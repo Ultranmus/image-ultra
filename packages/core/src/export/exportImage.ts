@@ -1,0 +1,167 @@
+import { loadImage } from '../loader/loadImage';
+import { createEditState, parseEditState, type EditState } from '../state/editState';
+import { getOutputSize, IDENTITY } from '../state/geometry';
+import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
+import type { RendererKind } from '../render/renderer';
+import type { ImageSource, LoadedImage, Size } from '../types';
+
+export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
+
+export interface ExportOptions {
+  /** Default: the source type when it's PNG/JPEG/WebP, otherwise PNG. */
+  mimeType?: ExportMimeType;
+  /** 0…1 for JPEG/WebP. Default 0.92 (JPEG) / 0.9 (WebP). */
+  quality?: number;
+  /** Scale the result down (never up) to fit these bounds. */
+  maxWidth?: number;
+  maxHeight?: number;
+  /** File name without extension. Default: the source name, else `image`. */
+  fileName?: string;
+  /** Fills transparent areas for formats without alpha (JPEG). Default `#ffffff`. */
+  background?: string;
+  /** Force a renderer; default tries WebGL2 then Canvas2D. */
+  renderer?: RendererKind | 'auto';
+}
+
+export interface ExportResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  /** The type actually produced (browsers may fall back to PNG for unsupported types). */
+  mimeType: string;
+  /** File name with extension, e.g. `photo-edited.jpg`. */
+  fileName: string;
+  /** The edits that produced this image — store it to re-open the editor later. */
+  state: EditState;
+  renderer: RendererKind;
+}
+
+const EXTENSIONS: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+};
+
+/** Renders the edited image at full quality and encodes it. Browser only. */
+export async function exportImage(
+  image: LoadedImage,
+  state: EditState,
+  options: ExportOptions = {},
+): Promise<ExportResult> {
+  const mimeType = options.mimeType ?? defaultMimeType(image.mimeType);
+  const quality =
+    options.quality ??
+    (mimeType === 'image/jpeg' ? 0.92 : mimeType === 'image/webp' ? 0.9 : undefined);
+  const full = getOutputSize(image, state);
+  const kinds: RendererKind[] =
+    options.renderer === 'webgl2' || options.renderer === 'canvas2d'
+      ? [options.renderer]
+      : ['webgl2', 'canvas2d'];
+
+  let lastError: unknown = null;
+  for (const kind of kinds) {
+    const canvas = createCanvas(1, 1);
+    let renderer;
+    try {
+      renderer = createRenderer(canvas, {
+        prefer: kind,
+        preserveDrawingBuffer: true,
+        ownsCanvas: true,
+      });
+    } catch (error) {
+      lastError = error;
+      continue;
+    }
+    try {
+      const { size, scale } = fitOutput(full, options, renderer.maxOutputSize);
+      await renderer.prepare(image);
+      renderer.render({
+        image,
+        state,
+        canvasSize: size,
+        outputSize: size,
+        outputScale: scale,
+        canvasToOutput: IDENTITY,
+        checker: null,
+        smooth: true,
+      });
+
+      // Composite onto a 2D canvas: flattens JPEG onto a background and gives a uniform encoder.
+      const out = createCanvas(size.width, size.height);
+      const ctx = out.getContext('2d') as
+        CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+      if (!ctx) throw new Error('image-ultra: no 2D canvas context available.');
+      if (mimeType === 'image/jpeg') {
+        ctx.fillStyle = options.background ?? '#ffffff';
+        ctx.fillRect(0, 0, size.width, size.height);
+      }
+      ctx.drawImage(canvas, 0, 0);
+      const blob = await canvasToBlob(out, mimeType, quality);
+      const actualType = blob.type || mimeType;
+      const baseName = options.fileName ?? image.name ?? 'image';
+      return {
+        blob,
+        width: size.width,
+        height: size.height,
+        mimeType: actualType,
+        fileName: `${baseName}.${EXTENSIONS[actualType] ?? 'png'}`,
+        state,
+        renderer: renderer.kind,
+      };
+    } catch (error) {
+      lastError = error;
+    } finally {
+      renderer.dispose();
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('image-ultra: export failed.');
+}
+
+/**
+ * Headless rendering: apply a saved `EditState` to an image without any UI.
+ * `state` may be an `EditState` or untrusted JSON (it is validated).
+ */
+export async function renderImage(
+  source: ImageSource | LoadedImage,
+  state?: EditState | unknown,
+  options: ExportOptions = {},
+): Promise<ExportResult> {
+  const edit = state === undefined ? createEditState() : parseEditState(state);
+  const owned = !isLoadedImage(source);
+  const image = isLoadedImage(source) ? source : await loadImage(source);
+  try {
+    return await exportImage(image, edit, options);
+  } finally {
+    if (owned) image.bitmap.close();
+  }
+}
+
+function isLoadedImage(value: unknown): value is LoadedImage {
+  return typeof value === 'object' && value !== null && 'bitmap' in value && 'width' in value;
+}
+
+function defaultMimeType(source: string | null): ExportMimeType {
+  return source === 'image/jpeg' || source === 'image/webp' ? source : 'image/png';
+}
+
+/** Output size after `maxWidth`/`maxHeight` and the renderer's hard limit. */
+export function fitOutput(
+  full: Size,
+  options: Pick<ExportOptions, 'maxWidth' | 'maxHeight'>,
+  hardLimit = Infinity,
+): { size: Size; scale: number } {
+  const scale = Math.min(
+    1,
+    (options.maxWidth ?? Infinity) / full.width,
+    (options.maxHeight ?? Infinity) / full.height,
+    hardLimit / full.width,
+    hardLimit / full.height,
+  );
+  return {
+    scale,
+    size: {
+      width: Math.max(1, Math.round(full.width * scale)),
+      height: Math.max(1, Math.round(full.height * scale)),
+    },
+  };
+}

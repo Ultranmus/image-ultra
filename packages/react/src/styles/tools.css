@@ -1,0 +1,190 @@
+/* Built-in tool panels and overlays. */
+@layer image-ultra {
+  .iu-adjust,
+  .iu-resize {
+    display: flex;
+    flex-direction: column;
+    gap: var(--iu-space-2);
+    width: 100%;
+    max-width: 760px;
+    min-width: 0;
+  }
+
+  .iu-adjust__row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--iu-space-2);
+  }
+
+  .iu-toolgroup {
+    display: flex;
+    gap: 2px;
+  }
+
+  .iu-toolgroup--end {
+    justify-content: flex-end;
+  }
+
+  .iu-resize__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--iu-space-2);
+    min-height: 40px;
+  }
+
+  .iu-resize__meta {
+    margin: 0 0 0 var(--iu-space-2);
+    color: var(--iu-text-muted);
+    font-size: var(--iu-text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .iu-resize__meta[data-warning] {
+    color: var(--iu-warning);
+  }
+
+  @container iu (max-width: 767px) {
+    .iu-adjust__row {
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .iu-toolgroup--end {
+      margin-left: auto;
+    }
+
+    .iu-resize__meta {
+      flex-basis: 100%;
+      margin: 0;
+      text-align: center;
+    }
+  }
+
+  /* ── Crop overlay ─────────────────────────────────────── */
+  .iu-crop {
+    position: absolute;
+    inset: 0;
+    z-index: var(--iu-z-overlay);
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .iu-crop[data-dragging='move'] {
+    cursor: grabbing;
+  }
+
+  .iu-crop__svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .iu-crop__shade {
+    fill: var(--iu-crop-shade);
+  }
+
+  .iu-crop__frame {
+    fill: none;
+    stroke: var(--iu-crop-frame);
+    stroke-width: 1;
+  }
+
+  .iu-crop__bounds {
+    fill: none;
+    stroke: var(--iu-crop-grid);
+    stroke-dasharray: 4 4;
+  }
+
+  .iu-crop__grid line {
+    stroke: var(--iu-crop-grid);
+    stroke-width: 1;
+  }
+
+  .iu-crop__handle {
+    fill: none;
+    stroke: var(--iu-crop-frame);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .iu-crop__box {
+    position: absolute;
+    outline: none;
+  }
+
+  .iu-crop__box:focus-visible {
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  /* 32px hit targets on a 10px visual handle (UI_VISION §6). */
+  .iu-crop__hit {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    margin: -16px 0 0 -16px;
+  }
+
+  .iu-crop__hit[data-handle='nw'] {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+  }
+
+  .iu-crop__hit[data-handle='ne'] {
+    top: 0;
+    left: 100%;
+    cursor: nesw-resize;
+  }
+
+  .iu-crop__hit[data-handle='se'] {
+    top: 100%;
+    left: 100%;
+    cursor: nwse-resize;
+  }
+
+  .iu-crop__hit[data-handle='sw'] {
+    top: 100%;
+    left: 0;
+    cursor: nesw-resize;
+  }
+
+  .iu-crop__hit[data-handle='n'],
+  .iu-crop__hit[data-handle='s'] {
+    left: 16px;
+    width: calc(100% - 32px);
+    height: 20px;
+    margin: -10px 0 0;
+    cursor: ns-resize;
+  }
+
+  .iu-crop__hit[data-handle='n'] {
+    top: 0;
+  }
+
+  .iu-crop__hit[data-handle='s'] {
+    top: 100%;
+  }
+
+  .iu-crop__hit[data-handle='e'],
+  .iu-crop__hit[data-handle='w'] {
+    top: 16px;
+    width: 20px;
+    height: calc(100% - 32px);
+    margin: 0 0 0 -10px;
+    cursor: ew-resize;
+  }
+
+  .iu-crop__hit[data-handle='e'] {
+    left: 100%;
+  }
+
+  .iu-crop__hit[data-handle='w'] {
+    left: 0;
+  }
+}

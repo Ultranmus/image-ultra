@@ -1,0 +1,154 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import {
+  ImageEditor,
+  renderImage,
+  useImageEditor,
+  type EditState,
+  type ExportMimeType,
+  type ExportResult,
+  type ThemeMode,
+} from '@image-ultra/react';
+import { DevPanel } from './DevPanel';
+
+// `undefined` = the built-in plum brand accent (tuned per theme); the rest test `themeOverrides`.
+const ACCENTS = [undefined, '#ff5a1f', '#10b981', '#0ea5e9', '#f43f5e'] as const;
+const THEMES: ThemeMode[] = ['dark', 'light', 'auto'];
+type Frame = 'full' | 'tablet' | 'phone';
+const FRAME_WIDTH: Record<Frame, string> = { full: '100%', tablet: '820px', phone: '390px' };
+
+export default function PlaygroundPage() {
+  const editor = useImageEditor();
+  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [accent, setAccent] = useState<string | undefined>(ACCENTS[0]);
+  const [frame, setFrame] = useState<Frame>('full');
+  const [src, setSrc] = useState<string | undefined>('/sample.jpg');
+  const [format, setFormat] = useState<ExportMimeType>('image/jpeg');
+  const [initialState, setInitialState] = useState<EditState | undefined>(undefined);
+  const [editorKey, setEditorKey] = useState(0);
+  const [saved, setSaved] = useState<{ result: ExportResult; url: string } | null>(null);
+  const [log, setLog] = useState('Ready');
+
+  // Test hook for Playwright (e2e) — not part of the package API.
+  useEffect(() => {
+    (window as unknown as { __iu: unknown }).__iu = { editor, renderImage };
+  }, [editor]);
+
+  const reopenWith = (state: EditState | undefined) => {
+    setInitialState(state);
+    setEditorKey((k) => k + 1);
+  };
+
+  return (
+    <div className="pg">
+      <header className="pg-bar">
+        <strong className="pg-logo">image-ultra</strong>
+
+        <Segmented label="Theme" options={THEMES} value={theme} onChange={setTheme} />
+        <Segmented
+          label="Frame"
+          options={['full', 'tablet', 'phone'] as const}
+          value={frame}
+          onChange={setFrame}
+        />
+
+        <div className="pg-group" aria-label="Accent">
+          {ACCENTS.map((color) => (
+            <button
+              key={color ?? 'default'}
+              className="pg-swatch"
+              style={{ background: color ?? '#4d194d' }}
+              aria-pressed={accent === color}
+              aria-label={color ? `Accent ${color}` : 'Default accent'}
+              onClick={() => setAccent(color)}
+            />
+          ))}
+        </div>
+
+        <div className="pg-group">
+          <button className="pg-btn" onClick={() => setSrc('/sample.jpg')}>
+            Sample
+          </button>
+          <button className="pg-btn" onClick={() => setSrc('/does-not-exist.jpg')}>
+            Broken URL
+          </button>
+          <button className="pg-btn" onClick={() => setSrc(undefined)}>
+            Empty
+          </button>
+        </div>
+
+        <span className="pg-log" data-testid="log">
+          {log}
+        </span>
+      </header>
+
+      <main className="pg-main">
+        <div className="pg-stage">
+          <div className="pg-frame" style={{ width: FRAME_WIDTH[frame] }}>
+            <ImageEditor
+              // Remount when the source or the restored state changes.
+              key={`${src ?? 'empty'}-${editorKey}`}
+              ref={editor}
+              src={src}
+              initialState={initialState}
+              theme={theme}
+              themeOverrides={accent ? { accent } : {}}
+              exportOptions={{ mimeType: format, fileName: 'edited' }}
+              onChange={(state) =>
+                setLog(`Changed · ${JSON.stringify(state).length} bytes of JSON`)
+              }
+              onSave={(result) => {
+                setSaved((previous) => {
+                  if (previous) URL.revokeObjectURL(previous.url);
+                  return { result, url: URL.createObjectURL(result.blob) };
+                });
+                setLog(`Saved ${result.fileName} · ${result.width}×${result.height}`);
+              }}
+              onCancel={() => setLog('Cancel pressed')}
+              onError={(error) => setLog(`Error: ${error.message}`)}
+            />
+          </div>
+        </div>
+
+        <DevPanel
+          editor={editor}
+          format={format}
+          onFormatChange={setFormat}
+          saved={saved}
+          onReopen={reopenWith}
+          onLog={setLog}
+        />
+      </main>
+    </div>
+  );
+}
+
+export function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly T[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="pg-group" role="radiogroup" aria-label={label}>
+      <span className="pg-label">{label}</span>
+      {options.map((option) => (
+        <button
+          key={option}
+          role="radio"
+          aria-checked={value === option}
+          className="pg-btn"
+          onClick={() => onChange(option)}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,139 @@
+/* Design tokens — keep in sync with docs/internal/THEMING.md. Dark is the default theme. */
+@layer image-ultra {
+  .iu-root {
+    /* Colour — dark */
+    --iu-bg: #0b0b0d;
+    --iu-stage: #060607;
+    --iu-surface-1: #131316;
+    --iu-surface-2: #1c1c21;
+    --iu-surface-3: #26262d;
+    --iu-border: rgba(255, 255, 255, 0.08);
+    --iu-border-strong: rgba(255, 255, 255, 0.16);
+    --iu-text: #f4f4f5;
+    --iu-text-muted: #a1a1aa;
+    --iu-text-subtle: #6b6b75;
+    /* Brand plum #4d194d, lightened for dark surfaces (contrast checked, see THEMING.md). */
+    --iu-accent: #9c479c;
+    --iu-accent-hover: #ab55ab;
+    --iu-accent-contrast: #ffffff;
+    --iu-accent-soft: rgba(156, 71, 156, 0.22);
+    --iu-accent-text: #d08bd0;
+    --iu-danger: #ff5c6c;
+    --iu-warning: #f5b54a;
+    --iu-overlay: rgba(0, 0, 0, 0.55);
+    /* Crop box sits on the photo, so it stays light in both themes. */
+    --iu-crop-frame: rgba(255, 255, 255, 0.95);
+    --iu-crop-shade: rgba(0, 0, 0, 0.62);
+    --iu-crop-grid: rgba(255, 255, 255, 0.45);
+    --iu-checker-a: #26262b;
+    --iu-checker-b: #1d1d21;
+    --iu-shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+    /* Typography */
+    --iu-font-family: inherit;
+    --iu-font-fallback: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --iu-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --iu-text-xs: 11px;
+    --iu-text-sm: 12px;
+    --iu-text-md: 13px;
+    --iu-text-lg: 14px;
+    --iu-text-xl: 16px;
+    --iu-weight-regular: 400;
+    --iu-weight-medium: 500;
+    --iu-weight-semibold: 600;
+
+    /* Space & shape */
+    --iu-space-1: 4px;
+    --iu-space-2: 8px;
+    --iu-space-3: 12px;
+    --iu-space-4: 16px;
+    --iu-space-5: 20px;
+    --iu-space-6: 24px;
+    --iu-space-7: 32px;
+    --iu-space-8: 40px;
+    --iu-radius-md: 8px;
+    --iu-radius-sm: calc(var(--iu-radius-md) * 0.75);
+    --iu-radius-lg: calc(var(--iu-radius-md) * 1.5);
+    --iu-radius-full: 999px;
+
+    /* Motion */
+    --iu-duration-fast: 120ms;
+    --iu-duration-base: 200ms;
+    --iu-duration-slow: 320ms;
+    --iu-ease: cubic-bezier(0.2, 0, 0, 1);
+
+    /* Sizes */
+    --iu-size-topbar: 48px;
+    --iu-size-rail: 72px;
+    --iu-size-rail-mobile: 64px;
+    --iu-size-controlbar: 136px;
+    --iu-size-touch: 40px;
+
+    /* Layers */
+    --iu-z-overlay: 10;
+    --iu-z-popover: 20;
+    --iu-z-toast: 30;
+
+    --iu-focus-ring: 0 0 0 2px var(--iu-bg), 0 0 0 4px var(--iu-accent);
+    color-scheme: dark;
+  }
+
+  .iu-root[data-iu-theme='light'] {
+    --iu-bg: #f4f4f6;
+    --iu-stage: #e9e9ed;
+    --iu-surface-1: #ffffff;
+    --iu-surface-2: #f1f1f4;
+    --iu-surface-3: #e4e4ea;
+    --iu-border: rgba(0, 0, 0, 0.08);
+    --iu-border-strong: rgba(0, 0, 0, 0.16);
+    --iu-text: #18181b;
+    --iu-text-muted: #5b5b66;
+    --iu-text-subtle: #8a8a94;
+    --iu-accent: #4d194d;
+    --iu-accent-hover: #3a123a;
+    --iu-accent-soft: rgba(77, 25, 77, 0.1);
+    --iu-accent-text: #4d194d;
+    --iu-danger: #e5293d;
+    --iu-warning: #9a5b00;
+    --iu-overlay: rgba(0, 0, 0, 0.45);
+    --iu-checker-a: #ffffff;
+    --iu-checker-b: #e6e6ea;
+    --iu-shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.14);
+    color-scheme: light;
+  }
+
+  /* theme="auto": no data attribute, follow the OS. Same values as the light block above. */
+  @media (prefers-color-scheme: light) {
+    .iu-root:not([data-iu-theme]) {
+      --iu-bg: #f4f4f6;
+      --iu-stage: #e9e9ed;
+      --iu-surface-1: #ffffff;
+      --iu-surface-2: #f1f1f4;
+      --iu-surface-3: #e4e4ea;
+      --iu-border: rgba(0, 0, 0, 0.08);
+      --iu-border-strong: rgba(0, 0, 0, 0.16);
+      --iu-text: #18181b;
+      --iu-text-muted: #5b5b66;
+      --iu-text-subtle: #8a8a94;
+      --iu-accent: #4d194d;
+      --iu-accent-hover: #3a123a;
+      --iu-accent-soft: rgba(77, 25, 77, 0.1);
+      --iu-accent-text: #4d194d;
+      --iu-danger: #e5293d;
+      --iu-warning: #9a5b00;
+      --iu-overlay: rgba(0, 0, 0, 0.45);
+      --iu-checker-a: #ffffff;
+      --iu-checker-b: #e6e6ea;
+      --iu-shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.14);
+      color-scheme: light;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .iu-root {
+      --iu-duration-fast: 0ms;
+      --iu-duration-base: 0ms;
+      --iu-duration-slow: 0ms;
+    }
+  }
+}

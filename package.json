@@ -1,0 +1,34 @@
+{
+  "name": "image-ultra-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "playground": "turbo run build --filter=@image-ultra/react && pnpm --filter playground dev",
+    "lint": "eslint .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset publish",
+    "e2e": "turbo run e2e"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jiti": "^2.7.0",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

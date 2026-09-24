@@ -1,0 +1,391 @@
+/* Shared controls — one style everywhere (UI_VISION.md §5, §8). */
+@layer image-ultra {
+  .iu-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--iu-space-2);
+    min-width: var(--iu-size-touch);
+    height: var(--iu-size-touch);
+    padding: 0;
+    border: 0;
+    border-radius: var(--iu-radius-md);
+    background: transparent;
+    color: var(--iu-text);
+    font: inherit;
+    font-size: var(--iu-text-md);
+    font-weight: var(--iu-weight-medium);
+    cursor: pointer;
+    user-select: none;
+    transition:
+      background-color var(--iu-duration-fast) var(--iu-ease),
+      color var(--iu-duration-fast) var(--iu-ease),
+      opacity var(--iu-duration-fast) var(--iu-ease),
+      transform var(--iu-duration-fast) var(--iu-ease);
+  }
+
+  .iu-button--text {
+    padding: 0 var(--iu-space-4) 0 var(--iu-space-3);
+  }
+
+  .iu-button:hover:not(:disabled) {
+    background: var(--iu-surface-2);
+  }
+
+  .iu-button:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .iu-button:focus-visible,
+  .iu-button:has(input:focus-visible) {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .iu-button[data-variant='primary'] {
+    background: var(--iu-accent);
+    color: var(--iu-accent-contrast);
+  }
+
+  .iu-button[data-variant='primary']:hover:not(:disabled) {
+    background: var(--iu-accent-hover);
+  }
+
+  .iu-button[data-variant='secondary'] {
+    background: var(--iu-surface-2);
+    border: 1px solid var(--iu-border);
+  }
+
+  .iu-button[data-variant='secondary']:hover {
+    background: var(--iu-surface-3);
+  }
+
+  /* Tooltip (desktop hover only). Replaced by an accessible popover primitive later if needed. */
+  @media (hover: hover) {
+    .iu-root [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + var(--iu-space-1));
+      left: 50%;
+      z-index: var(--iu-z-popover);
+      padding: var(--iu-space-1) var(--iu-space-2);
+      border-radius: var(--iu-radius-sm);
+      background: var(--iu-surface-3);
+      color: var(--iu-text);
+      box-shadow: var(--iu-shadow-popover);
+      font-size: var(--iu-text-xs);
+      font-weight: var(--iu-weight-medium);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -2px);
+      transition:
+        opacity var(--iu-duration-fast) var(--iu-ease),
+        transform var(--iu-duration-fast) var(--iu-ease);
+    }
+
+    .iu-root [data-tooltip]:hover:not(:disabled)::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      transition-delay: 400ms;
+    }
+  }
+
+  .iu-root [data-tooltip] {
+    position: relative;
+  }
+
+  .iu-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* ── RulerSlider ───────────────────────────────────────── */
+@layer image-ultra {
+  .iu-ruler {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    border-radius: var(--iu-radius-md);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    outline: none;
+  }
+
+  .iu-ruler[data-dragging] {
+    cursor: grabbing;
+  }
+
+  .iu-ruler:focus-visible {
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-ruler[aria-disabled] {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .iu-ruler__value {
+    color: var(--iu-text-muted);
+    font-size: var(--iu-text-sm);
+    font-weight: var(--iu-weight-medium);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .iu-ruler__value[data-changed] {
+    color: var(--iu-text);
+  }
+
+  .iu-ruler__viewport {
+    position: relative;
+    width: 100%;
+    height: 22px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  }
+
+  .iu-ruler__track {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transition: transform var(--iu-duration-fast) var(--iu-ease);
+  }
+
+  .iu-ruler[data-dragging] .iu-ruler__track {
+    transition: none;
+  }
+
+  .iu-ruler__tick {
+    position: absolute;
+    top: 8px;
+    width: 1px;
+    height: 6px;
+    margin-left: -0.5px;
+    background: var(--iu-text-subtle);
+  }
+
+  .iu-ruler__tick[data-major] {
+    top: 5px;
+    height: 10px;
+    background: var(--iu-text-muted);
+  }
+
+  .iu-ruler__tick[data-default] {
+    top: 3px;
+    height: 14px;
+    background: var(--iu-text);
+  }
+
+  .iu-ruler__fill {
+    position: absolute;
+    bottom: 1px;
+    height: 2px;
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-accent);
+  }
+
+  .iu-ruler__marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-accent-text);
+  }
+}
+
+/* ── SegmentedControl ──────────────────────────────────── */
+@layer image-ultra {
+  .iu-segmented {
+    display: inline-flex;
+    flex: none;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--iu-radius-md);
+    background: var(--iu-surface-2);
+  }
+
+  .iu-segmented__item {
+    height: 28px;
+    padding: 0 var(--iu-space-3);
+    border: 0;
+    border-radius: calc(var(--iu-radius-md) - 2px);
+    background: transparent;
+    color: var(--iu-text-muted);
+    font: inherit;
+    font-size: var(--iu-text-sm);
+    font-weight: var(--iu-weight-medium);
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--iu-duration-fast) var(--iu-ease),
+      color var(--iu-duration-fast) var(--iu-ease);
+  }
+
+  .iu-segmented__item:hover {
+    color: var(--iu-text);
+  }
+
+  .iu-segmented__item[aria-checked='true'] {
+    background: var(--iu-surface-3);
+    color: var(--iu-text);
+  }
+
+  .iu-segmented__item:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+}
+
+/* ── PresetStrip / chips ───────────────────────────────── */
+@layer image-ultra {
+  .iu-presets {
+    display: flex;
+    justify-content: safe center;
+    gap: 6px;
+    padding: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    --iu-fade-start: #000;
+    --iu-fade-end: #000;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      var(--iu-fade-start),
+      #000 32px,
+      #000 calc(100% - 32px),
+      var(--iu-fade-end)
+    );
+    mask-image: linear-gradient(
+      90deg,
+      var(--iu-fade-start),
+      #000 32px,
+      #000 calc(100% - 32px),
+      var(--iu-fade-end)
+    );
+  }
+
+  /* Fade an edge only when there is more content scrolled past it. */
+  .iu-presets[data-more-start] {
+    --iu-fade-start: transparent;
+  }
+
+  .iu-presets[data-more-end] {
+    --iu-fade-end: transparent;
+  }
+
+  .iu-chip {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 var(--iu-space-3);
+    border: 1px solid var(--iu-border);
+    border-radius: var(--iu-radius-full);
+    background: transparent;
+    color: var(--iu-text-muted);
+    font: inherit;
+    font-size: var(--iu-text-sm);
+    font-weight: var(--iu-weight-medium);
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--iu-duration-fast) var(--iu-ease),
+      color var(--iu-duration-fast) var(--iu-ease),
+      border-color var(--iu-duration-fast) var(--iu-ease);
+  }
+
+  .iu-chip:hover {
+    background: var(--iu-surface-2);
+    color: var(--iu-text);
+  }
+
+  .iu-chip[aria-checked='true'] {
+    border-color: transparent;
+    background: var(--iu-accent-soft);
+    color: var(--iu-accent-text);
+  }
+
+  .iu-chip:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-chip__glyph {
+    display: inline-block;
+    flex: none;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+  }
+
+  .iu-chip__glyph[data-round] {
+    border-radius: var(--iu-radius-full);
+  }
+
+  .iu-chip__glyph[data-free] {
+    border-style: dashed;
+  }
+}
+
+/* ── NumberField ───────────────────────────────────────── */
+@layer image-ultra {
+  .iu-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 var(--iu-space-3);
+    border: 1px solid var(--iu-border);
+    border-radius: var(--iu-radius-md);
+    background: var(--iu-surface-2);
+    cursor: text;
+  }
+
+  .iu-field:focus-within {
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-field__label,
+  .iu-field__unit {
+    color: var(--iu-text-muted);
+    font-size: var(--iu-text-xs);
+    font-weight: var(--iu-weight-medium);
+  }
+
+  .iu-field__input {
+    width: 5ch;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--iu-text);
+    font: inherit;
+    font-size: var(--iu-text-md);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}

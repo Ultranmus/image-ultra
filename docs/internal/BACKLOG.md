@@ -5,6 +5,24 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ## Open
 
+### From Phase 5 — Annotate
+
+- [ ] **Multi-select** (Shift-click, marquee) and group move/align — _Phase 6/7_
+- [ ] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _Phase 6_
+- [ ] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _Phase 7_
+- [ ] **Phone layout: Annotate rows scroll sideways** — _Phase 7 (mobile pass)_
+- [ ] **Line endpoint handles cover the arrow head** while selected — _Phase 7 polish_
+  - Fix: smaller hollow endpoint handles, or place them just behind the tip.
+- [ ] **In-place text editor may wrap slightly differently from the canvas** (CSS vs our measure) —
+      _Phase 7_
+  - Fix: render the editing text through the same layout and draw a caret, or match CSS exactly.
+- [ ] **Fonts are system stacks**: text can look different on another OS; exports use the
+      exporting machine's font — _document in Phase 8_ (apps can pass web fonts via `fonts`).
+- [ ] **Inserted images are stored as data URLs inside EditState** (max 1600px WebP) — can make saved
+      JSON large — _Phase 8_: option to upload assets and store URLs (`onAssetUpload` hook).
+- [ ] **Keyboard focus**: fixed for stage/annotate clicks (they now take focus); audit other
+      overlays in the Phase 7 a11y pass.
+
 ### From Phase 4 — Finetune + Filters
 
 - [ ] **Histogram shows "before" only** (Curves/Levels) — _Phase 7_

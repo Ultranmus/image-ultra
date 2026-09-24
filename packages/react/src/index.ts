@@ -4,6 +4,7 @@ export {
   type ImageEditorProps,
 } from './components/ImageEditor';
 export { useImageEditor } from './hooks/useImageEditor';
+export { MaskBrushOverlay, type MaskBrushOverlayProps } from './components/MaskBrushOverlay';
 export { defineTool, type ToolDefinition } from './tools/defineTool';
 export { BUILT_IN_TOOLS, type ToolInput } from './tools/builtins';
 export { SIZE_PRESETS, type SizePreset } from './tools/resize/ResizeControls';
@@ -20,7 +21,23 @@ export {
   type PresetStripProps,
 } from './controls/PresetStrip';
 export { NumberField, type NumberFieldProps } from './controls/NumberField';
-export { useEditorState, useEditorStore, useLabels, useLooks } from './context';
+export { Popover, type PopoverProps } from './controls/Popover';
+export {
+  ColorButton,
+  DEFAULT_SWATCHES,
+  SwatchPicker,
+  type SwatchPickerProps,
+} from './controls/SwatchPicker';
+export {
+  useEditorState,
+  useEditorStore,
+  useFonts,
+  useLabels,
+  useLooks,
+  useToolState,
+  type FontOption,
+} from './context';
+export { DEFAULT_FONTS } from './fonts';
 export { defaultLabels, type LabelOverrides, type Labels } from './i18n';
 export type { ThemeMode, ThemeOverrides } from './theme';
 
@@ -54,6 +71,8 @@ export type {
   GeometryState,
   LevelsState,
   Look,
+  Shape,
+  TextShape,
   ImageSource,
   LoadedImage,
   Rect,

@@ -2,10 +2,12 @@ import {
   createGeometryState,
   cropForAspect,
   fitCrop,
+  flipAnnotations,
   flipGeometry,
   getCropRect,
   getOrientedSize,
   MAX_TILT_DEGREES,
+  rotateAnnotations,
   rotateGeometry,
   rotateResize,
   syncResizeToCrop,
@@ -89,6 +91,7 @@ export function useAdjust() {
       apply('Rotate', (image, edit) => ({
         ...edit,
         geometry: rotateGeometry(image, edit.geometry, -1),
+        annotations: rotateAnnotations(edit.annotations, getOrientedSize(image, edit.geometry), -1),
         resize: rotateResize(edit.resize),
       }));
     },
@@ -97,6 +100,7 @@ export function useAdjust() {
       apply('Flip', (image, edit) => ({
         ...edit,
         geometry: flipGeometry(image, edit.geometry, axis),
+        annotations: flipAnnotations(edit.annotations, getOrientedSize(image, edit.geometry), axis),
       }));
     },
 

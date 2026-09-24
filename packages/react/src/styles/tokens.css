@@ -25,6 +25,9 @@
     --iu-crop-frame: rgba(255, 255, 255, 0.95);
     --iu-crop-shade: rgba(0, 0, 0, 0.62);
     --iu-crop-grid: rgba(255, 255, 255, 0.45);
+    /* Selection handles sit on the photo too: accent outline, white fill in both themes. */
+    --iu-handle-fill: #ffffff;
+    --iu-guide: #ff2d95;
     /* Curve channel colours (on UI surfaces). */
     --iu-channel-red: #ff6b6b;
     --iu-channel-green: #4cd97b;

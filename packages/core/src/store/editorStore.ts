@@ -73,6 +73,11 @@ export interface EditorState {
   /** An open continuous change (slider drag) that becomes one history step on `endChange`. */
   pendingChange: { base: EditState; label: string } | null;
   tasks: EditorTask[];
+  /**
+   * Transient UI state owned by tools (e.g. Annotate's current drawing tool and selection),
+   * shared between a tool's Controls and StageOverlay. Not part of the edit or history.
+   */
+  toolState: Record<string, unknown>;
 }
 
 export interface ViewportChangeOptions {
@@ -87,6 +92,8 @@ export interface EditorActions {
   load(source: ImageSource, options?: { state?: EditState }): Promise<void>;
   setActiveTool(tool: string): void;
   setCropView(view: CropView | null): void;
+  /** Replace one tool's transient UI state. */
+  setToolState(toolId: string, value: unknown): void;
   setStageSize(size: Size): void;
   setViewport(viewport: Viewport, options?: Pick<ViewportChangeOptions, 'animate'>): void;
   zoomTo(scale: number, options?: ViewportChangeOptions): void;
@@ -222,6 +229,7 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
       history: createHistory(),
       pendingChange: null,
       tasks: [],
+      toolState: {},
 
       async load(source, loadOptions = {}) {
         loadController?.abort();
@@ -262,6 +270,10 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
 
       setCropView(view) {
         set({ cropView: view });
+      },
+
+      setToolState(toolId, value) {
+        set({ toolState: { ...get().toolState, [toolId]: value } });
       },
 
       setStageSize(size) {

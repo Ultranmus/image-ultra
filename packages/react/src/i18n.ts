@@ -69,6 +69,56 @@ export interface Labels {
   save: string;
   cancelEdit: string;
 
+  /* Annotate */
+  annotateTools: string;
+  annotateModes: Record<
+    'select' | 'pen' | 'line' | 'arrow' | 'rect' | 'ellipse' | 'polygon' | 'text',
+    string
+  >;
+  insertImage: string;
+  strokeColor: string;
+  fillColor: string;
+  textColor: string;
+  textBackground: string;
+  strokeWidth: string;
+  fontSize: string;
+  opacity: string;
+  cornerRadius: string;
+  font: string;
+  bold: string;
+  alignLeft: string;
+  alignCenter: string;
+  alignRight: string;
+  arrowStart: string;
+  arrowEnd: string;
+  duplicate: string;
+  deleteShape: string;
+  layers: string;
+  noLayers: string;
+  bringForward: string;
+  sendBackward: string;
+  showLayer: string;
+  hideLayer: string;
+  lockLayer: string;
+  unlockLayer: string;
+  sizeSmall: string;
+  sizeMedium: string;
+  sizeLarge: string;
+  sizeHuge: string;
+  annotateHint: string;
+  polygonHint: string;
+  textPlaceholder: string;
+  editText: string;
+  rotate: string;
+
+  /* Colour picker */
+  color: string;
+  colorNone: string;
+  colorCustom: string;
+  colorSaturation: string;
+  colorHue: string;
+  colorPick: string;
+
   /* Filter */
   filters: string;
   filterNone: string;
@@ -166,6 +216,60 @@ export const defaultLabels: Labels = {
   save: 'Save',
   cancelEdit: 'Cancel',
 
+  annotateTools: 'Drawing tools',
+  annotateModes: {
+    select: 'Select',
+    pen: 'Pen',
+    line: 'Line',
+    arrow: 'Arrow',
+    rect: 'Rectangle',
+    ellipse: 'Ellipse',
+    polygon: 'Polygon',
+    text: 'Text',
+  },
+  insertImage: 'Add image',
+  strokeColor: 'Colour',
+  fillColor: 'Fill',
+  textColor: 'Text colour',
+  textBackground: 'Background',
+  strokeWidth: 'Line width',
+  fontSize: 'Text size',
+  opacity: 'Opacity',
+  cornerRadius: 'Corner radius',
+  font: 'Font',
+  bold: 'Bold',
+  alignLeft: 'Align left',
+  alignCenter: 'Align centre',
+  alignRight: 'Align right',
+  arrowStart: 'Arrow at start',
+  arrowEnd: 'Arrow at end',
+  duplicate: 'Duplicate',
+  deleteShape: 'Delete',
+  layers: 'Layers',
+  noLayers: 'Nothing drawn yet',
+  bringForward: 'Bring forward',
+  sendBackward: 'Send backward',
+  showLayer: 'Show',
+  hideLayer: 'Hide',
+  lockLayer: 'Lock',
+  unlockLayer: 'Unlock',
+  sizeSmall: 'S',
+  sizeMedium: 'M',
+  sizeLarge: 'L',
+  sizeHuge: 'XL',
+  annotateHint: 'Pick a tool and draw on the photo, or select a shape to change it.',
+  polygonHint: 'Click to add points · click the first point or press Enter to finish · Esc cancels',
+  textPlaceholder: 'Type something',
+  editText: 'Edit text',
+  rotate: 'Rotate',
+
+  color: 'Colour',
+  colorNone: 'None',
+  colorCustom: 'Custom colour',
+  colorSaturation: 'Saturation and brightness',
+  colorHue: 'Hue',
+  colorPick: 'Pick from screen',
+
   filters: 'Filters',
   filterNone: 'Original',
   intensity: 'Intensity',
@@ -173,7 +277,7 @@ export const defaultLabels: Labels = {
   removeLook: 'Remove look',
 };
 
-type NestedKey = 'tools' | 'finetune' | 'curveChannels';
+type NestedKey = 'tools' | 'finetune' | 'curveChannels' | 'annotateModes';
 
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
   [K in NestedKey]?: Partial<Labels[K]>;
@@ -187,5 +291,6 @@ export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
     tools: { ...defaultLabels.tools, ...overrides.tools },
     finetune: { ...defaultLabels.finetune, ...overrides.finetune },
     curveChannels: { ...defaultLabels.curveChannels, ...overrides.curveChannels },
+    annotateModes: { ...defaultLabels.annotateModes, ...overrides.annotateModes },
   };
 }

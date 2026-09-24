@@ -103,3 +103,11 @@
     visibility: hidden;
   }
 }
+
+@layer image-ultra {
+  /* Focusable for keyboard shortcuts after a click; no ring for mouse focus. */
+  .iu-stage:focus,
+  .iu-annotate-layer:focus {
+    outline: none;
+  }
+}

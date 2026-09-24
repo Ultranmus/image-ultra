@@ -153,3 +153,38 @@ brush/mask tool for the future AI eraser).
 - Fixed Adjust/Curves/Levels segmented box stretching to fill its grid column (extra empty space).
 - New shared bits: `Preset.separatorBefore`, `Preset.badge`, `.iu-notice` / `.iu-link`.
 - 25/25 e2e pass (looks test now covers the notice, the link and the order).
+
+## 2026-09-24 · Phase 5 — Annotate ✅ (awaiting owner review)
+
+**Done**
+
+- Core: `state/annotations.ts` (shape types, boxes/corners/bounds, hit testing, move/resize incl.
+  rotated anchor, rotate/flip with the photo, names), `state/parseAnnotations.ts` (safe parsing),
+  `state/strokes.ts` (RDP simplify, smooth tracing, `drawMask`, `rasterizeMask`),
+  `render/annotations.ts` (drawing, text layout/wrap, arrow heads, assets + fonts loading,
+  `getOrientedToOutput`). Export draws annotations (clipped by round crop). Store: `toolState`.
+- React: Annotate tool (AnnotateControls, AnnotateOverlay, LayersPanel, snapping, state/factories),
+  Stage annotation canvas layer, `Popover` (Radix), `SwatchPicker` + `ColorButton` (HSV, hex,
+  eyedropper), `useToolState`, `useFonts` + `fonts` prop, `MaskBrushOverlay`, new icons + labels.
+  Adjust tool's rotate/flip now carry annotations.
+- Fixes found while testing: text box blurred instantly on creation (focus race); shortcuts didn't
+  work after clicking the photo (stage/overlay now take focus); Escape in a popover deselected the
+  shape.
+- Tests: 70 unit + 34 e2e (new: draw/export, click-to-default, select/move/resize/delete/undo,
+  text create/edit/empty-discard, pen simplify + polygon Enter, keyboard R/⌘D/Esc, layers hide/lock,
+  rotate photo carries shapes).
+
+**Notes / open issues** → see BACKLOG.md "From Phase 5".
+
+**Next:** Phase 6 — Extras (watermark, redact, frames, fill, stickers, compare, history panel,
+shortcuts overlay, EXIF option, copy/paste shapes).
+
+## 2026-09-24 · Phase 5 follow-up (owner report)
+
+- React warning "Updating a style property during rerender (font) when a conflicting property is set
+  (lineHeight)…" from the in-place text editor: replaced the `font` shorthand with longhand properties.
+  Verified in the dev server (no warning).
+- While checking: re-editing text selected all of it, so typing replaced it → caret now goes to the end.
+- Investigated "GPU stall due to ReadPixels": headless-Chrome-only (reproduced with a bare WebGL page);
+  none in a headed browser. Preview canvas switched to premultiplied alpha anyway (DECISIONS #54).
+- Playground got a favicon (the only 404 in a headed browser).

@@ -50,3 +50,41 @@ export function exportAlpha(page: Page, options: ExportOptions = { mimeType: 'im
     };
   }, options);
 }
+
+/** Exports a PNG and returns the RGBA of the pixel at fractional position `fx`,`fy`. */
+export function exportPixel(page: Page, fx: number, fy: number) {
+  return page.evaluate(
+    async ({ fx, fy }) => {
+      const editor = (window as unknown as { __iu: TestHook }).__iu.editor.current!;
+      const result = await editor.exportImage({ mimeType: 'image/png' });
+      const bitmap = await createImageBitmap(result.blob);
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(bitmap, 0, 0);
+      return Array.from(
+        ctx.getImageData(Math.floor(bitmap.width * fx), Math.floor(bitmap.height * fy), 1, 1).data,
+      );
+    },
+    { fx, fy },
+  );
+}
+
+/** Stage-relative mouse helpers: positions are fractions of the stage box. */
+export async function stagePoint(page: Page, fx: number, fy: number) {
+  const box = (await page.locator('.iu-stage').boundingBox())!;
+  return { x: box.x + box.width * fx, y: box.y + box.height * fy };
+}
+
+export async function dragOnStage(
+  page: Page,
+  from: [number, number],
+  to: [number, number],
+  steps = 6,
+) {
+  const a = await stagePoint(page, ...from);
+  const b = await stagePoint(page, ...to);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps });
+  await page.mouse.up();
+}

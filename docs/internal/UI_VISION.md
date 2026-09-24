@@ -99,6 +99,16 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   PresetStrip (52px live previews of each look on the current crop, label below, selected = accent
   ring): Original, then the user's looks (bookmark badge; hover ✕ / Delete key removes), a divider,
   then the 28 presets. Own looks come first so a just-saved look is visible without scrolling.
+- **Annotate** ControlBar: row 1 = drawing tools as icon radios (Select V, Pen P, Line L, Arrow A,
+  Rectangle R, Ellipse O, Polygon G, Text T) + Add image — [Layers]; row 2 = inspector for the selected
+  shape (or the defaults of the current tool): colour/fill buttons (round swatch dots; fill shows a
+  ring), width / text size / font / corner radius / opacity as popovers, Bold + alignment + arrow-head
+  toggles inline (`data-active`), then Duplicate / Delete on the right. Nothing to show → one muted hint.
+- **Annotate stage:** accent selection outline, white square handles (10px visual, rotated with the
+  shape, direction-aware cursors), a round rotate handle 28px above the top edge, round endpoint
+  handles for lines, pink dashed snap guides, hover outline in Select mode. Text is edited in place
+  (transparent textarea over the canvas, dashed accent outline). Layers = floating panel top-right.
+- **Popovers** (Radix, portalled inside `.iu-root`) are the only floating UI besides the Layers panel.
 - Dense panels use small 24px IconButtons (`size="sm"`) for secondary actions (per-editor reset).
 - Placeholder tools show one muted line ("coming soon") until their phase.
 

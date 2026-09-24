@@ -1,6 +1,12 @@
 import { loadImage } from '../loader/loadImage';
 import { createEditState, parseEditState, type EditState } from '../state/editState';
-import { getOutputSize, IDENTITY } from '../state/geometry';
+import { compose, getOutputSize, IDENTITY, scale as scaleBy } from '../state/geometry';
+import {
+  drawAnnotations,
+  ensureAnnotationFonts,
+  getOrientedToOutput,
+  loadAnnotationAssets,
+} from '../render/annotations';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
 import type { AnyCanvas, RendererKind } from '../render/renderer';
 import type { ImageSource, LoadedImage, Size } from '../types';
@@ -104,6 +110,33 @@ export async function renderToCanvas(
         ctx.fillRect(0, 0, size.width, size.height);
       }
       ctx.drawImage(canvas, 0, 0);
+
+      // Vector annotations on top (sharp at any size), clipped to a round crop.
+      if (state.annotations.length > 0) {
+        const [assets] = await Promise.all([
+          loadAnnotationAssets(state),
+          ensureAnnotationFonts(state.annotations),
+        ]);
+        ctx.save();
+        if (state.geometry.cropShape === 'ellipse') {
+          ctx.beginPath();
+          ctx.ellipse(
+            size.width / 2,
+            size.height / 2,
+            size.width / 2,
+            size.height / 2,
+            0,
+            0,
+            Math.PI * 2,
+          );
+          ctx.clip();
+        }
+        drawAnnotations(ctx, state.annotations, {
+          transform: compose(scaleBy(scale), getOrientedToOutput(image, state)),
+          assets,
+        });
+        ctx.restore();
+      }
       return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };
     } catch (error) {
       lastError = error;

@@ -48,6 +48,8 @@ Rule: text/icons in accent colour use `--iu-accent-text`, never `--iu-accent` / 
 | `--iu-crop-frame`             | `rgba(255,255,255,0.95)`                             | same                          | crop frame + handles               |
 | `--iu-crop-grid`              | `rgba(255,255,255,0.45)`                             | same                          | thirds grid, circle bounds         |
 | `--iu-channel-red/green/blue` | `#ff6b6b` `#4cd97b` `#5aa9ff`                        | `#d62f2f` `#1f9d4c` `#1f6fd6` | curve channels                     |
+| `--iu-handle-fill`            | `#ffffff`                                            | same                          | annotation handles (on photo)      |
+| `--iu-guide`                  | `#ff2d95`                                            | same                          | snap guides                        |
 | `--iu-overlay`                | `rgba(0,0,0,0.55)`                                   | `rgba(0,0,0,0.45)`            | crop mask outside box              |
 | `--iu-checker-a`              | `#26262b`                                            | `#ffffff`                     | transparency checkerboard          |
 | `--iu-checker-b`              | `#1d1d21`                                            | `#e6e6ea`                     | transparency checkerboard          |

@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useCallback, useContext } from 'react';
 import { useStore } from 'zustand';
 import type { EditorStore, EditorStoreState, Look } from '@image-ultra/core';
 import type { Labels } from './i18n';
@@ -9,6 +9,17 @@ export interface EditorContextValue {
   /** Saved colour looks (see `ImageEditorProps.looks`). */
   looks: readonly Look[];
   setLooks: (looks: Look[]) => void;
+  /** Element inside `.iu-root` that popovers portal into (keeps theme variables). */
+  portalContainer: HTMLElement | null;
+  /** Fonts offered for text annotations. */
+  fonts: readonly FontOption[];
+}
+
+export interface FontOption {
+  /** Shown in the font menu. */
+  label: string;
+  /** CSS font-family value. Web fonts must be loaded by your app (e.g. next/font). */
+  family: string;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -35,4 +46,36 @@ export function useLabels(): Labels {
 export function useLooks(): [readonly Look[], (looks: Look[]) => void] {
   const { looks, setLooks } = useEditorContext();
   return [looks, setLooks];
+}
+
+export function usePortalContainer(): HTMLElement | null {
+  return useEditorContext().portalContainer;
+}
+
+export function useFonts(): readonly FontOption[] {
+  return useEditorContext().fonts;
+}
+
+/** Id of the tool whose Controls / StageOverlay is rendering. */
+export const ToolIdContext = createContext<string>('');
+
+/**
+ * Transient UI state shared by a tool's Controls and StageOverlay (e.g. current drawing tool,
+ * selection). Lives in the store, outside the edit history.
+ */
+export function useToolState<T>(initial: T): [T, (next: T | ((prev: T) => T)) => void] {
+  const toolId = useContext(ToolIdContext);
+  const store = useEditorStore();
+  const value = useStore(store, (s) => s.toolState[toolId] as T | undefined) ?? initial;
+  const setValue = useCallback(
+    (next: T | ((prev: T) => T)) => {
+      const prev = (store.getState().toolState[toolId] as T | undefined) ?? initial;
+      const resolved = typeof next === 'function' ? (next as (p: T) => T)(prev) : next;
+      store.getState().setToolState(toolId, resolved);
+    },
+    // `initial` is only a fallback for the first read.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store, toolId],
+  );
+  return [value, setValue];
 }

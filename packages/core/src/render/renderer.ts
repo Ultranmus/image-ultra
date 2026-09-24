@@ -51,6 +51,13 @@ export interface CreateRendererOptions {
    * Leave `false` for on-screen canvases that can be re-used (e.g. React StrictMode remounts).
    */
   ownsCanvas?: boolean;
+  /**
+   * Premultiplied canvas output. Use `true` for on-screen previews that always draw the checkerboard
+   * (every pixel is fully opaque or fully transparent, so it looks identical) — it avoids a slow
+   * GPU read-back when the browser composites the canvas. Exports need `false` (the default) to keep
+   * exact colours in semi-transparent pixels.
+   */
+  premultipliedAlpha?: boolean;
 }
 
 /** Parses any CSS colour into 0…1 RGB using the browser's own parser. */

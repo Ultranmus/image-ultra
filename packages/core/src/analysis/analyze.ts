@@ -142,6 +142,7 @@ export async function renderAnalysisPixels(
     levels: createLevelsState(),
     curves: createCurvesState(),
     filter: null,
+    annotations: [],
     geometry: { ...state.geometry, cropShape: 'rect' },
   };
   const rendered = await renderToCanvas(image, neutral, { maxWidth: maxSide, maxHeight: maxSide });

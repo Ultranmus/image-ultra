@@ -8,18 +8,26 @@ import {
   type ComponentType,
 } from 'react';
 import {
+  compose,
   createRenderer,
+  drawAnnotations,
+  ensureAnnotationFonts,
   getImageBounds,
+  getOrientedToOutput,
   getOutputSize,
+  loadAnnotationAssets,
+  scale,
+  translate,
   panBy,
   zoomAt,
   type EditorState,
   type Point,
   type Renderer,
 } from '@image-ultra/core';
-import { useEditorState, useEditorStore, useLabels } from '../context';
+import { ToolIdContext, useEditorState, useEditorStore, useLabels } from '../context';
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
 import { IconAlert, IconImage, IconUpload } from '../icons/Icon';
+import { getAnnotateState } from '../tools/annotate/state';
 
 /** Loading indicator only appears if loading takes longer than this (UI_VISION §7). */
 const LOADING_DELAY_MS = 300;
@@ -27,9 +35,11 @@ const LOADING_DELAY_MS = 300;
 export interface StageProps {
   /** The active tool's overlay (e.g. the crop box), drawn above the image. */
   overlay?: ComponentType | undefined;
+  /** Id of the active tool (for `useToolState` inside the overlay). */
+  toolId?: string | undefined;
 }
 
-export function Stage({ overlay: Overlay }: StageProps) {
+export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   const store = useEditorStore();
   const labels = useLabels();
   const status = useEditorState((s) => s.status);
@@ -37,6 +47,7 @@ export function Stage({ overlay: Overlay }: StageProps) {
   const cropping = useEditorState((s) => s.cropView !== null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const annotationsRef = useRef<HTMLCanvasElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropTarget, setIsDropTarget] = useState(false);
   const showLoading = useDelayedFlag(status === 'loading', LOADING_DELAY_MS);
@@ -59,7 +70,8 @@ export function Stage({ overlay: Overlay }: StageProps) {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
-    const renderer = createRenderer(canvas);
+    // Premultiplied: the preview always has the checkerboard, so pixels are opaque or empty.
+    const renderer = createRenderer(canvas, { premultipliedAlpha: true });
     let frame = 0;
     let disposed = false;
     const draw = () => {
@@ -108,6 +120,96 @@ export function Stage({ overlay: Overlay }: StageProps) {
     };
   }, [store]);
 
+  // Annotation layer: vector shapes drawn with Canvas2D above the GPU image (sharp at any zoom).
+  useEffect(() => {
+    const canvas = annotationsRef.current;
+    if (!canvas) return;
+    let frame = 0;
+    let assets = new Map<string, ImageBitmap>();
+    let assetsFor: unknown = null;
+    let fontsFor: unknown = null;
+    const draw = () => {
+      frame = 0;
+      const state = store.getState();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(state.stageSize.width * dpr);
+      const h = Math.round(state.stageSize.height * dpr);
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const { image, edit, viewport: vp, cropView } = state;
+      if (!image || edit.annotations.length === 0) return;
+
+      // Images and fonts load asynchronously; redraw once they're ready.
+      if (assetsFor !== edit.assets) {
+        assetsFor = edit.assets;
+        void loadAnnotationAssets(edit).then((loaded) => {
+          assets = loaded;
+          schedule();
+        });
+      }
+      if (fontsFor !== edit.annotations) {
+        fontsFor = edit.annotations;
+        void ensureAnnotationFonts(edit.annotations).then(schedule);
+      }
+
+      const transform = cropView
+        ? compose(scale(dpr), translate(cropView.x, cropView.y), scale(cropView.scale))
+        : compose(
+            scale(dpr),
+            translate(vp.x, vp.y),
+            scale(vp.scale),
+            getOrientedToOutput(image, edit),
+          );
+      ctx.save();
+      if (!cropView && edit.geometry.cropShape === 'ellipse') {
+        const out = getOutputSize(image, edit);
+        ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
+        ctx.beginPath();
+        ctx.ellipse(
+          out.width / 2,
+          out.height / 2,
+          out.width / 2,
+          out.height / 2,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        ctx.clip();
+      }
+      const editingId = getAnnotateState(store).editingId;
+      drawAnnotations(ctx, edit.annotations, {
+        transform,
+        assets,
+        ...(editingId && { skip: new Set([editingId]) }),
+      });
+      ctx.restore();
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
+    schedule();
+    const unsubscribe = store.subscribe((state, prev) => {
+      if (
+        state.edit !== prev.edit ||
+        state.viewport !== prev.viewport ||
+        state.stageSize !== prev.stageSize ||
+        state.cropView !== prev.cropView ||
+        state.image !== prev.image ||
+        state.toolState !== prev.toolState
+      ) {
+        schedule();
+      }
+    });
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(frame);
+    };
+  }, [store]);
+
   // Wheel / trackpad zoom. Registered manually because React wheel listeners are passive.
   useEffect(() => {
     const element = containerRef.current;
@@ -132,6 +234,7 @@ export function Stage({ overlay: Overlay }: StageProps) {
     if (status !== 'ready' || event.button !== 0 || cropping) return;
     const element = containerRef.current;
     if (!element) return;
+    element.focus({ preventScroll: true }); // zoom shortcuts work right after clicking the photo
     element.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, localPoint(element, event));
     setIsDragging(true);
@@ -197,6 +300,7 @@ export function Stage({ overlay: Overlay }: StageProps) {
     <div
       ref={containerRef}
       className="iu-stage"
+      tabIndex={-1}
       data-pannable={status === 'ready' && !isFitted && !cropping ? '' : undefined}
       data-dragging={isDragging ? '' : undefined}
       data-drop-target={isDropTarget ? '' : undefined}
@@ -216,7 +320,18 @@ export function Stage({ overlay: Overlay }: StageProps) {
         aria-hidden="true"
       />
 
-      {status === 'ready' && Overlay && <Overlay />}
+      <canvas
+        ref={annotationsRef}
+        className="iu-stage__canvas iu-stage__annotations"
+        data-hidden={status !== 'ready' ? '' : undefined}
+        aria-hidden="true"
+      />
+
+      {status === 'ready' && Overlay && (
+        <ToolIdContext.Provider value={toolId}>
+          <Overlay />
+        </ToolIdContext.Provider>
+      )}
 
       {showLoading && (
         <div className="iu-stage__overlay" role="status">

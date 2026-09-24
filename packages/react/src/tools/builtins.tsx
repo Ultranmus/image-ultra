@@ -18,6 +18,8 @@ import { defineTool, type ToolDefinition } from './defineTool';
 import { ResizeControls } from './resize/ResizeControls';
 import { FinetuneControls } from './finetune/FinetuneControls';
 import { FilterControls } from './filter/FilterControls';
+import { AnnotateControls } from './annotate/AnnotateControls';
+import { AnnotateOverlay } from './annotate/AnnotateOverlay';
 
 /** Placeholder panel for tools whose UI arrives in a later phase. */
 function ComingSoon() {
@@ -37,7 +39,12 @@ export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
   }),
   finetune: defineTool({ id: 'finetune', icon: IconFinetune, Controls: FinetuneControls }),
   filter: defineTool({ id: 'filter', icon: IconFilter, Controls: FilterControls }),
-  annotate: placeholder('annotate', IconAnnotate),
+  annotate: defineTool({
+    id: 'annotate',
+    icon: IconAnnotate,
+    Controls: AnnotateControls,
+    StageOverlay: AnnotateOverlay,
+  }),
   redact: placeholder('redact', IconRedact),
   sticker: placeholder('sticker', IconSticker),
   frame: placeholder('frame', IconFrame),

@@ -207,3 +207,138 @@ export const IconBookmark = createIcon(
   'Bookmark',
   <path d="M6.5 4.5a1.5 1.5 0 0 1 1.5-1.5h8a1.5 1.5 0 0 1 1.5 1.5V20l-5.5-3.5L6.5 20z" />,
 );
+
+/* ── Annotate ───────────────────────────────────────────── */
+export const IconPointer = createIcon('Pointer', <path d="M5 3.5l13 6.2-5.6 1.8-2.2 5.8z" />);
+export const IconPen = createIcon(
+  'Pen',
+  <>
+    <path d="M4 20c2.5-.5 4-2 5-4.5 1.2-3 3-6.5 7-10.5l2 2c-4 4-7.5 5.8-10.5 7-2.5 1-4 2.5-4.5 5z" />
+    <path d="M15 6l3 3" />
+  </>,
+);
+export const IconLine = createIcon('Line', <path d="M5 19L19 5" />);
+export const IconArrow = createIcon(
+  'Arrow',
+  <>
+    <path d="M5 19L19 5" />
+    <path d="M10 5h9v9" />
+  </>,
+);
+export const IconSquare = createIcon(
+  'Square',
+  <rect x="4" y="4" width="16" height="16" rx="2.5" />,
+);
+export const IconCircle = createIcon('Circle', <circle cx="12" cy="12" r="8.5" />);
+export const IconPolygon = createIcon('Polygon', <path d="M12 3.5l8 6-3 10H7l-3-10z" />);
+export const IconText = createIcon('Text', <path d="M5 6.5V5h14v1.5M12 5v14M9 19h6" />);
+export const IconImagePlus = createIcon(
+  'ImagePlus',
+  <>
+    <path d="M13 3.5H6a2.5 2.5 0 0 0-2.5 2.5v12A2.5 2.5 0 0 0 6 20.5h12a2.5 2.5 0 0 0 2.5-2.5v-6" />
+    <circle cx="9" cy="9.5" r="1.8" />
+    <path d="M20.5 15.5l-4.5-4.5-10 9.5M18 2.5v6M15 5.5h6" />
+  </>,
+);
+export const IconLayers = createIcon(
+  'Layers',
+  <>
+    <path d="M12 3.5l8.5 4.5-8.5 4.5-8.5-4.5z" />
+    <path d="M3.5 12.5l8.5 4.5 8.5-4.5M3.5 16.5l8.5 4.5 8.5-4.5" />
+  </>,
+);
+export const IconDuplicate = createIcon(
+  'Duplicate',
+  <>
+    <rect x="8" y="8" width="12" height="12" rx="2.5" />
+    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+  </>,
+);
+export const IconTrash = createIcon(
+  'Trash',
+  <>
+    <path d="M4 6.5h16M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13" />
+    <path d="M10 10.5v5.5M14 10.5v5.5" />
+  </>,
+);
+export const IconEye = createIcon(
+  'Eye',
+  <>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+    <circle cx="12" cy="12" r="3" />
+  </>,
+);
+export const IconEyeOff = createIcon(
+  'EyeOff',
+  <>
+    <path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.5 7.2C4 8.9 2.5 12 2.5 12S6 18.5 12 18.5c1.8 0 3.4-.6 4.7-1.4" />
+    <path d="M3.5 3.5l17 17M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+  </>,
+);
+export const IconLock = createIcon(
+  'Lock',
+  <>
+    <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+    <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+  </>,
+);
+export const IconUnlock = createIcon(
+  'Unlock',
+  <>
+    <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+    <path d="M8 10.5V8a4 4 0 0 1 7.7-1.5" />
+  </>,
+);
+export const IconBold = createIcon(
+  'Bold',
+  <path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" />,
+);
+export const IconAlignLeft = createIcon('AlignLeft', <path d="M4 6h16M4 10h10M4 14h16M4 18h10" />);
+export const IconAlignCenter = createIcon(
+  'AlignCenter',
+  <path d="M4 6h16M7 10h10M4 14h16M7 18h10" />,
+);
+export const IconAlignRight = createIcon(
+  'AlignRight',
+  <path d="M4 6h16M10 10h10M4 14h16M10 18h10" />,
+);
+export const IconStrokeWidth = createIcon(
+  'StrokeWidth',
+  <>
+    <path d="M4 6h16" strokeWidth={1} />
+    <path d="M4 11h16" strokeWidth={2} />
+    <path d="M4 17h16" strokeWidth={3.5} />
+  </>,
+);
+export const IconOpacity = createIcon(
+  'Opacity',
+  <>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor" />
+  </>,
+);
+export const IconCorner = createIcon('Corner', <path d="M5 19V11a6 6 0 0 1 6-6h8" />);
+export const IconFont = createIcon(
+  'Font',
+  <path d="M3.5 18l5-12 5 12M5.5 13.5h6M15 18v-5.5a2.5 2.5 0 0 1 5 0V18M15 15h5" />,
+);
+export const IconArrowStart = createIcon(
+  'ArrowStart',
+  <>
+    <path d="M19 12H5" />
+    <path d="M10 7l-5 5 5 5" />
+  </>,
+);
+export const IconArrowEnd = createIcon(
+  'ArrowEnd',
+  <>
+    <path d="M5 12h14" />
+    <path d="M14 7l5 5-5 5" />
+  </>,
+);
+export const IconChevronUp = createIcon('ChevronUp', <path d="M6 15l6-6 6 6" />);
+export const IconChevronDown = createIcon('ChevronDown', <path d="M6 9l6 6 6-6" />);
+export const IconTextSize = createIcon(
+  'TextSize',
+  <path d="M3.5 7V5.5h10V7M8.5 5.5V19M6.5 19h4M14 12.5v-1h6.5v1M17.25 11.5V19M15.75 19h3" />,
+);

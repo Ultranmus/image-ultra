@@ -25,7 +25,8 @@ import {
 import { useLooksState } from '../hooks/useLooksState';
 import { resolveTools, type ToolInput } from '../tools/builtins';
 import { toolLabel } from '../tools/toolLabel';
-import { EditorContext, type EditorContextValue } from '../context';
+import { EditorContext, type EditorContextValue, type FontOption } from '../context';
+import { DEFAULT_FONTS } from '../fonts';
 import { mergeLabels, type LabelOverrides } from '../i18n';
 import { themeOverridesToStyle, type ThemeMode, type ThemeOverrides } from '../theme';
 import { ControlBar } from './ControlBar';
@@ -70,6 +71,8 @@ export interface ImageEditorProps {
   onLooksChange?: (looks: Look[]) => void;
   /** localStorage key for uncontrolled looks; `false` keeps them in memory only. */
   persistLooks?: boolean | string;
+  /** Fonts offered for text annotations (default: system font stacks). */
+  fonts?: FontOption[];
   /** Shows a Cancel button in the TopBar when provided. */
   onCancel?: () => void;
   /** Load, export or `initialState` errors. Defaults to `console.error`. */
@@ -112,6 +115,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     looks: controlledLooks,
     onLooksChange,
     persistLooks = true,
+    fonts = DEFAULT_FONTS as FontOption[],
     onCancel,
     onError,
     className,
@@ -126,11 +130,12 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   );
   const labels = useMemo(() => mergeLabels(labelOverrides), [labelOverrides]);
   const [looks, setLooks] = useLooksState(controlledLooks, onLooksChange, persistLooks);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const context = useMemo<EditorContextValue>(
-    () => ({ store, labels, looks, setLooks }),
+    () => ({ store, labels, looks, setLooks, portalContainer, fonts }),
     // setLooks is recreated each render but only reads refs/state setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [store, labels, looks],
+    [store, labels, looks, portalContainer, fonts],
   );
   const [saving, setSaving] = useState(false);
 
@@ -264,10 +269,12 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
         <div className="iu-body">
           <ToolRail tools={resolvedTools} idPrefix={idPrefix} />
           <main className="iu-main">
-            <Stage overlay={activeTool?.StageOverlay} />
+            <Stage overlay={activeTool?.StageOverlay} toolId={activeTool?.id} />
             {activeTool && <ControlBar idPrefix={idPrefix} tool={activeTool} />}
           </main>
         </div>
+        {/* Popovers render here so they inherit the theme variables. */}
+        <div ref={setPortalContainer} className="iu-portal" />
         <div className="iu-sr-only" aria-live="polite">
           {activeTool ? toolLabel(activeTool, labels) : ''}
         </div>

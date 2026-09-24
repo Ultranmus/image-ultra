@@ -67,11 +67,15 @@ export class WebGLRenderer implements Renderer {
 
   static create(
     canvas: AnyCanvas,
-    options: { preserveDrawingBuffer?: boolean; ownsCanvas?: boolean } = {},
+    options: {
+      preserveDrawingBuffer?: boolean;
+      ownsCanvas?: boolean;
+      premultipliedAlpha?: boolean;
+    } = {},
   ): WebGLRenderer | null {
     const gl = canvas.getContext('webgl2', {
       alpha: true,
-      premultipliedAlpha: false,
+      premultipliedAlpha: options.premultipliedAlpha ?? false,
       antialias: false,
       depth: false,
       stencil: false,

@@ -1,3 +1,4 @@
+import { ToolIdContext } from '../context';
 import type { ToolDefinition } from '../tools/defineTool';
 
 export interface ControlBarProps {
@@ -17,7 +18,9 @@ export function ControlBar({ idPrefix, tool }: ControlBarProps) {
     >
       {/* `key` restarts the enter animation on every tool switch. */}
       <div key={tool.id} className="iu-controlbar__content">
-        <Controls />
+        <ToolIdContext.Provider value={tool.id}>
+          <Controls />
+        </ToolIdContext.Provider>
       </div>
     </section>
   );

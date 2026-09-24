@@ -98,12 +98,16 @@ docs/internal (these notes)
 
 ### Phase 5 — Annotate
 
-- [ ] Shapes: rect, ellipse, polygon, line, arrow, pen (smoothed), text, image, sticker/emoji
-- [ ] Select / move / resize / rotate / duplicate / delete, snapping & guides
-- [ ] Inspector: fill, stroke, width, opacity, corner radius, font, alignment
-- [ ] Layers panel: reorder, lock, hide
-- [ ] **AI-ready hook:** reusable brush/mask tool (paint + erase mask) — needed later by Object eraser
-      **Exit:** draw, edit text inline, layer ordering.
+- [x] Shapes: rectangle, ellipse, line, arrow, pen (smoothed + simplified), polygon, text, image
+      (stickers/emoji reuse text + image shapes in Phase 6)
+- [x] Select / move / resize (anchored opposite corner, rotated boxes) / rotate (snap 0/90, Shift 15°)
+      / duplicate / delete; snapping + guides to frame and other shapes (Alt disables)
+- [x] Inspector: colour, fill, width (S/M/L/XL + exact), opacity, corner radius, font, size, bold,
+      alignment, arrow heads — popovers (Radix) + SwatchPicker with HSV, hex, eyedropper
+- [x] Layers panel: select, show/hide, lock, bring forward / send backward
+- [x] Annotations follow rotate/flip; stay sharp (vector) in preview and export; clipped by round crop
+- [x] **AI-ready hook:** `MaskBrushOverlay` + core `drawMask` / `rasterizeMask` / `simplifyPoints`
+      **Exit:** draw, edit text inline, layer ordering. ✅
 
 ### Phase 6 — Extras
 

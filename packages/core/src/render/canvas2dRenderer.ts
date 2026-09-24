@@ -1,4 +1,3 @@
-import { isNeutralFinetune } from '../state/editState';
 import {
   applyToPoint,
   getOutputToSource,
@@ -12,7 +11,15 @@ import {
   type Mat3,
 } from '../state/geometry';
 import type { Point, Size } from '../types';
-import { applyFinetune } from './color';
+import { gaussianBlur, premultiply, sampleBlurred, type BlurredImage } from './blur';
+import {
+  colorPixel,
+  compileColor,
+  detailPixel,
+  detailSigmas,
+  finishPixel,
+  type ColorProgram,
+} from './color';
 import type { AnyCanvas, CheckerStyle, Renderer, RenderParams } from './renderer';
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -63,9 +70,9 @@ export class Canvas2DRenderer implements Renderer {
     ].map((p) => mat3Apply(sourceToCanvas, p));
     const ellipse = state.geometry.cropShape === 'ellipse';
 
-    // 1. Geometry: draw the source clipped to the output shape.
+    // 1. Geometry: draw the source clipped to the output rectangle.
     ctx.save();
-    clipOutput(ctx, outputToCanvas, outputSize, ellipse);
+    clipOutput(ctx, outputToCanvas, outputSize, false);
     ctx.imageSmoothingEnabled = params.smooth;
     ctx.imageSmoothingQuality = 'high';
     if (isAffine(sourceToCanvas)) {
@@ -76,16 +83,13 @@ export class Canvas2DRenderer implements Renderer {
     }
     ctx.restore();
 
-    // 2. Colour: CPU pass over the visible output area.
-    if (!isNeutralFinetune(state.finetune)) {
+    // 2. Pixels: colour → detail → finish (vignette, grain, round mask), on the CPU.
+    const color = compileColor(state);
+    if (color.hasColor || color.hasDetail || color.hasFinish || ellipse) {
       const box = visibleBox(outputToCanvas, outputSize, canvasSize);
       if (box) {
         const pixels = ctx.getImageData(box.x, box.y, box.width, box.height);
-        applyFinetune(pixels.data, box.width, box.height, state.finetune, (x, y) => {
-          const o = applyToPoint(canvasToOutput, { x: x + box.x, y: y + box.y });
-          if (o.x < 0 || o.y < 0 || o.x > outputSize.width || o.y > outputSize.height) return null;
-          return [o.x / outputSize.width, o.y / outputSize.height];
-        });
+        processPixels(pixels.data, box, color, params, ellipse);
         ctx.putImageData(pixels, box.x, box.y);
       }
     }
@@ -122,6 +126,81 @@ export class Canvas2DRenderer implements Renderer {
     if (!pattern) return style.a;
     this.checkerCache = { key, pattern };
     return pattern;
+  }
+}
+
+/** Runs the per-pixel pipeline on `data` (unpremultiplied RGBA of the canvas region `box`). */
+function processPixels(
+  data: Uint8ClampedArray,
+  box: { x: number; y: number; width: number; height: number },
+  color: ColorProgram,
+  params: RenderParams,
+  ellipse: boolean,
+): void {
+  const { canvasToOutput: c2o, outputSize } = params;
+  const f = color.finetune;
+  const n = box.width * box.height;
+
+  if (color.hasColor) {
+    for (let i = 0; i < n * 4; i += 4) {
+      if (data[i + 3] === 0) continue;
+      const [r, g, b] = colorPixel([data[i]! / 255, data[i + 1]! / 255, data[i + 2]! / 255], color);
+      data[i] = r * 255;
+      data[i + 1] = g * 255;
+      data[i + 2] = b * 255;
+    }
+  }
+
+  // Detail needs blurred copies; radii are converted from output to canvas pixels.
+  const outputPerCanvasPx = Math.sqrt(Math.abs(c2o[0] * c2o[3] - c2o[1] * c2o[2]));
+  const blurred: { sharpen?: BlurredImage; clarity?: BlurredImage; blur?: BlurredImage } = {};
+  if (color.hasDetail) {
+    const pre = premultiply(data);
+    const sigmas = detailSigmas(f, outputSize);
+    for (const kind of ['sharpen', 'clarity', 'blur'] as const) {
+      const sigma = sigmas[kind] / outputPerCanvasPx;
+      if (sigma > 0) blurred[kind] = gaussianBlur(pre, box.width, box.height, Math.max(0.5, sigma));
+    }
+  }
+
+  const finish = {
+    finetune: f,
+    output: outputSize,
+    ellipse,
+    ellipseAA: (2 * outputPerCanvasPx) / Math.max(1, Math.min(outputSize.width, outputSize.height)),
+  };
+  for (let y = 0; y < box.height; y++) {
+    for (let x = 0; x < box.width; x++) {
+      const i = (y * box.width + x) * 4;
+      let rgb: [number, number, number] = [data[i]! / 255, data[i + 1]! / 255, data[i + 2]! / 255];
+      let alpha = data[i + 3]! / 255;
+      if (color.hasDetail) {
+        const px = x + 0.5;
+        const py = y + 0.5;
+        if (blurred.blur) {
+          const b = blurred.blur;
+          const fx = Math.min(b.width - 1, Math.max(0, px / b.scale - 0.5));
+          const fy = Math.min(b.height - 1, Math.max(0, py / b.scale - 0.5));
+          alpha = b.data[(Math.round(fy) * b.width + Math.round(fx)) * 4 + 3]! / 255;
+        }
+        rgb = detailPixel(
+          rgb,
+          {
+            ...(blurred.sharpen && { sharpen: sampleBlurred(blurred.sharpen, px, py) }),
+            ...(blurred.clarity && { clarity: sampleBlurred(blurred.clarity, px, py) }),
+            ...(blurred.blur && { blur: sampleBlurred(blurred.blur, px, py) }),
+          },
+          f,
+        );
+      }
+      if (alpha === 0) continue;
+      const o = applyToPoint(c2o, { x: box.x + x + 0.5, y: box.y + y + 0.5 });
+      const [r, g, b, mask] = finishPixel(rgb, o.x, o.y, finish);
+      data[i] = r * 255;
+      data[i + 1] = g * 255;
+      data[i + 2] = b * 255;
+      data[i + 3] = alpha * mask * 255;
+    }
   }
 }
 

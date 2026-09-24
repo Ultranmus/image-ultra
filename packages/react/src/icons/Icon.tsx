@@ -194,3 +194,16 @@ export const IconUnlink = createIcon(
     <path d="M4 4l16 16" />
   </>,
 );
+
+/* ── Finetune / Filter controls ─────────────────────────── */
+export const IconSparkle = createIcon(
+  'Sparkle',
+  <>
+    <path d="M12 3.5l1.7 4.6a2 2 0 0 0 1.2 1.2l4.6 1.7-4.6 1.7a2 2 0 0 0-1.2 1.2L12 18.5l-1.7-4.6a2 2 0 0 0-1.2-1.2L4.5 11l4.6-1.7a2 2 0 0 0 1.2-1.2z" />
+    <path d="M19 3v3M17.5 4.5h3" />
+  </>,
+);
+export const IconBookmark = createIcon(
+  'Bookmark',
+  <path d="M6.5 4.5a1.5 1.5 0 0 1 1.5-1.5h8a1.5 1.5 0 0 1 1.5 1.5V20l-5.5-3.5L6.5 20z" />,
+);

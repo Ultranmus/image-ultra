@@ -19,8 +19,10 @@ import {
   type ExportOptions,
   type ExportResult,
   type ImageSource,
+  type Look,
   type ToolId,
 } from '@image-ultra/core';
+import { useLooksState } from '../hooks/useLooksState';
 import { resolveTools, type ToolInput } from '../tools/builtins';
 import { toolLabel } from '../tools/toolLabel';
 import { EditorContext, type EditorContextValue } from '../context';
@@ -60,6 +62,14 @@ export interface ImageEditorProps {
   onSave?: (result: ExportResult) => void | Promise<void>;
   /** Called after every committed edit (not on every frame of a slider drag). */
   onChange?: (state: EditState) => void;
+  /**
+   * Saved colour looks shown in the Filter tool. Pass with `onLooksChange` to store them yourself
+   * (e.g. per user in your database); otherwise they're kept in this browser's localStorage.
+   */
+  looks?: Look[];
+  onLooksChange?: (looks: Look[]) => void;
+  /** localStorage key for uncontrolled looks; `false` keeps them in memory only. */
+  persistLooks?: boolean | string;
   /** Shows a Cancel button in the TopBar when provided. */
   onCancel?: () => void;
   /** Load, export or `initialState` errors. Defaults to `console.error`. */
@@ -99,6 +109,9 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     exportOptions,
     onSave,
     onChange,
+    looks: controlledLooks,
+    onLooksChange,
+    persistLooks = true,
     onCancel,
     onError,
     className,
@@ -112,7 +125,13 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     createEditorStore({ defaultTool: defaultTool ?? resolvedTools[0]?.id ?? 'adjust' }),
   );
   const labels = useMemo(() => mergeLabels(labelOverrides), [labelOverrides]);
-  const context = useMemo<EditorContextValue>(() => ({ store, labels }), [store, labels]);
+  const [looks, setLooks] = useLooksState(controlledLooks, onLooksChange, persistLooks);
+  const context = useMemo<EditorContextValue>(
+    () => ({ store, labels, looks, setLooks }),
+    // setLooks is recreated each render but only reads refs/state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store, labels, looks],
+  );
   const [saving, setSaving] = useState(false);
 
   // Latest callbacks/options without re-running effects when parents pass new closures.

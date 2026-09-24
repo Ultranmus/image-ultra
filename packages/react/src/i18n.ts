@@ -1,4 +1,4 @@
-import type { ToolId } from '@image-ultra/core';
+import type { CurveChannel, FinetuneState, ToolId } from '@image-ultra/core';
 
 /** Every user-facing string. Pass a partial object to `labels` to translate or rename. */
 export interface Labels {
@@ -45,6 +45,33 @@ export interface Labels {
   sizePresets: string;
   originalSize: string;
   upscaleWarning: string;
+
+  /* Finetune */
+  /** Names of the 16 adjustments. */
+  finetune: Record<keyof FinetuneState, string>;
+  modeAdjust: string;
+  modeCurves: string;
+  modeLevels: string;
+  adjustments: string;
+  auto: string;
+  autoHint: string;
+  curveChannels: Record<CurveChannel, string>;
+  curvePoint: string;
+  curveHint: string;
+  levelsBlack: string;
+  levelsMid: string;
+  levelsWhite: string;
+  saveLook: string;
+  lookName: string;
+  save: string;
+  cancelEdit: string;
+
+  /* Filter */
+  filters: string;
+  filterNone: string;
+  intensity: string;
+  myLooks: string;
+  removeLook: string;
 }
 
 export const defaultLabels: Labels = {
@@ -98,11 +125,62 @@ export const defaultLabels: Labels = {
   sizePresets: 'Size presets',
   originalSize: 'Original size',
   upscaleWarning: 'Larger than the crop — may look soft',
+
+  finetune: {
+    brightness: 'Brightness',
+    contrast: 'Contrast',
+    saturation: 'Saturation',
+    vibrance: 'Vibrance',
+    exposure: 'Exposure',
+    highlights: 'Highlights',
+    shadows: 'Shadows',
+    temperature: 'Temperature',
+    tint: 'Tint',
+    hue: 'Hue',
+    gamma: 'Gamma',
+    clarity: 'Clarity',
+    sharpen: 'Sharpen',
+    blur: 'Blur',
+    grain: 'Grain',
+    vignette: 'Vignette',
+  },
+  modeAdjust: 'Adjust',
+  modeCurves: 'Curves',
+  modeLevels: 'Levels',
+  adjustments: 'Adjustments',
+  auto: 'Auto',
+  autoHint: 'Auto-enhance: fix exposure, contrast and colour',
+  curveChannels: { rgb: 'RGB', red: 'Red', green: 'Green', blue: 'Blue' },
+  curvePoint: 'Curve point',
+  curveHint: 'Click to add a point, drag to shape, double-click a point to remove it.',
+  levelsBlack: 'Black point',
+  levelsMid: 'Mid-tones',
+  levelsWhite: 'White point',
+  saveLook: 'Save look',
+  lookName: 'Look name',
+  save: 'Save',
+  cancelEdit: 'Cancel',
+
+  filters: 'Filters',
+  filterNone: 'Original',
+  intensity: 'Intensity',
+  myLooks: 'My looks',
+  removeLook: 'Remove look',
 };
 
-export type LabelOverrides = Partial<Omit<Labels, 'tools'>> & { tools?: Partial<Labels['tools']> };
+type NestedKey = 'tools' | 'finetune' | 'curveChannels';
+
+export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
+  [K in NestedKey]?: Partial<Labels[K]>;
+};
 
 export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
   if (!overrides) return defaultLabels;
-  return { ...defaultLabels, ...overrides, tools: { ...defaultLabels.tools, ...overrides.tools } };
+  return {
+    ...defaultLabels,
+    ...overrides,
+    tools: { ...defaultLabels.tools, ...overrides.tools },
+    finetune: { ...defaultLabels.finetune, ...overrides.finetune },
+    curveChannels: { ...defaultLabels.curveChannels, ...overrides.curveChannels },
+  };
 }

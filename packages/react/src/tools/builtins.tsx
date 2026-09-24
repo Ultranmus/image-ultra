@@ -16,6 +16,8 @@ import { AdjustControls } from './adjust/AdjustControls';
 import { CropOverlay } from './adjust/CropOverlay';
 import { defineTool, type ToolDefinition } from './defineTool';
 import { ResizeControls } from './resize/ResizeControls';
+import { FinetuneControls } from './finetune/FinetuneControls';
+import { FilterControls } from './filter/FilterControls';
 
 /** Placeholder panel for tools whose UI arrives in a later phase. */
 function ComingSoon() {
@@ -33,8 +35,8 @@ export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
     Controls: AdjustControls,
     StageOverlay: CropOverlay,
   }),
-  finetune: placeholder('finetune', IconFinetune),
-  filter: placeholder('filter', IconFilter),
+  finetune: defineTool({ id: 'finetune', icon: IconFinetune, Controls: FinetuneControls }),
+  filter: defineTool({ id: 'filter', icon: IconFilter, Controls: FilterControls }),
   annotate: placeholder('annotate', IconAnnotate),
   redact: placeholder('redact', IconRedact),
   sticker: placeholder('sticker', IconSticker),

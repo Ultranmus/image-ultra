@@ -25,6 +25,12 @@
       transform var(--iu-duration-fast) var(--iu-ease);
   }
 
+  .iu-button[data-size='sm'] {
+    min-width: 24px;
+    height: 24px;
+    border-radius: var(--iu-radius-sm);
+  }
+
   .iu-button--text {
     padding: 0 var(--iu-space-4) 0 var(--iu-space-3);
   }

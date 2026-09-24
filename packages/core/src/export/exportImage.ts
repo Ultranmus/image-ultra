@@ -2,7 +2,7 @@ import { loadImage } from '../loader/loadImage';
 import { createEditState, parseEditState, type EditState } from '../state/editState';
 import { getOutputSize, IDENTITY } from '../state/geometry';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
-import type { RendererKind } from '../render/renderer';
+import type { AnyCanvas, RendererKind } from '../render/renderer';
 import type { ImageSource, LoadedImage, Size } from '../types';
 
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
@@ -42,16 +42,25 @@ const EXTENSIONS: Record<string, string> = {
   'image/webp': 'webp',
 };
 
-/** Renders the edited image at full quality and encodes it. Browser only. */
-export async function exportImage(
+/** A rendered result on a 2D canvas, before encoding. */
+export interface RenderedCanvas {
+  canvas: AnyCanvas;
+  width: number;
+  height: number;
+  renderer: RendererKind;
+}
+
+/**
+ * Renders the edited image onto a 2D canvas (WebGL2 first, Canvas2D fallback).
+ * `background` flattens transparency (used for JPEG). Browser only.
+ */
+export async function renderToCanvas(
   image: LoadedImage,
   state: EditState,
-  options: ExportOptions = {},
-): Promise<ExportResult> {
-  const mimeType = options.mimeType ?? defaultMimeType(image.mimeType);
-  const quality =
-    options.quality ??
-    (mimeType === 'image/jpeg' ? 0.92 : mimeType === 'image/webp' ? 0.9 : undefined);
+  options: Pick<ExportOptions, 'maxWidth' | 'maxHeight' | 'renderer'> & {
+    background?: string;
+  } = {},
+): Promise<RenderedCanvas> {
   const full = getOutputSize(image, state);
   const kinds: RendererKind[] =
     options.renderer === 'webgl2' || options.renderer === 'canvas2d'
@@ -85,36 +94,52 @@ export async function exportImage(
         checker: null,
         smooth: true,
       });
-
-      // Composite onto a 2D canvas: flattens JPEG onto a background and gives a uniform encoder.
+      // Copy onto a 2D canvas: flattens onto a background if asked and gives a uniform encoder.
       const out = createCanvas(size.width, size.height);
       const ctx = out.getContext('2d') as
         CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
       if (!ctx) throw new Error('image-ultra: no 2D canvas context available.');
-      if (mimeType === 'image/jpeg') {
-        ctx.fillStyle = options.background ?? '#ffffff';
+      if (options.background) {
+        ctx.fillStyle = options.background;
         ctx.fillRect(0, 0, size.width, size.height);
       }
       ctx.drawImage(canvas, 0, 0);
-      const blob = await canvasToBlob(out, mimeType, quality);
-      const actualType = blob.type || mimeType;
-      const baseName = options.fileName ?? image.name ?? 'image';
-      return {
-        blob,
-        width: size.width,
-        height: size.height,
-        mimeType: actualType,
-        fileName: `${baseName}.${EXTENSIONS[actualType] ?? 'png'}`,
-        state,
-        renderer: renderer.kind,
-      };
+      return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };
     } catch (error) {
       lastError = error;
     } finally {
       renderer.dispose();
     }
   }
-  throw lastError instanceof Error ? lastError : new Error('image-ultra: export failed.');
+  throw lastError instanceof Error ? lastError : new Error('image-ultra: rendering failed.');
+}
+
+/** Renders the edited image at full quality and encodes it. Browser only. */
+export async function exportImage(
+  image: LoadedImage,
+  state: EditState,
+  options: ExportOptions = {},
+): Promise<ExportResult> {
+  const mimeType = options.mimeType ?? defaultMimeType(image.mimeType);
+  const quality =
+    options.quality ??
+    (mimeType === 'image/jpeg' ? 0.92 : mimeType === 'image/webp' ? 0.9 : undefined);
+  const rendered = await renderToCanvas(image, state, {
+    ...options,
+    ...(mimeType === 'image/jpeg' && { background: options.background ?? '#ffffff' }),
+  });
+  const blob = await canvasToBlob(rendered.canvas, mimeType, quality);
+  const actualType = blob.type || mimeType;
+  const baseName = options.fileName ?? image.name ?? 'image';
+  return {
+    blob,
+    width: rendered.width,
+    height: rendered.height,
+    mimeType: actualType,
+    fileName: `${baseName}.${EXTENSIONS[actualType] ?? 'png'}`,
+    state,
+    renderer: rendered.renderer,
+  };
 }
 
 /**

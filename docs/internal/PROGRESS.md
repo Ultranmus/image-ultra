@@ -106,3 +106,41 @@ Append one entry per work session: date · phase · what was done · what's next
 
 **Next:** Phase 4 — Finetune + Filters (real Finetune tool with RulerSliders, curves/levels, ~30
 filter presets with thumbnails, user presets, AI #1 auto-enhance).
+
+## 2026-09-24 · Phase 4 — Finetune + Filters ✅ (awaiting owner review)
+
+**Done**
+
+- Core state: 16 finetune keys with per-key ranges (`FINETUNE_RANGES`), `levels`, `curves`, self-contained
+  `filter`; `parseEditState` validates all of it. New modules: `state/curves.ts` (monotone cubic curves,
+  levels, tone LUT), `filters/presets.ts` (28 looks: colour / film / mono), `state/looks.ts`,
+  `analysis/analyze.ts` (histogram, Auto-enhance, `renderAnalysisPixels`), `render/thumbnails.ts`
+  (one GPU context for all thumbnails), `render/blur.ts` (CPU Gaussian approximation).
+- Colour pipeline rewritten around `compileColor` → `ColorProgram` (`colorPixel`, `detailPixel`,
+  `finishPixel`) mirrored in GLSL; WebGL renderer now has 3 programs (main / blur / finish), render
+  targets, LUT texture; Canvas2D renderer runs the same stages on the CPU. Export refactored into
+  `renderToCanvas` + encode.
+- React: Finetune tool (Adjust chips + dial, Curves editor, Levels editor, ✨ Auto, inline Save look),
+  Filter tool (live thumbnails, intensity, My looks with remove), `useLooks`, `useHistogram`,
+  `useThumbnailRenderer`; props `looks` / `onLooksChange` / `persistLooks`; labels for everything.
+  Tokens: `--iu-channel-*`; ControlBar 148px; `IconButton size="sm"`.
+- Playground dev panel is now only history / state / export.
+- Tests: 60 unit + 25 e2e (new: colour-stage parity ≤3/255 incl. filter/levels/curves/grain/round
+  crop, detail parity, dial drag = 1 step, finetune dial, Auto = 1 step + undo, curve point add/delete,
+  levels keyboard, filter + intensity, looks save/apply/persist/delete).
+
+**Notes / open issues**
+
+- Histogram (Curves/Levels) shows the image before colour edits (geometry only) — by design, like an
+  input histogram; could add an "after" toggle later.
+- Filter thumbnails show each look on the plain image (not on top of the user's finetune).
+- `SIZE_PRESETS` and filter preset names are English-only (see #34).
+- Keyboard: each arrow press on dials/points is its own undo step.
+
+**Next:** Phase 5 — Annotate (shapes, text, pen, arrows, selection/transform, inspector, layers,
+brush/mask tool for the future AI eraser).
+
+## 2026-09-24 · Backlog created
+
+- Moved all "fix later" notes from Phases 2–4 into `docs/internal/BACKLOG.md` (11 items, most
+  planned for Phase 7). CLAUDE.md now points to it; Phase 7 includes working through it.

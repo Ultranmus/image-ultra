@@ -51,10 +51,15 @@ async function compareRenderers(page: Page, state: unknown, maxWidth?: number) {
       const b = await pixels(cpu.blob);
       let sum = 0;
       let max = 0;
-      for (let i = 0; i < a.length; i++) {
-        const d = Math.abs(a[i]! - b[i]!);
-        sum += d;
-        if (d > max) max = d;
+      // Compare premultiplied colour (what is visible): at near-zero alpha, stored RGB is noise.
+      for (let i = 0; i < a.length; i += 4) {
+        for (let c = 0; c < 4; c++) {
+          const va = c === 3 ? a[i + 3]! : (a[i + c]! * a[i + 3]!) / 255;
+          const vb = c === 3 ? b[i + 3]! : (b[i + c]! * b[i + 3]!) / 255;
+          const d = Math.abs(va - vb);
+          sum += d;
+          if (d > max) max = d;
+        }
       }
       return {
         renderers: [gpu.renderer, cpu.renderer],
@@ -86,6 +91,63 @@ test('perspective renders the same on GPU and on the Canvas2D mesh fallback', as
   expect(stats.meanDiff).toBeLessThan(3);
 });
 
+test('every colour stage matches pixel-for-pixel: filter, 16 adjustments, levels, curves, grain', async ({
+  page,
+}) => {
+  await openEditor(page);
+  const stats = await compareRenderers(page, {
+    ...ALL_EDITS,
+    finetune: {
+      ...ALL_EDITS.finetune,
+      vibrance: 0.4,
+      highlights: -0.3,
+      shadows: 0.35,
+      hue: 0.15,
+      grain: 0.5,
+    },
+    levels: { black: 0.05, white: 0.92, mid: 0.2 },
+    curves: {
+      rgb: [
+        [0, 0],
+        [0.3, 0.22],
+        [0.7, 0.8],
+        [1, 1],
+      ],
+      blue: [
+        [0, 0.05],
+        [1, 0.95],
+      ],
+    },
+    filter: {
+      id: 'test',
+      name: 'Test',
+      intensity: 0.7,
+      matrix: [1.1, 0.05, -0.05, 0.02, 0, 0.95, 0.05, 0, -0.05, 0.05, 1.05, -0.01],
+      curves: {
+        rgb: [
+          [0, 0.08],
+          [0.5, 0.5],
+          [1, 0.95],
+        ],
+      },
+    },
+    geometry: { ...ALL_EDITS.geometry, cropShape: 'ellipse' },
+  });
+  expect(stats.maxDiff).toBeLessThanOrEqual(3);
+});
+
+test('detail effects (clarity, sharpen, blur) look the same on GPU and CPU', async ({ page }) => {
+  await openEditor(page);
+  for (const detail of [{ clarity: 0.6, sharpen: 0.5 }, { blur: 0.4 }]) {
+    const stats = await compareRenderers(page, {
+      ...ALL_EDITS,
+      finetune: { ...ALL_EDITS.finetune, ...detail },
+    });
+    // Different blur kernels (GPU Gaussian vs CPU box ×3) — close, not identical.
+    expect(stats.meanDiff).toBeLessThan(3);
+  }
+});
+
 test('downscaled exports stay visually equal across renderers', async ({ page }) => {
   await openEditor(page);
   const stats = await compareRenderers(page, ALL_EDITS, 350);
@@ -110,14 +172,16 @@ test('undo / redo with buttons and keyboard shortcuts', async ({ page }) => {
   expect(await rotation(page)).toBe(0);
 });
 
-test('a slider drag is a single undo step', async ({ page }) => {
+test('a dial drag is a single undo step', async ({ page }) => {
   await openEditor(page);
-  const slider = page.getByRole('slider', { name: 'Brightness' });
-  const box = (await slider.boundingBox())!;
+  await page.getByRole('tab', { name: 'Finetune' }).click();
+  const dial = page.getByRole('slider', { name: 'Brightness' });
+  const box = (await dial.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
+  // Dragging the scale left moves higher values under the marker.
   for (let i = 1; i <= 10; i++)
-    await page.mouse.move(box.x + box.width / 2 + i * 6, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2 - i * 6, box.y + box.height / 2);
   await page.mouse.up();
 
   const history = await page.evaluate(() => {

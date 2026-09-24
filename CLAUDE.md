@@ -10,7 +10,8 @@ Feature reference: Filerobot Image Editor. UX reference: Pintura. We copy **neit
 3. `docs/internal/THEMING.md` — every design token. Components use tokens only.
 4. `docs/internal/DECISIONS.md` — why things are the way they are. Don't re-litigate without a new reason.
 5. `docs/internal/PROGRESS.md` — log of what was done per phase. **Append an entry after every work session.**
-6. `docs/internal/AI_ROADMAP.md` — AI feature spec (Phase 9 + auto-enhance in Phase 4).
+6. `docs/internal/BACKLOG.md` — known gaps to fix later. **Add new ones when found; tick them when fixed.**
+7. `docs/internal/AI_ROADMAP.md` — AI feature spec (Phase 9 + auto-enhance in Phase 4).
 
 ## Hard rules
 

@@ -37,7 +37,7 @@ the component is wrong (or this doc must be updated first, deliberately).
 │ icon + │            only where transparent)                  │
 │ label  │                                                     │
 │ vert.  ├─────────────────────────────────────────────────────┤
-│        │ ControlBar (contextual: ruler slider / dial /       │  136px
+│        │ ControlBar (contextual: ruler slider / dial /       │  148px
 │        │ preset strip / segmented options)                   │
 └────────┴─────────────────────────────────────────────────────┘
 ```
@@ -85,6 +85,17 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   image under the crop; arrow keys move the crop (focus the crop area). TopBar zoom is disabled here.
 - **Resize** ControlBar: [Width px] [lock] [Height px] + "Original size: W × H" (turns into a
   `--iu-warning` note when upscaling); PresetStrip: Original size, 50%, social presets.
+- **Finetune** ControlBar: SegmentedControl [Adjust | Curves | Levels] — [✨ Auto] [Save look]
+  [reset]. Adjust = RulerSlider (−100…+100, "+25"/"−25") above a chip strip of the 16 adjustments
+  (a dot marks changed ones). Curves = channel SegmentedControl + small reset on the left, 80px
+  graph (tinted histogram, thirds grid, dashed identity, points = sliders; click adds, double-click
+  or Delete removes). Levels = 32px histogram with clipped areas dimmed, three triangle handles,
+  values row ("Black point 0 · Mid-tones 1.00 · White point 255").
+- **Save look** is inline (name field + ✓/✕ replace the header buttons) — never a modal.
+- **Filter** ControlBar: Intensity RulerSlider (disabled when "Original"), then a thumbnail
+  PresetStrip (52px live previews of each look on the current crop, label below, selected = accent
+  ring): Original, 28 presets, then the user's looks (hover ✕ / Delete key removes).
+- Dense panels use small 24px IconButtons (`size="sm"`) for secondary actions (per-editor reset).
 - Placeholder tools show one muted line ("coming soon") until their phase.
 
 ## 6. Interaction details
@@ -127,6 +138,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 
 ## 10. AI features (Phase 9 — spec in `AI_ROADMAP.md`)
 
+- **Auto-enhance (shipped, Phase 4)** is the reference for AI UI: a labelled ✨ button in the
+  tool's header, one undo step, results visible as normal slider/levels values.
 - **Where AI lives:** one extra ToolRail item **"Magic"** (sparkle icon, only shown when the plugin is
   installed) holding Remove background, Erase, Prompt edit. Other AI features appear **inside the tool
   they belong to**, never as a separate place: "Auto" in Finetune, "Smart" crop in Adjust, "Detect"

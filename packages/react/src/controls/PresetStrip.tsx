@@ -7,6 +7,8 @@ export interface Preset<T extends string> {
   glyph?: ReactNode;
   /** Extra text for screen readers, e.g. "1080 by 1350 pixels". */
   description?: string;
+  /** Shows a remove badge (and Delete key removes it) — needs `onRemove` on the strip. */
+  removable?: boolean;
 }
 
 export interface PresetStripProps<T extends string> {
@@ -15,6 +17,11 @@ export interface PresetStripProps<T extends string> {
   /** `null` when no preset matches the current state. */
   value: T | null;
   onSelect: (value: T) => void;
+  /** `thumbs`: large glyph (e.g. a preview image) above the label. */
+  variant?: 'chips' | 'thumbs';
+  onRemove?: (value: T) => void;
+  /** Accessible name of the remove badge, e.g. "Remove look". */
+  removeLabel?: string;
 }
 
 /** Horizontally scrolling row of choice chips (UI_VISION §5 PresetStrip, compact variant). */
@@ -23,6 +30,9 @@ export function PresetStrip<T extends string>({
   presets,
   value,
   onSelect,
+  variant = 'chips',
+  onRemove,
+  removeLabel = 'Remove',
 }: PresetStripProps<T>) {
   const refs = useRef<HTMLButtonElement[]>([]);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -52,10 +62,17 @@ export function PresetStrip<T extends string>({
   );
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const current = refs.current.indexOf(document.activeElement as HTMLButtonElement);
+    const focused = presets[current];
+    if ((event.key === 'Delete' || event.key === 'Backspace') && focused?.removable && onRemove) {
+      event.preventDefault();
+      onRemove(focused.value);
+      refs.current[Math.max(0, current - 1)]?.focus();
+      return;
+    }
     const dir = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!dir) return;
     event.preventDefault();
-    const current = refs.current.indexOf(document.activeElement as HTMLButtonElement);
     const next = refs.current[(Math.max(0, current) + dir + presets.length) % presets.length];
     next?.focus();
     next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -64,7 +81,7 @@ export function PresetStrip<T extends string>({
   return (
     <div
       ref={stripRef}
-      className="iu-presets"
+      className={variant === 'thumbs' ? 'iu-presets iu-presets--thumbs' : 'iu-presets'}
       role="radiogroup"
       aria-label={label}
       data-more-start={more.start ? '' : undefined}
@@ -82,13 +99,31 @@ export function PresetStrip<T extends string>({
             type="button"
             role="radio"
             aria-checked={checked}
-            aria-description={preset.description}
+            aria-description={
+              preset.removable && onRemove
+                ? [preset.description, `Delete: ${removeLabel}`].filter(Boolean).join('. ')
+                : preset.description
+            }
             tabIndex={index === focusIndex ? 0 : -1}
-            className="iu-chip"
+            className={variant === 'thumbs' ? 'iu-chip iu-chip--thumb' : 'iu-chip'}
             onClick={() => onSelect(preset.value)}
           >
             {preset.glyph}
-            <span>{preset.label}</span>
+            <span className="iu-chip__label">{preset.label}</span>
+            {preset.removable && onRemove && (
+              // Pointer shortcut; keyboard users press Delete (announced via aria-description).
+              <span
+                className="iu-chip__remove"
+                aria-hidden="true"
+                title={removeLabel}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemove(preset.value);
+                }}
+              >
+                ×
+              </span>
+            )}
           </button>
         );
       })}

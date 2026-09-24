@@ -20,13 +20,18 @@ export {
   type PresetStripProps,
 } from './controls/PresetStrip';
 export { NumberField, type NumberFieldProps } from './controls/NumberField';
-export { useEditorState, useEditorStore, useLabels } from './context';
+export { useEditorState, useEditorStore, useLabels, useLooks } from './context';
 export { defaultLabels, type LabelOverrides, type Labels } from './i18n';
 export type { ThemeMode, ThemeOverrides } from './theme';
 
 // Re-export the core API most apps need, so one package is enough.
 export {
+  autoEnhance,
   createEditState,
+  createLook,
+  applyLook,
+  FILTER_PRESETS,
+  filterFromPreset,
   parseEditState,
   renderImage,
   selectCanRedo,
@@ -41,8 +46,14 @@ export type {
   ExportMimeType,
   ExportOptions,
   ExportResult,
+  CurvePoint,
+  CurvesState,
+  FilterPreset,
+  FilterState,
   FinetuneState,
   GeometryState,
+  LevelsState,
+  Look,
   ImageSource,
   LoadedImage,
   Rect,

@@ -1,0 +1,128 @@
+import { useEffect, useMemo, useRef } from 'react';
+import {
+  applyLook,
+  createCurvesState,
+  createFinetuneState,
+  createLevelsState,
+  FILTER_PRESETS,
+  filterFromPreset,
+  lookMatches,
+  type EditState,
+  type ThumbnailRenderer,
+} from '@image-ultra/core';
+import { useEditorState, useEditorStore, useLabels, useLooks } from '../../context';
+import { PresetStrip, type Preset } from '../../controls/PresetStrip';
+import { RulerSlider } from '../../controls/RulerSlider';
+import { useThumbnailRenderer } from '../../hooks/useThumbnailRenderer';
+
+const NONE = 'none';
+/** Thumbnail edge in CSS px. */
+const THUMB = 52;
+
+/** ControlBar for the Filter tool: live thumbnails, intensity, and the user's saved looks. */
+export function FilterControls() {
+  const labels = useLabels();
+  const store = useEditorStore();
+  const [looks, setLooks] = useLooks();
+  const image = useEditorState((s) => s.image);
+  const edit = useEditorState((s) => s.edit);
+  const renderer = useThumbnailRenderer(image);
+
+  // Thumbnails show each look on the current crop, without the user's other colour edits.
+  const geometry = edit.geometry;
+  const base = useMemo<EditState>(
+    () => ({
+      ...edit,
+      finetune: createFinetuneState(),
+      levels: createLevelsState(),
+      curves: createCurvesState(),
+      filter: null,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only geometry affects thumbnails
+    [geometry],
+  );
+  const states = useMemo(
+    () => ({
+      [NONE]: base,
+      ...Object.fromEntries(
+        FILTER_PRESETS.map((p) => [p.id, { ...base, filter: filterFromPreset(p) }]),
+      ),
+      ...Object.fromEntries(looks.map((l) => [l.id, applyLook(base, l)])),
+    }),
+    [base, looks],
+  ) as Record<string, EditState>;
+
+  const lookMatch = looks.find((l) => lookMatches(edit, l));
+  const selected = lookMatch?.id ?? edit.filter?.id ?? NONE;
+
+  const select = (id: string) => {
+    const look = looks.find((l) => l.id === id);
+    if (look) {
+      store.getState().update(look.name, () => applyLook(store.getState().edit, look));
+      return;
+    }
+    const preset = FILTER_PRESETS.find((p) => p.id === id);
+    const intensity = store.getState().edit.filter?.intensity ?? 1;
+    store.getState().update(preset?.name ?? labels.filterNone, (draft) => {
+      draft.filter = preset ? filterFromPreset(preset, intensity) : null;
+    });
+  };
+
+  const thumb = (id: string) => <Thumbnail renderer={renderer} state={states[id]!} />;
+  const presets: Preset<string>[] = [
+    { value: NONE, label: labels.filterNone, glyph: thumb(NONE) },
+    ...FILTER_PRESETS.map((p) => ({ value: p.id, label: p.name, glyph: thumb(p.id) })),
+    ...looks.map((l) => ({
+      value: l.id,
+      label: l.name,
+      glyph: thumb(l.id),
+      description: labels.myLooks,
+      removable: true,
+    })),
+  ];
+
+  return (
+    <div className="iu-filter">
+      <RulerSlider
+        label={labels.intensity}
+        value={Math.round((edit.filter?.intensity ?? 1) * 100)}
+        min={0}
+        max={100}
+        step={1}
+        tickEvery={5}
+        unitWidth={4}
+        majorEvery={25}
+        defaultValue={100}
+        disabled={!edit.filter}
+        format={(v) => `${v}%`}
+        onChangeStart={() => store.getState().beginChange(labels.intensity)}
+        onChange={(v) =>
+          store.getState().update(labels.intensity, (draft) => {
+            if (draft.filter) draft.filter.intensity = v / 100;
+          })
+        }
+        onChangeEnd={() => store.getState().endChange()}
+      />
+      <PresetStrip
+        variant="thumbs"
+        label={labels.filters}
+        presets={presets}
+        value={selected}
+        onSelect={select}
+        removeLabel={labels.removeLook}
+        onRemove={(id) => setLooks(looks.filter((l) => l.id !== id))}
+      />
+    </div>
+  );
+}
+
+/** One live preview, redrawn when the renderer or its state changes. */
+function Thumbnail({ renderer, state }: { renderer: ThumbnailRenderer | null; state: EditState }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (!renderer || !canvas.current) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    renderer.render(state, canvas.current, Math.round(THUMB * dpr));
+  }, [renderer, state]);
+  return <canvas ref={canvas} className="iu-thumb" aria-hidden="true" />;
+}

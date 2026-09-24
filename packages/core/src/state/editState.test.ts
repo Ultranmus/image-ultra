@@ -33,6 +33,29 @@ describe('parseEditState', () => {
     expect(parsed.resize).toEqual({ width: 16384, height: 481 });
   });
 
+  it('reads Phase 4 fields: finetune ranges, levels, curves, filter', () => {
+    const parsed = parseEditState({
+      finetune: { blur: -1, grain: 3, hue: 0.5 },
+      levels: { black: 0.5, white: 0.2, mid: 9 },
+      curves: { rgb: [[0.5, 0.6]], red: 'nope' },
+      filter: { id: 'x', intensity: 2, matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 99] },
+    });
+    expect(parsed.finetune.blur).toBe(0);
+    expect(parsed.finetune.grain).toBe(1);
+    expect(parsed.finetune.hue).toBe(0.5);
+    expect(parsed.levels).toEqual({ black: 0.5, white: 0.51, mid: 1 });
+    expect(parsed.curves.rgb).toEqual([
+      [0, 0],
+      [0.5, 0.6],
+      [1, 1],
+    ]);
+    expect(parsed.curves.red).toEqual([
+      [0, 0],
+      [1, 1],
+    ]);
+    expect(parsed.filter).toEqual({ id: 'x', name: 'x', intensity: 1 }); // 13-number matrix dropped
+  });
+
   it('rejects other versions and non-objects', () => {
     expect(() => parseEditState({ version: 2 })).toThrow(EditStateError);
     expect(() => parseEditState('not json')).toThrow(EditStateError);

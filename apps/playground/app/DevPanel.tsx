@@ -10,20 +10,9 @@ import type {
 } from '@image-ultra/react';
 
 /**
- * Playground-only test harness for the Phase 2 engine. Finetune sliders are replaced by the real
- * Finetune tool in Phase 4. Everything here goes through the public `ImageEditorHandle`.
+ * Playground-only test harness: history, saved state and export through the public
+ * `ImageEditorHandle`. All editing happens in the real tools.
  */
-
-const FINETUNE: { key: keyof FinetuneState; label: string }[] = [
-  { key: 'brightness', label: 'Brightness' },
-  { key: 'contrast', label: 'Contrast' },
-  { key: 'saturation', label: 'Saturation' },
-  { key: 'exposure', label: 'Exposure' },
-  { key: 'temperature', label: 'Temperature' },
-  { key: 'tint', label: 'Tint' },
-  { key: 'gamma', label: 'Gamma' },
-  { key: 'vignette', label: 'Vignette' },
-];
 
 const FORMATS: { value: ExportMimeType; label: string }[] = [
   { value: 'image/jpeg', label: 'JPEG' },
@@ -51,40 +40,11 @@ export function DevPanel({
   const state = useEditState(editor);
   const [snapshot, setSnapshot] = useState<EditState | null>(null);
 
-  const update = (label: string, recipe: (s: EditState) => void) =>
-    editor.current?.update(label, recipe);
-
   return (
     <aside className="pg-panel" aria-label="Dev panel">
       <p className="pg-panel__note">
-        Dev panel — drives the engine through <code>ref</code>. Finetune sliders here are temporary
-        until Phase 4.
+        Dev panel — drives the engine through <code>ref</code> (history, saved state, export).
       </p>
-
-      <section>
-        <h3>Finetune</h3>
-        {FINETUNE.map(({ key, label }) => (
-          <label key={key} className="pg-slider">
-            <span>{label}</span>
-            <input
-              type="range"
-              min={-100}
-              max={100}
-              value={Math.round((state?.finetune[key] ?? 0) * 100)}
-              aria-label={label}
-              // One undo step per drag: begin on press, live updates, commit on release.
-              onPointerDown={() => editor.current?.store.getState().beginChange(label)}
-              onPointerUp={() => editor.current?.store.getState().endChange()}
-              onChange={(e) => {
-                const value = Number(e.target.value) / 100;
-                update(label, (s) => void (s.finetune[key] = value));
-              }}
-              onDoubleClick={() => update(label, (s) => void (s.finetune[key] = 0))}
-            />
-            <output>{Math.round((state?.finetune[key] ?? 0) * 100)}</output>
-          </label>
-        ))}
-      </section>
 
       <section>
         <h3>History</h3>

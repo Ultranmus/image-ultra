@@ -84,14 +84,17 @@ docs/internal (these notes)
 
 ### Phase 4 — Finetune + Filters
 
-- [ ] Finetune sliders: brightness, contrast, saturation, exposure, temperature/warmth, tint, hue,
-      gamma, clarity, sharpen, blur, noise/grain, vignette
-- [ ] Curves & levels (advanced)
-- [ ] ~30 filter presets (LUT/matrix based) with live thumbnails, intensity slider
-- [ ] User-saved adjustment presets
-- [ ] **AI #1 Auto-enhance** (no model, lives in core): histogram auto-levels, auto white balance,
-      auto contrast/vibrance → sets finetune values (fully editable afterwards). "Auto" button in Finetune
-      **Exit:** real-time slider response on 20MP images.
+- [x] 16 adjustments: brightness, contrast, saturation, vibrance, exposure, highlights, shadows,
+      temperature, tint, hue, gamma, clarity, sharpen, blur, grain, vignette (dial + chip strip)
+- [x] Curves (RGB + per channel, monotone cubic) & Levels (black / mid / white + histogram)
+- [x] 28 filter presets (colour matrix + curves, stored in full in EditState) with live thumbnails,
+      intensity dial
+- [x] User-saved looks ("Save look" → shown in Filter tool; localStorage or controlled via props)
+- [x] **AI #1 Auto-enhance** (no model): auto levels, gray-world white balance, vibrance/contrast/
+      shadows/highlights — one undo step, fully editable afterwards
+- [x] Multi-pass GPU pipeline for detail effects + matching CPU fallback
+      **Exit:** real-time slider response on 20MP images. ✅ (single pass for colour; detail uses
+      downsampled blurs — formal 20MP benchmark in Phase 7)
 
 ### Phase 5 — Annotate
 
@@ -112,6 +115,8 @@ docs/internal (these notes)
 - [ ] EXIF strip option on export
 
 ### Phase 7 — Polish
+
+- [ ] Work through `BACKLOG.md` items tagged _Phase 7_
 
 - [ ] Mobile layout & thumb-zone controls, gestures
 - [ ] Motion pass, reduced-motion

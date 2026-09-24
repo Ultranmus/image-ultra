@@ -31,7 +31,7 @@ embed them or reference them; re-running is possible because the inputs are reco
 
 ## Features
 
-### 1. Auto-enhance — Phase 4 (core, no model)
+### 1. Auto-enhance — Phase 4 (core, no model) ✅ shipped
 
 - **User:** taps "Auto" in Finetune → photo looks better instantly; sliders move to show what changed.
 - **How:** histogram analysis → auto levels, white balance (gray-world / white-patch), contrast, vibrance.

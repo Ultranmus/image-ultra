@@ -49,33 +49,119 @@ export interface ResizeState {
   height: number;
 }
 
-/** Colour adjustments. Every value is −1…1 and 0 means "unchanged". */
+/**
+ * Colour and detail adjustments. 0 always means "unchanged". Most values are −1…1;
+ * `sharpen`, `blur` and `grain` are 0…1 (see `FINETUNE_RANGES`).
+ */
 export interface FinetuneState {
   brightness: number;
   contrast: number;
   saturation: number;
+  /** Boosts muted colours more than already-saturated ones. */
+  vibrance: number;
   /** ±2 photographic stops at the extremes. */
   exposure: number;
+  /** Brightens (positive) or recovers (negative) the brightest tones. */
+  highlights: number;
+  /** Lifts (positive) or deepens (negative) the darkest tones. */
+  shadows: number;
   /** Negative = cooler (blue), positive = warmer (amber). */
   temperature: number;
   /** Negative = green, positive = magenta. */
   tint: number;
+  /** Rotates all hues, ±180° at the extremes. */
+  hue: number;
   /** Positive brightens mid-tones, negative darkens them. */
   gamma: number;
+  /** Local contrast (mid-tone detail). Negative softens. */
+  clarity: number;
+  sharpen: number;
+  blur: number;
+  /** Film grain amount. */
+  grain: number;
   /** Positive darkens the edges, negative lightens them. */
   vignette: number;
 }
 
+/** Display order of the adjustments. */
 export const FINETUNE_KEYS = [
   'brightness',
   'contrast',
   'saturation',
+  'vibrance',
   'exposure',
+  'highlights',
+  'shadows',
   'temperature',
   'tint',
+  'hue',
   'gamma',
+  'clarity',
+  'sharpen',
+  'blur',
+  'grain',
   'vignette',
 ] as const satisfies readonly (keyof FinetuneState)[];
+
+/** Allowed range of each adjustment. */
+export const FINETUNE_RANGES: Record<keyof FinetuneState, readonly [min: number, max: number]> = {
+  brightness: [-1, 1],
+  contrast: [-1, 1],
+  saturation: [-1, 1],
+  vibrance: [-1, 1],
+  exposure: [-1, 1],
+  highlights: [-1, 1],
+  shadows: [-1, 1],
+  temperature: [-1, 1],
+  tint: [-1, 1],
+  hue: [-1, 1],
+  gamma: [-1, 1],
+  clarity: [-1, 1],
+  sharpen: [0, 1],
+  blur: [0, 1],
+  grain: [0, 1],
+  vignette: [-1, 1],
+};
+
+/** Input levels: `black`/`white` points (0…1) and a mid-tone shift (−1…1, positive = brighter). */
+export interface LevelsState {
+  black: number;
+  white: number;
+  mid: number;
+}
+
+/** A tone-curve control point `[input, output]`, both 0…1. */
+export type CurvePoint = [x: number, y: number];
+
+/** Tone curves. Each list is sorted by x and always includes x = 0 and x = 1. */
+export interface CurvesState {
+  rgb: CurvePoint[];
+  red: CurvePoint[];
+  green: CurvePoint[];
+  blue: CurvePoint[];
+}
+
+export type CurveChannel = keyof CurvesState;
+
+/**
+ * A filter look. The full definition is stored (not just an id) so a saved EditState renders the
+ * same anywhere, even without the preset list that created it.
+ */
+export interface FilterState {
+  /** Preset id, e.g. `chrome` — used to highlight the chip. */
+  id: string;
+  /** Display name at the time it was applied. */
+  name: string;
+  /** 0…1 blend between the original and the filtered colours. */
+  intensity: number;
+  /**
+   * Row-major 3×4 colour matrix on 0…1 RGB: `r' = m0·r + m1·g + m2·b + m3`, etc.
+   * Omit for "curves only".
+   */
+  matrix?: number[];
+  /** Tone curves applied after the matrix. */
+  curves?: Partial<CurvesState>;
+}
 
 /**
  * A raster produced during editing (e.g. by an AI plugin): a background mask, an erased patch,
@@ -100,6 +186,10 @@ export interface EditState {
   version: typeof EDIT_STATE_VERSION;
   geometry: GeometryState;
   finetune: FinetuneState;
+  levels: LevelsState;
+  curves: CurvesState;
+  /** Applied before finetune, so adjustments tweak the filtered look. */
+  filter: FilterState | null;
   /** Output size in pixels, or `null` to keep the crop's size. */
   resize: ResizeState | null;
   assets: Record<string, EditAsset>;
@@ -119,15 +209,26 @@ export function createGeometryState(): GeometryState {
 }
 
 export function createFinetuneState(): FinetuneState {
+  return Object.fromEntries(FINETUNE_KEYS.map((key) => [key, 0])) as unknown as FinetuneState;
+}
+
+export function createLevelsState(): LevelsState {
+  return { black: 0, white: 1, mid: 0 };
+}
+
+export function createIdentityCurve(): CurvePoint[] {
+  return [
+    [0, 0],
+    [1, 1],
+  ];
+}
+
+export function createCurvesState(): CurvesState {
   return {
-    brightness: 0,
-    contrast: 0,
-    saturation: 0,
-    exposure: 0,
-    temperature: 0,
-    tint: 0,
-    gamma: 0,
-    vignette: 0,
+    rgb: createIdentityCurve(),
+    red: createIdentityCurve(),
+    green: createIdentityCurve(),
+    blue: createIdentityCurve(),
   };
 }
 
@@ -137,6 +238,9 @@ export function createEditState(): EditState {
     version: EDIT_STATE_VERSION,
     geometry: createGeometryState(),
     finetune: createFinetuneState(),
+    levels: createLevelsState(),
+    curves: createCurvesState(),
+    filter: null,
     resize: null,
     assets: {},
   };
@@ -147,6 +251,23 @@ export const MAX_OUTPUT_SIDE = 16384;
 
 export function isNeutralFinetune(finetune: FinetuneState): boolean {
   return FINETUNE_KEYS.every((key) => finetune[key] === 0);
+}
+
+export function isNeutralLevels(levels: LevelsState): boolean {
+  return levels.black === 0 && levels.white === 1 && levels.mid === 0;
+}
+
+export function isIdentityCurve(points: readonly CurvePoint[]): boolean {
+  return points.every(([x, y]) => Math.abs(x - y) < 1e-6);
+}
+
+export function isNeutralCurves(curves: CurvesState): boolean {
+  return (
+    isIdentityCurve(curves.rgb) &&
+    isIdentityCurve(curves.red) &&
+    isIdentityCurve(curves.green) &&
+    isIdentityCurve(curves.blue)
+  );
 }
 
 export class EditStateError extends Error {
@@ -188,7 +309,26 @@ export function parseEditState(input: unknown): EditState {
   };
 
   const finetune = isRecord(value['finetune']) ? value['finetune'] : {};
-  for (const key of FINETUNE_KEYS) state.finetune[key] = clampNumber(finetune[key], -1, 1);
+  for (const key of FINETUNE_KEYS) {
+    const [min, max] = FINETUNE_RANGES[key];
+    state.finetune[key] = clampNumber(finetune[key], min, max);
+  }
+
+  if (isRecord(value['levels'])) {
+    const l = value['levels'];
+    const black = clampNumber(l['black'], 0, 0.99);
+    const white = finite(l['white']) === null ? 1 : clampNumber(l['white'], black + 0.01, 1);
+    state.levels = { black, white, mid: clampNumber(l['mid'], -1, 1) };
+  }
+
+  if (isRecord(value['curves'])) {
+    for (const channel of CURVE_CHANNELS) {
+      const points = parseCurve(value['curves'][channel]);
+      if (points) state.curves[channel] = points;
+    }
+  }
+
+  state.filter = parseFilter(value['filter']);
 
   if (isRecord(value['resize'])) {
     const width = finite(value['resize']['width']);
@@ -207,6 +347,50 @@ export function parseEditState(input: unknown): EditState {
     if (parsed) state.assets[id] = parsed;
   }
   return state;
+}
+
+const CURVE_CHANNELS: readonly CurveChannel[] = ['rgb', 'red', 'green', 'blue'];
+
+/** Sorted, clamped curve with guaranteed end points; `null` if unusable. */
+export function parseCurve(input: unknown): CurvePoint[] | null {
+  if (!Array.isArray(input)) return null;
+  const points: CurvePoint[] = [];
+  for (const item of input) {
+    if (!Array.isArray(item)) continue;
+    const x = finite(item[0]);
+    const y = finite(item[1]);
+    if (x === null || y === null) continue;
+    points.push([Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))]);
+  }
+  points.sort((a, b) => a[0] - b[0]);
+  // Drop points closer than 1% in x (curves must be functions).
+  const unique = points.filter((p, i) => i === 0 || p[0] - points[i - 1]![0] > 0.01);
+  if (unique.length === 0) return null;
+  if (unique[0]![0] > 0) unique.unshift([0, unique[0]![0] === 0 ? unique[0]![1] : 0]);
+  if (unique[unique.length - 1]![0] < 1) unique.push([1, 1]);
+  return unique.slice(0, 16);
+}
+
+function parseFilter(input: unknown): FilterState | null {
+  if (!isRecord(input) || typeof input['id'] !== 'string') return null;
+  const filter: FilterState = {
+    id: input['id'],
+    name: typeof input['name'] === 'string' ? input['name'] : input['id'],
+    intensity: finite(input['intensity']) === null ? 1 : clampNumber(input['intensity'], 0, 1),
+  };
+  const matrix = input['matrix'];
+  if (Array.isArray(matrix) && matrix.length === 12 && matrix.every((n) => finite(n) !== null)) {
+    filter.matrix = matrix.map((n) => Math.min(4, Math.max(-4, n as number)));
+  }
+  if (isRecord(input['curves'])) {
+    const curves: Partial<CurvesState> = {};
+    for (const channel of CURVE_CHANNELS) {
+      const points = parseCurve(input['curves'][channel]);
+      if (points) curves[channel] = points;
+    }
+    filter.curves = curves;
+  }
+  return filter;
 }
 
 function parseRect(input: unknown): Rect | null {

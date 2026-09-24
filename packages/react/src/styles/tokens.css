@@ -25,6 +25,10 @@
     --iu-crop-frame: rgba(255, 255, 255, 0.95);
     --iu-crop-shade: rgba(0, 0, 0, 0.62);
     --iu-crop-grid: rgba(255, 255, 255, 0.45);
+    /* Curve channel colours (on UI surfaces). */
+    --iu-channel-red: #ff6b6b;
+    --iu-channel-green: #4cd97b;
+    --iu-channel-blue: #5aa9ff;
     --iu-checker-a: #26262b;
     --iu-checker-b: #1d1d21;
     --iu-shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.5);
@@ -66,7 +70,7 @@
     --iu-size-topbar: 48px;
     --iu-size-rail: 72px;
     --iu-size-rail-mobile: 64px;
-    --iu-size-controlbar: 136px;
+    --iu-size-controlbar: 148px;
     --iu-size-touch: 40px;
 
     /* Layers */
@@ -95,6 +99,9 @@
     --iu-accent-text: #4d194d;
     --iu-danger: #e5293d;
     --iu-warning: #9a5b00;
+    --iu-channel-red: #d62f2f;
+    --iu-channel-green: #1f9d4c;
+    --iu-channel-blue: #1f6fd6;
     --iu-overlay: rgba(0, 0, 0, 0.45);
     --iu-checker-a: #ffffff;
     --iu-checker-b: #e6e6ea;
@@ -121,6 +128,9 @@
       --iu-accent-text: #4d194d;
       --iu-danger: #e5293d;
       --iu-warning: #9a5b00;
+      --iu-channel-red: #d62f2f;
+      --iu-channel-green: #1f9d4c;
+      --iu-channel-blue: #1f6fd6;
       --iu-overlay: rgba(0, 0, 0, 0.45);
       --iu-checker-a: #ffffff;
       --iu-checker-b: #e6e6ea;

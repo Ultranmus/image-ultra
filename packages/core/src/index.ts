@@ -7,12 +7,20 @@ export { loadImage, ImageLoadError, type LoadImageOptions } from './loader/loadI
 export {
   EDIT_STATE_VERSION,
   FINETUNE_KEYS,
+  FINETUNE_RANGES,
   EditStateError,
   MAX_OUTPUT_SIDE,
   createEditState,
+  createCurvesState,
   createFinetuneState,
   createGeometryState,
+  createIdentityCurve,
+  createLevelsState,
+  isIdentityCurve,
+  isNeutralCurves,
   isNeutralFinetune,
+  isNeutralLevels,
+  parseCurve,
   parseEditState,
   type EditAsset,
   type EditState,
@@ -20,6 +28,11 @@ export {
   type GeometryState,
   type QuarterTurn,
   type CropShape,
+  type CurveChannel,
+  type CurvePoint,
+  type CurvesState,
+  type FilterState,
+  type LevelsState,
   type RasterAsset,
   type Rect,
   type ResizeState,
@@ -72,7 +85,36 @@ export {
 } from './history/history';
 
 /* Rendering & export */
-export { adjustColor } from './render/color';
+export {
+  colorPixel,
+  compileColor,
+  detailPixel,
+  finishPixel,
+  hueRotation,
+  type ColorProgram,
+} from './render/color';
+export {
+  createThumbnailRenderer,
+  scaleEditState,
+  type ThumbnailRenderer,
+} from './render/thumbnails';
+export { buildToneLUT, createCurveFunction, createLevelsFunction, sampleLUT } from './state/curves';
+export { applyLook, createLook, lookMatches, parseLooks, type Look } from './state/looks';
+export {
+  FILTER_PRESETS,
+  filterFromPreset,
+  type FilterCategory,
+  type FilterPreset,
+} from './filters/presets';
+export {
+  autoEnhance,
+  computeAutoEnhance,
+  computeHistogram,
+  percentile,
+  renderAnalysisPixels,
+  type AutoEnhanceResult,
+  type Histogram,
+} from './analysis/analyze';
 export { createCanvas, createRenderer } from './render/createRenderer';
 export type {
   AnyCanvas,
@@ -85,6 +127,8 @@ export type {
 export {
   exportImage,
   renderImage,
+  renderToCanvas,
+  type RenderedCanvas,
   type ExportMimeType,
   type ExportOptions,
   type ExportResult,

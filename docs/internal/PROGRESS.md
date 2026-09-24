@@ -144,3 +144,12 @@ brush/mask tool for the future AI eraser).
 
 - Moved all "fix later" notes from Phases 2–4 into `docs/internal/BACKLOG.md` (11 items, most
   planned for Phase 7). CLAUDE.md now points to it; Phase 7 includes working through it.
+
+## 2026-09-24 · Phase 4 follow-up (owner feedback)
+
+- Saved looks were hard to find (end of the Filter strip). Now: own looks right after "Original" with
+  a bookmark badge + divider; Finetune shows "Saved “Name” · View in Filters" after saving.
+  Storage unchanged: browser localStorage `image-ultra:looks`, or app-controlled via props.
+- Fixed Adjust/Curves/Levels segmented box stretching to fill its grid column (extra empty space).
+- New shared bits: `Preset.separatorBefore`, `Preset.badge`, `.iu-notice` / `.iu-link`.
+- 25/25 e2e pass (looks test now covers the notice, the link and the order).

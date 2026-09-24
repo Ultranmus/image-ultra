@@ -14,6 +14,7 @@ import { useEditorState, useEditorStore, useLabels, useLooks } from '../../conte
 import { PresetStrip, type Preset } from '../../controls/PresetStrip';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { useThumbnailRenderer } from '../../hooks/useThumbnailRenderer';
+import { IconBookmark } from '../../icons/Icon';
 
 const NONE = 'none';
 /** Thumbnail edge in CSS px. */
@@ -69,15 +70,22 @@ export function FilterControls() {
   };
 
   const thumb = (id: string) => <Thumbnail renderer={renderer} state={states[id]!} />;
+  // Order: Original, the user's own looks (easy to find right after saving), then the presets.
   const presets: Preset<string>[] = [
     { value: NONE, label: labels.filterNone, glyph: thumb(NONE) },
-    ...FILTER_PRESETS.map((p) => ({ value: p.id, label: p.name, glyph: thumb(p.id) })),
     ...looks.map((l) => ({
       value: l.id,
       label: l.name,
       glyph: thumb(l.id),
+      badge: <IconBookmark size={10} strokeWidth={2.5} />,
       description: labels.myLooks,
       removable: true,
+    })),
+    ...FILTER_PRESETS.map((p, i) => ({
+      value: p.id,
+      label: p.name,
+      glyph: thumb(p.id),
+      separatorBefore: i === 0,
     })),
   ];
 

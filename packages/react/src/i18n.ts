@@ -62,6 +62,9 @@ export interface Labels {
   levelsMid: string;
   levelsWhite: string;
   saveLook: string;
+  /** `{name}` is replaced with the look's name. */
+  lookSaved: string;
+  viewInFilters: string;
   lookName: string;
   save: string;
   cancelEdit: string;
@@ -157,6 +160,8 @@ export const defaultLabels: Labels = {
   levelsMid: 'Mid-tones',
   levelsWhite: 'White point',
   saveLook: 'Save look',
+  lookSaved: 'Saved “{name}”',
+  viewInFilters: 'View in Filters',
   lookName: 'Look name',
   save: 'Save',
   cancelEdit: 'Cancel',

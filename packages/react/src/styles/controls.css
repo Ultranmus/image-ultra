@@ -395,3 +395,63 @@
     text-align: right;
   }
 }
+
+@layer image-ultra {
+  /* Fit the segmented box to its options, even inside a stretching grid/flex cell. */
+  .iu-segmented {
+    width: fit-content;
+  }
+
+  .iu-presets__divider {
+    flex: none;
+    align-self: center;
+    width: 1px;
+    height: 32px;
+    margin: 0 var(--iu-space-1);
+    background: var(--iu-border-strong);
+  }
+
+  .iu-chip__badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-accent);
+    color: var(--iu-accent-contrast);
+  }
+
+  /* Inline confirmation (no toasts/modals while editing). */
+  .iu-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--iu-space-2);
+    margin: 0;
+    color: var(--iu-text);
+    font-size: var(--iu-text-sm);
+    white-space: nowrap;
+    animation: iu-enter var(--iu-duration-base) var(--iu-ease);
+  }
+
+  .iu-link {
+    padding: 0;
+    border: 0;
+    border-radius: var(--iu-radius-sm);
+    background: none;
+    color: var(--iu-accent-text);
+    font: inherit;
+    font-weight: var(--iu-weight-medium);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .iu-link:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+}

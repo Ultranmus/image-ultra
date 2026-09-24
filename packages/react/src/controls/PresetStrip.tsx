@@ -1,4 +1,11 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  Fragment,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 
 export interface Preset<T extends string> {
   value: T;
@@ -9,6 +16,10 @@ export interface Preset<T extends string> {
   description?: string;
   /** Shows a remove badge (and Delete key removes it) — needs `onRemove` on the strip. */
   removable?: boolean;
+  /** Draw a thin divider before this item (to separate groups). */
+  separatorBefore?: boolean;
+  /** Small marker in the corner, e.g. a bookmark for the user's own looks. */
+  badge?: ReactNode;
 }
 
 export interface PresetStripProps<T extends string> {
@@ -91,40 +102,47 @@ export function PresetStrip<T extends string>({
       {presets.map((preset, index) => {
         const checked = preset.value === value;
         return (
-          <button
-            key={preset.value}
-            ref={(el) => {
-              if (el) refs.current[index] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            aria-description={
-              preset.removable && onRemove
-                ? [preset.description, `Delete: ${removeLabel}`].filter(Boolean).join('. ')
-                : preset.description
-            }
-            tabIndex={index === focusIndex ? 0 : -1}
-            className={variant === 'thumbs' ? 'iu-chip iu-chip--thumb' : 'iu-chip'}
-            onClick={() => onSelect(preset.value)}
-          >
-            {preset.glyph}
-            <span className="iu-chip__label">{preset.label}</span>
-            {preset.removable && onRemove && (
-              // Pointer shortcut; keyboard users press Delete (announced via aria-description).
-              <span
-                className="iu-chip__remove"
-                aria-hidden="true"
-                title={removeLabel}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onRemove(preset.value);
-                }}
-              >
-                ×
-              </span>
-            )}
-          </button>
+          <Fragment key={preset.value}>
+            {preset.separatorBefore && <span className="iu-presets__divider" aria-hidden="true" />}
+            <button
+              ref={(el) => {
+                if (el) refs.current[index] = el;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              aria-description={
+                preset.removable && onRemove
+                  ? [preset.description, `Delete: ${removeLabel}`].filter(Boolean).join('. ')
+                  : preset.description
+              }
+              tabIndex={index === focusIndex ? 0 : -1}
+              className={variant === 'thumbs' ? 'iu-chip iu-chip--thumb' : 'iu-chip'}
+              onClick={() => onSelect(preset.value)}
+            >
+              {preset.glyph}
+              {preset.badge && (
+                <span className="iu-chip__badge" aria-hidden="true">
+                  {preset.badge}
+                </span>
+              )}
+              <span className="iu-chip__label">{preset.label}</span>
+              {preset.removable && onRemove && (
+                // Pointer shortcut; keyboard users press Delete (announced via aria-description).
+                <span
+                  className="iu-chip__remove"
+                  aria-hidden="true"
+                  title={removeLabel}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove(preset.value);
+                  }}
+                >
+                  ×
+                </span>
+              )}
+            </button>
+          </Fragment>
         );
       })}
     </div>

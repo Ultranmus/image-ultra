@@ -84,9 +84,18 @@ test.describe('Filter tool', () => {
     await page.getByLabel('Look name').fill('Muted');
     await page.keyboard.press('Enter');
 
-    await page.getByRole('tab', { name: 'Filter' }).click();
+    // Confirmation with a shortcut to where looks live.
+    await expect(page.getByRole('status').filter({ hasText: 'Saved “Muted”' })).toBeVisible();
+    await page.getByRole('button', { name: 'View in Filters' }).click();
+    await expect(page.getByRole('tab', { name: 'Filter' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     const look = page.getByRole('radio', { name: 'Muted' });
     await expect(look).toHaveAttribute('aria-checked', 'true'); // current state matches the look
+    // Own looks come right after "Original", before the presets.
+    const names = await page.locator('.iu-presets--thumbs .iu-chip__label').allInnerTexts();
+    expect(names.slice(0, 3)).toEqual(['Original', 'Muted', 'Vivid']);
 
     // Reset colour, then re-apply the look.
     await page.evaluate(() => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   autoEnhance,
   createCurvesState,
@@ -37,6 +37,13 @@ export function FinetuneControls() {
   const [key, setKey] = useState<Key>('brightness');
   const [saving, setSaving] = useState(false);
   const [autoBusy, setAutoBusy] = useState(false);
+  /** Name of the look just saved — shows a short confirmation with a link to the Filter tool. */
+  const [savedName, setSavedName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!savedName) return;
+    const timer = setTimeout(() => setSavedName(null), 6000);
+    return () => clearTimeout(timer);
+  }, [savedName]);
   const histogram = useHistogram(mode === 'adjust' ? null : image, edit);
 
   const f = edit.finetune;
@@ -86,13 +93,27 @@ export function FinetuneControls() {
             { value: 'levels', label: labels.modeLevels },
           ]}
         />
-        <span />
+        {savedName ? (
+          <p className="iu-notice" role="status">
+            {labels.lookSaved.replace('{name}', savedName)}
+            <button
+              type="button"
+              className="iu-link"
+              onClick={() => store.getState().setActiveTool('filter')}
+            >
+              {labels.viewInFilters}
+            </button>
+          </p>
+        ) : (
+          <span />
+        )}
         <div className="iu-toolgroup iu-toolgroup--end">
           {saving ? (
             <SaveLookForm
               onSave={(name) => {
                 setLooks([...looks, createLook(store.getState().edit, name)]);
                 setSaving(false);
+                setSavedName(name);
               }}
               onCancel={() => setSaving(false)}
             />

@@ -91,10 +91,14 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   graph (tinted histogram, thirds grid, dashed identity, points = sliders; click adds, double-click
   or Delete removes). Levels = 32px histogram with clipped areas dimmed, three triangle handles,
   values row ("Black point 0 · Mid-tones 1.00 · White point 255").
-- **Save look** is inline (name field + ✓/✕ replace the header buttons) — never a modal.
+- **Save look** is inline (name field + ✓/✕ replace the header buttons) — never a modal. After
+  saving, an inline notice "Saved “Name” · View in Filters" (role=status, 6s) links to the Filter tool.
+- **Inline notice pattern** (`.iu-notice` + `.iu-link`): short confirmations live in the ControlBar
+  header's middle slot, never as toasts or dialogs.
 - **Filter** ControlBar: Intensity RulerSlider (disabled when "Original"), then a thumbnail
   PresetStrip (52px live previews of each look on the current crop, label below, selected = accent
-  ring): Original, 28 presets, then the user's looks (hover ✕ / Delete key removes).
+  ring): Original, then the user's looks (bookmark badge; hover ✕ / Delete key removes), a divider,
+  then the 28 presets. Own looks come first so a just-saved look is visible without scrolling.
 - Dense panels use small 24px IconButtons (`size="sm"`) for secondary actions (per-editor reset).
 - Placeholder tools show one muted line ("coming soon") until their phase.
 

@@ -505,7 +505,18 @@ export function AnnotateControls() {
               icon={<IconDuplicate />}
               onClick={duplicate}
             />
-            <IconButton label={`${labels.deleteShape} (⌫)`} icon={<IconTrash />} onClick={remove} />
+            <IconButton
+              label={`${labels.deleteShape} (⌫)`}
+              icon={<IconTrash />}
+              onClick={(event) => {
+                // The button disappears with the selection: keep keyboard focus in the editor.
+                const root = event.currentTarget.closest('.iu-root');
+                remove();
+                root
+                  ?.querySelector<HTMLElement>('.iu-annotate-layer')
+                  ?.focus({ preventScroll: true });
+              }}
+            />
           </div>
         )}
       </div>

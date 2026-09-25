@@ -20,6 +20,8 @@ import { FinetuneControls } from './finetune/FinetuneControls';
 import { FilterControls } from './filter/FilterControls';
 import { AnnotateControls } from './annotate/AnnotateControls';
 import { AnnotateOverlay } from './annotate/AnnotateOverlay';
+import { RedactControls } from './redact/RedactControls';
+import { RedactOverlay } from './redact/RedactOverlay';
 
 /** Placeholder panel for tools whose UI arrives in a later phase. */
 function ComingSoon() {
@@ -45,7 +47,12 @@ export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
     Controls: AnnotateControls,
     StageOverlay: AnnotateOverlay,
   }),
-  redact: placeholder('redact', IconRedact),
+  redact: defineTool({
+    id: 'redact',
+    icon: IconRedact,
+    Controls: RedactControls,
+    StageOverlay: RedactOverlay,
+  }),
   sticker: placeholder('sticker', IconSticker),
   frame: placeholder('frame', IconFrame),
   fill: placeholder('fill', IconFill),

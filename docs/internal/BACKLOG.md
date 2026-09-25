@@ -87,6 +87,37 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       so resizing needs Select tool → click the text again. Owner wants it like Canva: a text box being
       edited keeps its outline + resize/rotate handles, usable without leaving editing.
 
+### Owner review of Phase 6.2 — Redact (2026-09-25)
+
+- [x] **Redact areas can't be resized or moved (dashed outline)** _(fixed 2026-09-25)_ — brush areas were selected with a
+      dashed bounds outline and no handles, and only a press exactly on the painted stroke moved them.
+      Fix: every area (box or brush) gets the same solid outline + 8 resize handles; pressing anywhere
+      inside the selected area's outline moves it; resizing a brush area scales its stroke.
+- [x] **Brush size doesn't change a selected brush area** _(fixed 2026-09-25)_ — the size control only set the size for
+      the next stroke (colour did change the selected one). Fix: with a brush area selected, the
+      size control shows and changes that area's stroke width (one undo step per drag), in either mode.
+
+- [x] **Redact areas can't be rotated** (owner) _(fixed 2026-09-25)_ — add the round rotate handle like Annotate shapes,
+      for boxes and brush areas.
+
+- [x] **Wrong cursor over shapes / areas** (owner) _(fixed 2026-09-25, DECISIONS #70)_ — drawing tools show a crosshair everywhere, even
+      over an element that a click would select or over the selected one that a drag would move.
+      Fix (Annotate + Redact): move cursor over the selected element, pointer over other elements
+      (a click selects them), resize/rotate cursors on handles, crosshair only on empty photo while a
+      drawing tool is active, grabbing while dragging.
+
+- [x] **Redact Brush cursor** (owner) — crosshair + a size circle that also showed around the move /
+      pointer cursors over areas. Now: a brush cursor on empty photo, the usual cursors over areas,
+      no circle _(fixed 2026-09-25)_.
+
+- [x] **Annotate: selected lines / pen strokes / polygons only drag from the stroke** (owner) _(fixed 2026-09-25)_ — the
+      empty middle of their selection box ignored presses. Fix: like Redact, a press anywhere inside
+      the selected shape's (rotated) box moves it, unless another shape on top is under the pointer.
+
+- [x] **Unfinished polygon points stay after switching tools** (owner) _(fixed 2026-09-25)_ — only the keyboard shortcut
+      and Esc cleared them; the ControlBar tool buttons didn't. Fix: any tool change drops the
+      unfinished polygon (like Esc).
+
 ### Found during Phase 5.1
 
 - [ ] **Owner's `.ico` crash not reproduced** — ask which browser/file. Chrome decodes ICO; Safari

@@ -15,7 +15,10 @@ import {
   ensureAnnotationFonts,
   getImageBounds,
   getOrientedToOutput,
+  drawRedactions,
   getBeforeState,
+  getOrientedSize,
+  redactReference,
   getOutputSize,
   ImageLoadError,
   loadAnnotationAssets,
@@ -23,6 +26,7 @@ import {
   translate,
   panBy,
   zoomAt,
+  type Affine,
   type EditorState,
   type EditState,
   type LoadedImage,
@@ -57,6 +61,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const annotationsRef = useRef<HTMLCanvasElement>(null);
   const beforeRef = useRef<HTMLCanvasElement>(null);
+  const redactRef = useRef<HTMLCanvasElement>(null);
   const compare = useEditorState((s) => s.compare);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropTarget, setIsDropTarget] = useState(false);
@@ -79,8 +84,9 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   useEffect(() => {
     const canvas = canvasRef.current;
     const beforeCanvas = beforeRef.current;
+    const redactCanvas = redactRef.current;
     const container = containerRef.current;
-    if (!canvas || !beforeCanvas || !container) return;
+    if (!canvas || !beforeCanvas || !redactCanvas || !container) return;
     // A preview that can't be drawn shows the error screen instead of throwing (never uncaught).
     const fail = (error: unknown) => {
       if (disposed) return;
@@ -127,6 +133,8 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
           return;
         }
         renderPreview(renderer, container, state);
+        // Same task as the GPU frame: its canvas can still be read (no preserveDrawingBuffer).
+        paintRedactions(redactCanvas, canvas, state);
         if (state.compare !== null) drawBefore(state, image);
       } catch (error) {
         fail(error);
@@ -203,14 +211,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         void ensureAnnotationFonts(edit.annotations).then(schedule);
       }
 
-      const transform = cropView
-        ? compose(scale(dpr), translate(cropView.x, cropView.y), scale(cropView.scale))
-        : compose(
-            scale(dpr),
-            translate(vp.x, vp.y),
-            scale(vp.scale),
-            getOrientedToOutput(image, edit),
-          );
+      const transform = orientedToCanvas(state, dpr);
       ctx.save();
       if (!cropView && edit.geometry.cropShape === 'ellipse') {
         const out = getOutputSize(image, edit);
@@ -380,6 +381,15 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       />
 
       <canvas
+        ref={redactRef}
+        className="iu-stage__canvas iu-stage__redactions"
+        data-hidden={status !== 'ready' ? '' : undefined}
+        data-compare={compare !== null ? '' : undefined}
+        style={compareStyle}
+        aria-hidden="true"
+      />
+
+      <canvas
         ref={beforeRef}
         className="iu-stage__canvas iu-stage__before"
         data-hidden={status !== 'ready' || compare === null ? '' : undefined}
@@ -453,6 +463,49 @@ function errorMessage(error: Error | null, labels: Labels): string {
     case 'network':
       return labels.loadErrorNetwork;
   }
+}
+
+/** Oriented px → stage canvas (device) px, in the result view or the Adjust crop view. */
+function orientedToCanvas(state: EditorState, dpr: number): Affine {
+  const { image, edit, viewport: vp, cropView } = state;
+  if (cropView)
+    return compose(scale(dpr), translate(cropView.x, cropView.y), scale(cropView.scale));
+  return compose(
+    scale(dpr),
+    translate(vp.x, vp.y),
+    scale(vp.scale),
+    getOrientedToOutput(image!, edit),
+  );
+}
+
+/**
+ * Redactions for the preview, drawn from the GPU frame onto their own layer (same function as
+ * the export, so they look the same). Clipped to a round crop like the annotations.
+ */
+function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, state: EditorState) {
+  const { image, edit, cropView, viewport: vp } = state;
+  if (target.width !== source.width) target.width = source.width;
+  if (target.height !== source.height) target.height = source.height;
+  const ctx = target.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, target.width, target.height);
+  if (!image || edit.redactions.length === 0) return;
+  const dpr = window.devicePixelRatio || 1;
+  ctx.save();
+  if (!cropView && edit.geometry.cropShape === 'ellipse') {
+    const out = getOutputSize(image, edit);
+    ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
+    ctx.beginPath();
+    ctx.ellipse(out.width / 2, out.height / 2, out.width / 2, out.height / 2, 0, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  drawRedactions(ctx, source, edit.redactions, {
+    transform: orientedToCanvas(state, dpr),
+    reference: redactReference(getOrientedSize(image, edit.geometry)),
+  });
+  ctx.restore();
 }
 
 /** Renders into the stage canvas: the edited result, or the whole image while cropping. */

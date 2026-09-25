@@ -76,6 +76,10 @@ export type {
   ImageSource,
   LoadedImage,
   Rect,
+  RedactBox,
+  RedactBrush,
+  RedactStyle,
+  Redaction,
   ResizeState,
   ToolId,
 } from '@image-ultra/core';

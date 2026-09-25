@@ -371,3 +371,10 @@ export const IconKeyboard = createIcon(
     <path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M8 14h8" />
   </>,
 );
+export const IconBrush = createIcon(
+  'Brush',
+  <>
+    <path d="M19.5 4.5l-8.3 8.3" />
+    <path d="M11.2 12.8c-2.2-.6-4.2.9-4.5 3.1-.2 1.3-.9 2.3-2.2 2.9 2.6 1.3 6.3 1 7.8-1.4.9-1.4.7-3.1-1.1-4.6z" />
+  </>,
+);

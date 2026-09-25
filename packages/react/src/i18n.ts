@@ -1,4 +1,4 @@
-import type { CurveChannel, FinetuneState, ToolId } from '@image-ultra/core';
+import type { CurveChannel, FinetuneState, RedactStyle, ToolId } from '@image-ultra/core';
 
 /** Every user-facing string. Pass a partial object to `labels` to translate or rename. */
 export interface Labels {
@@ -138,6 +138,23 @@ export interface Labels {
   textDefault: string;
   editText: string;
   rotate: string;
+
+  /* Redact */
+  redactTools: string;
+  redactBox: string;
+  redactBrush: string;
+  redactStyle: string;
+  redactStyles: Record<RedactStyle, string>;
+  redactStrength: string;
+  brushSize: string;
+  redactColor: string;
+  redactClear: string;
+  redactDelete: string;
+  /** History label for a new area. */
+  redactArea: string;
+  redactMove: string;
+  redactHint: string;
+  redactBlurHint: string;
 
   /* Colour picker */
   color: string;
@@ -314,6 +331,21 @@ export const defaultLabels: Labels = {
   editText: 'Edit text',
   rotate: 'Rotate',
 
+  redactTools: 'Redact tools',
+  redactBox: 'Box',
+  redactBrush: 'Brush',
+  redactStyle: 'Style',
+  redactStyles: { pixelate: 'Pixelate', blur: 'Blur', solid: 'Solid' },
+  redactStrength: 'Strength',
+  brushSize: 'Brush size',
+  redactColor: 'Fill colour',
+  redactClear: 'Clear all',
+  redactDelete: 'Delete area',
+  redactArea: 'Redact',
+  redactMove: 'Move area',
+  redactHint: 'Drag over a face, name or number to hide it.',
+  redactBlurHint: 'For faces, names and numbers, Pixelate or Solid is safer.',
+
   color: 'Colour',
   colorNone: 'None',
   colorCustom: 'Custom colour',
@@ -328,7 +360,7 @@ export const defaultLabels: Labels = {
   removeLook: 'Remove look',
 };
 
-type NestedKey = 'tools' | 'finetune' | 'curveChannels' | 'annotateModes';
+type NestedKey = 'tools' | 'finetune' | 'curveChannels' | 'annotateModes' | 'redactStyles';
 
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
   [K in NestedKey]?: Partial<Labels[K]>;
@@ -343,5 +375,6 @@ export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
     finetune: { ...defaultLabels.finetune, ...overrides.finetune },
     curveChannels: { ...defaultLabels.curveChannels, ...overrides.curveChannels },
     annotateModes: { ...defaultLabels.annotateModes, ...overrides.annotateModes },
+    redactStyles: { ...defaultLabels.redactStyles, ...overrides.redactStyles },
   };
 }

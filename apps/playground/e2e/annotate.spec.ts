@@ -328,6 +328,77 @@ test.describe('Annotate tool', () => {
     await expect(selection).toHaveCount(0);
   });
 
+  test('switching tools drops an unfinished polygon', async ({ page }) => {
+    await openAnnotate(page);
+    await page.getByRole('radio', { name: /Polygon/ }).click();
+    for (const [fx, fy] of [
+      [0.3, 0.3],
+      [0.6, 0.3],
+    ] as const) {
+      const q = await stagePoint(page, fx, fy);
+      await page.mouse.click(q.x, q.y);
+    }
+    const draft = page.locator('.iu-annotate__draft');
+    await expect(draft).toHaveCount(1);
+    await page.getByRole('radio', { name: /Select/ }).click();
+    await expect(draft).toHaveCount(0);
+    await page.getByRole('radio', { name: /Polygon/ }).click();
+    await expect(draft).toHaveCount(0); // it doesn't come back either
+    expect(await shapes(page)).toHaveLength(0);
+  });
+
+  test('a selected polygon drags from the empty middle of its box', async ({ page }) => {
+    await openAnnotate(page);
+    await page.getByRole('radio', { name: /Polygon/ }).click();
+    for (const [fx, fy] of [
+      [0.3, 0.3],
+      [0.6, 0.3],
+      [0.45, 0.6],
+    ] as const) {
+      const q = await stagePoint(page, fx, fy);
+      await page.mouse.click(q.x, q.y);
+    }
+    await page.keyboard.press('Enter'); // closed, no fill: only the outline is paint
+    const before = (await shapes(page))[0] as { points: { x: number }[] };
+    await page.getByRole('radio', { name: /Select/ }).click();
+
+    // Inside the triangle's box but on no stroke.
+    const middle = await stagePoint(page, 0.45, 0.4);
+    await page.mouse.move(middle.x, middle.y);
+    await expect(page.locator('.iu-annotate-layer')).toHaveAttribute('data-cursor', 'move');
+    await page.mouse.down();
+    await page.mouse.move(middle.x + 60, middle.y, { steps: 4 });
+    await page.mouse.up();
+    const after = (await shapes(page))[0] as { points: { x: number }[] };
+    expect(after.points[0]!.x).toBeGreaterThan(before.points[0]!.x);
+    expect(await shapes(page)).toHaveLength(1);
+  });
+
+  test('cursor: move over the selected shape, pointer over others, crosshair on empty photo', async ({
+    page,
+  }) => {
+    await openAnnotate(page);
+    await page.getByRole('radio', { name: /Rectangle/ }).click();
+    await dragOnStage(page, [0.3, 0.3], [0.5, 0.5]); // selected
+    const layer = page.locator('.iu-annotate-layer');
+    const cursor = () => layer.evaluate((el) => getComputedStyle(el).cursor);
+    const inside = await stagePoint(page, 0.4, 0.4);
+    const empty = await stagePoint(page, 0.8, 0.8);
+
+    await page.mouse.move(inside.x, inside.y);
+    expect(await cursor()).toBe('move');
+    await page.mouse.down();
+    await page.mouse.move(inside.x + 20, inside.y + 10, { steps: 3 });
+    expect(await cursor()).toBe('grabbing');
+    await page.mouse.up();
+
+    await page.keyboard.press('Escape'); // deselect
+    await page.mouse.move(inside.x + 25, inside.y + 15);
+    expect(await cursor()).toBe('pointer'); // a click would select it
+    await page.mouse.move(empty.x, empty.y);
+    expect(await cursor()).toBe('crosshair'); // the Rectangle tool draws here
+  });
+
   test('tooltips render above panels instead of being clipped by them', async ({ page }) => {
     await openAnnotate(page);
     await page.getByRole('radio', { name: /Rectangle/ }).click();

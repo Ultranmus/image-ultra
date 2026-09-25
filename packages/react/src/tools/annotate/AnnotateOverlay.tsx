@@ -18,6 +18,7 @@ import {
   moveShape,
   normalizeDegrees,
   resizeRotatedBox,
+  rotatePoint,
   setShapeBox,
   shapeAt,
   simplifyPoints,
@@ -103,7 +104,17 @@ export function AnnotateOverlay() {
   const creatingText = useRef(false);
   const [guides, setGuides] = useState<{ x?: number; y?: number }[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  /** Cursor for what's under the pointer / what the current drag does (see `data-cursor`). */
+  const [hoverCursor, setHoverCursor] = useState<string | undefined>(undefined);
+  const [dragCursor, setDragCursor] = useState<string | undefined>(undefined);
   const [polygon, setPolygon] = useState<Point[]>([]);
+  // Switching tools (ControlBar, shortcut, anywhere) drops an unfinished polygon, like Esc.
+  // Adjusted during render (React's pattern for resetting state when a value changes).
+  const [polygonMode, setPolygonMode] = useState(ui.mode);
+  if (polygonMode !== ui.mode) {
+    setPolygonMode(ui.mode);
+    if (polygon.length > 0) setPolygon([]);
+  }
   const [cursor, setCursor] = useState<Point | null>(null);
   /** How the text editor opens: everything selected (new box) or the caret at an index. */
   const [editCaret, setEditCaret] = useState<number | 'all'>('all');
@@ -227,6 +238,11 @@ export function AnnotateOverlay() {
   /* ── Pointer ────────────────────────────────────────────────────── */
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    pointerDown(event);
+    setDragCursor(dragCursorFor(interaction.current));
+  };
+
+  const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!image || event.button !== 0 || !fromStage) return;
     if ((event.target as HTMLElement).closest('.iu-textedit, .iu-layers')) {
       // The text editor / Layers panel handle their own presses (no stage pan or zoom).
@@ -313,7 +329,20 @@ export function AnnotateOverlay() {
       store.getState().beginChange(labels.annotateModes.select);
     };
 
-    // 2. Select tool, or grabbing the already selected shape with any tool: move it.
+    // 2. Anywhere inside the selected shape's box (e.g. the empty middle of a line or polygon),
+    //    unless another shape on top is under the pointer: move it.
+    if (
+      selected &&
+      !selected.locked &&
+      (!hit || hit.id === selected.id) &&
+      insideBox(selected, p, tol)
+    ) {
+      capture();
+      move(selected, selected.type === 'text');
+      return;
+    }
+
+    // 3. Select tool, or grabbing the already selected shape with any tool: move it.
     if (hit && (ui.mode === 'select' || hit.id === ui.selectedId)) {
       capture();
       select(hit.id);
@@ -417,8 +446,15 @@ export function AnnotateOverlay() {
     if (press && Math.hypot(screen.x - press.screen.x, screen.y - press.screen.y) >= DRAG_START)
       cancelLongPress();
     if (!it) {
-      if (ui.mode === 'select')
-        setHoverId(shapeAt(shapes, p, HIT_TOLERANCE / k, measureTextHeight)?.id ?? null);
+      const over = shapeAt(shapes, p, HIT_TOLERANCE / k, measureTextHeight);
+      if (ui.mode === 'select') setHoverId(over?.id ?? null);
+      // Over the selected shape a drag moves it; over another one a click selects it.
+      const onSelected =
+        selected &&
+        !selected.locked &&
+        (!over || over.id === selected.id) &&
+        insideBox(selected, p, HIT_TOLERANCE / k);
+      setHoverCursor(onSelected ? 'move' : over ? 'pointer' : undefined);
       return;
     }
     if (it.pointerId !== event.pointerId) return;
@@ -528,6 +564,7 @@ export function AnnotateOverlay() {
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     cancelLongPress();
+    setDragCursor(undefined);
     const it = interaction.current;
     if (!it || it.pointerId !== event.pointerId) return;
     interaction.current = null;
@@ -755,13 +792,17 @@ export function AnnotateOverlay() {
       ref={rootRef}
       className="iu-annotate-layer"
       data-mode={ui.mode}
+      data-cursor={dragCursor ?? hoverCursor}
       tabIndex={-1}
       aria-label={labels.tools.annotate}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      onPointerLeave={() => setHoverId(null)}
+      onPointerLeave={() => {
+        setHoverId(null);
+        setHoverCursor(undefined);
+      }}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
     >
@@ -1044,7 +1085,7 @@ function squareEnd(from: Point, to: Point): Point {
 }
 
 /** Resize cursor that matches the handle direction after rotation. */
-function cursorFor(handle: BoxHandle, rotation: number): string {
+export function cursorFor(handle: BoxHandle, rotation: number): string {
   const base: Record<BoxHandle, number> = {
     n: 0,
     ne: 45,
@@ -1058,4 +1099,25 @@ function cursorFor(handle: BoxHandle, rotation: number): string {
   const angle = (((base[handle] + rotation) % 180) + 180) % 180;
   const cursors = ['ns', 'nesw', 'ew', 'nwse'];
   return cursors[Math.round(angle / 45) % 4]!;
+}
+
+/** Cursor while a drag is under way (the pointer is captured, so the layer's cursor shows). */
+function dragCursorFor(it: Interaction | null): string | undefined {
+  if (!it) return undefined;
+  if (it.kind === 'resize') return cursorFor(it.handle, it.shape.rotation);
+  if (it.kind === 'move' || it.kind === 'rotate' || it.kind === 'endpoint') return 'grabbing';
+  return undefined; // drawing: keep the tool's crosshair
+}
+
+/** Is `p` inside the shape's (rotated) selection box? Thin shapes get their stroke as margin. */
+function insideBox(shape: Shape, p: Point, tolerance: number): boolean {
+  const box = getShapeBox(shape, textHeight(shape));
+  const local = rotatePoint(p, boxCenter(box), -shape.rotation);
+  const pad = tolerance + ('strokeWidth' in shape ? shape.strokeWidth / 2 : 0);
+  return (
+    local.x >= box.x - pad &&
+    local.x <= box.x + box.width + pad &&
+    local.y >= box.y - pad &&
+    local.y <= box.y + box.height + pad
+  );
 }

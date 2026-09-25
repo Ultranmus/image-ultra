@@ -282,3 +282,45 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   visible while typing and can be dragged without leaving editing; typing + resizing is one undo step
   (DECISIONS #67).
 - Tests: 54 e2e (+ resize a text box mid-edit and keep typing).
+
+## 2026-09-25 · Phase 6.2 — Redact
+
+- Core: `EditState.redactions` (box / brush; pixelate · blur · solid; strength; colour), parsing,
+  hit-testing, move, rotate/flip with the photo (`state/redactions.ts`); `drawRedactions`
+  (`render/redactions.ts`) shared by preview and export — copies the rendered region, pixelates
+  (high-quality downscale → nearest upscale), blurs (downscale/upscale + `ctx.filter`) or fills,
+  masked to the box / stroke. Strength relative to the image's short side (DECISIONS #68).
+- Export: redactions after the colour pipeline, under annotations, inside a round crop.
+- Stage: own redaction layer, drawn from the GPU frame in the same task; clipped to the "after" side
+  in compare.
+- Redact tool: Box / Brush (+ brush size popover), style Pixelate (default) / Blur / Solid, Strength
+  ruler or fill colour, Delete, Clear all; stage: drag to draw, click to select (handles on boxes),
+  drag to move/resize, Delete / Esc, brush-size cursor, hover outline. Blur shows a "Pixelate or
+  Solid is safer" hint.
+- Tests: 93 unit (+ redactions) · 59 e2e (+ `redact.spec.ts`: pixel blocks in export, solid colour,
+  select/restyle/move/delete/undo, brush + Clear all, rotate carries areas, compare).
+- Fixes found while testing: after "Clear all" / Delete (Redact) and Delete (Annotate ControlBar)
+  the button vanished or disabled itself and keyboard focus left the editor, so ⌘Z stopped working —
+  focus now returns to the photo layer. The phone-TopBar e2e measured the playground frame mid
+  width-animation (flaky) — it now disables the transition.
+
+## 2026-09-25 · Phase 6.2 — owner review round 1
+
+- Brush areas couldn't be resized (dashed outline, no handles) and only moved when pressed exactly on
+  the stroke → every area now has the solid outline + 8 handles; a press anywhere inside the selected
+  outline moves it; resizing scales the stroke to fit exactly (`resizeRedaction`).
+- The brush size control only affected the next stroke → with a brush area selected (either mode)
+  it shows and changes that area's width, one undo step per drag.
+- Tests: 94 unit · 61 e2e (+ brush handles/resize/move, brush size on a selected Solid area).
+- Redact areas rotate (owner): round rotate handle on boxes and brush areas, rotated outline and
+  handles, resize along the area's own axes, move from inside the rotated outline; rotate/flip of the
+  photo carries the angle (DECISIONS #69). Tests: 95 unit · 62 e2e.
+- Cursors (owner): Annotate and Redact show move over the selected element, pointer over other
+  elements, resize/grab on handles, grabbing while dragging, crosshair only on empty photo with a
+  drawing tool (DECISIONS #70). Tests: 64 e2e (+ cursor checks in both tools).
+- Redact Brush cursor (owner): a brush-shaped cursor on empty photo instead of crosshair + size
+  circle; over areas the usual move/pointer cursors, and the circle is gone.
+- Annotate (owner): a selected line / pen stroke / polygon drags from anywhere inside its selection
+  box, not only from the stroke; the move cursor shows there (DECISIONS #71). Tests: 65 e2e.
+- Annotate (owner): switching tools from the ControlBar left an unfinished polygon's points on the
+  photo — any tool change now drops the draft, like Esc. Tests: 66 e2e.

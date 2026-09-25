@@ -130,6 +130,24 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - **Split compare:** thin white divider (`--iu-crop-frame`) across the stage with a round 28px grab
   handle (role=slider, ←/→ move it), "Before" / "After" pills at the top on each side
   (`--iu-overlay` background). Before = same crop/rotation, no colour or annotations.
+- **Redact** ControlBar: row 1 = Box / Brush icon radios (+ brush size popover in Brush mode) —
+  style SegmentedControl Pixelate · Blur · Solid (default Pixelate) — Delete (when selected) and
+  "Clear all" on the right. Row 2 = Strength RulerSlider (0–100) for Pixelate/Blur, or the colour
+  button for Solid. With Blur a muted hint: "For faces, names and numbers, Pixelate or Solid is
+  safer." Nothing drawn and nothing selected → the controls set the style for the next area.
+- **Redact stage:** Box = drag a rectangle (a plain click draws nothing); Brush = paint, round, size
+  relative to the photo. The effect shows live. Click an area to select it (accent outline + 8 white
+  resize handles + the round rotate handle for boxes and brush areas alike — a brush stroke scales
+  to fit; rotation soft-snaps to 90°, Shift = 15° steps), press anywhere
+  inside the outline and drag to move, the brush size control changes a selected brush area, Delete removes,
+  Esc deselects, hover outline. Brush size is set in its popover (no circle around the cursor). Selected area → the controls edit it. Compare's "before" side shows
+  no redactions.
+- **Cursors on the photo (Annotate + Redact):** move anywhere inside the selected element's box (a
+  drag there moves it, even the empty middle of a line or polygon),
+  pointer over any other element (a click selects it), resize cursors on handles (turned with the
+  element), grab on the rotate handle, grabbing while dragging, crosshair on empty photo with a
+  drawing tool (text cursor for the Text tool, a brush cursor for Redact's Brush), default arrow
+  with Select. No size circle follows the pointer.
 - **Popovers and menus** (Radix, portalled inside `.iu-root`) are the only floating UI besides the
   Layers panel and tooltips.
 - **Tooltips:** one shared tooltip for every `data-tooltip` element — below the element (flips above

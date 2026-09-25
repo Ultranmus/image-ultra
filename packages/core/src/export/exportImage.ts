@@ -1,6 +1,13 @@
 import { loadImage } from '../loader/loadImage';
 import { createEditState, parseEditState, type EditState } from '../state/editState';
-import { compose, getOutputSize, IDENTITY, scale as scaleBy } from '../state/geometry';
+import {
+  compose,
+  getOrientedSize,
+  getOutputSize,
+  IDENTITY,
+  scale as scaleBy,
+} from '../state/geometry';
+import { redactReference } from '../state/redactions';
 import {
   drawAnnotations,
   ensureAnnotationFonts,
@@ -8,6 +15,7 @@ import {
   loadAnnotationAssets,
 } from '../render/annotations';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
+import { drawRedactions } from '../render/redactions';
 import type { AnyCanvas, RendererKind } from '../render/renderer';
 import type { ImageSource, LoadedImage, Size } from '../types';
 
@@ -111,12 +119,15 @@ export async function renderToCanvas(
       }
       ctx.drawImage(canvas, 0, 0);
 
-      // Vector annotations on top (sharp at any size), clipped to a round crop.
-      if (state.annotations.length > 0) {
+      // Redactions, then vector annotations on top (sharp at any size), clipped to a round crop.
+      const hasRedactions = state.redactions.length > 0;
+      const hasAnnotations = state.annotations.length > 0;
+      if (hasRedactions || hasAnnotations) {
         const [assets] = await Promise.all([
-          loadAnnotationAssets(state),
+          hasAnnotations ? loadAnnotationAssets(state) : new Map<string, ImageBitmap>(),
           ensureAnnotationFonts(state.annotations),
         ]);
+        const transform = compose(scaleBy(scale), getOrientedToOutput(image, state));
         ctx.save();
         if (state.geometry.cropShape === 'ellipse') {
           ctx.beginPath();
@@ -131,10 +142,13 @@ export async function renderToCanvas(
           );
           ctx.clip();
         }
-        drawAnnotations(ctx, state.annotations, {
-          transform: compose(scaleBy(scale), getOrientedToOutput(image, state)),
-          assets,
-        });
+        if (hasRedactions) {
+          drawRedactions(ctx, out, state.redactions, {
+            transform,
+            reference: redactReference(getOrientedSize(image, state.geometry)),
+          });
+        }
+        if (hasAnnotations) drawAnnotations(ctx, state.annotations, { transform, assets });
         ctx.restore();
       }
       return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };

@@ -126,7 +126,7 @@ function parseShape(input: unknown): Shape | null {
   }
 }
 
-function points(input: unknown): Point[] | null {
+export function points(input: unknown): Point[] | null {
   if (!Array.isArray(input)) return null;
   const out: Point[] = [];
   for (const p of input) {
@@ -143,7 +143,7 @@ function cap(input: unknown): LineCap {
 }
 
 /** Only plain colour strings are accepted (no `url(...)`, no expressions). */
-function paint(input: unknown): Paint {
+export function paint(input: unknown): Paint {
   if (typeof input !== 'string') return null;
   const value = input.trim();
   return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\)|[a-z]{3,20})$/i.test(value)
@@ -151,15 +151,15 @@ function paint(input: unknown): Paint {
     : null;
 }
 
-function num(input: unknown, fallback: number, min: number, max: number): number {
+export function num(input: unknown, fallback: number, min: number, max: number): number {
   const n = finite(input);
   return n === null ? fallback : Math.min(max, Math.max(min, n));
 }
 
-function finite(input: unknown): number | null {
+export function finite(input: unknown): number | null {
   return typeof input === 'number' && Number.isFinite(input) ? input : null;
 }
 
-function isRecord(input: unknown): input is Record<string, unknown> {
+export function isRecord(input: unknown): input is Record<string, unknown> {
   return typeof input === 'object' && input !== null && !Array.isArray(input);
 }

@@ -116,7 +116,9 @@ test.describe('Compare, history, shortcuts', () => {
     await openEditor(page);
     for (const width of [390, 320]) {
       await page.evaluate((w) => {
-        document.querySelector<HTMLElement>('.pg-frame')!.style.width = `${w}px`;
+        const frame = document.querySelector<HTMLElement>('.pg-frame')!;
+        frame.style.transition = 'none'; // measure the final size, not the animation
+        frame.style.width = `${w}px`;
       }, width);
       await expect(page.getByRole('button', { name: 'History' })).toBeVisible();
       await expect(page.locator('.iu-zoom__value')).toBeVisible();

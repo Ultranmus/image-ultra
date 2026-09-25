@@ -1,5 +1,6 @@
 import { parseAnnotations } from './parseAnnotations';
 import type { Shape } from './annotations';
+import { parseRedactions, type Redaction } from './redactions';
 /**
  * EditState — the single, serializable description of every edit.
  * The source image is never modified; rendering = source image + EditState.
@@ -194,6 +195,8 @@ export interface EditState {
   filter: FilterState | null;
   /** Vector shapes on top of the photo, bottom → top (see `annotations.ts`). */
   annotations: Shape[];
+  /** Hidden areas (pixelate / blur / solid), drawn under the annotations (see `redactions.ts`). */
+  redactions: Redaction[];
   /** Output size in pixels, or `null` to keep the crop's size. */
   resize: ResizeState | null;
   assets: Record<string, EditAsset>;
@@ -246,6 +249,7 @@ export function createEditState(): EditState {
     curves: createCurvesState(),
     filter: null,
     annotations: [],
+    redactions: [],
     resize: null,
     assets: {},
   };
@@ -343,6 +347,7 @@ export function parseEditState(input: unknown): EditState {
 
   state.filter = parseFilter(value['filter']);
   state.annotations = parseAnnotations(value['annotations']);
+  state.redactions = parseRedactions(value['redactions']);
 
   if (isRecord(value['resize'])) {
     const width = finite(value['resize']['width']);

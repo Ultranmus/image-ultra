@@ -164,6 +164,27 @@ export {
   type DrawAnnotationsOptions,
   type TextLayout,
 } from './render/annotations';
+export {
+  DEFAULT_REDACT_COLOR,
+  DEFAULT_REDACT_STRENGTH,
+  REDACT_STYLES,
+  flipRedactions,
+  hitTestRedaction,
+  moveRedaction,
+  redactBlockSize,
+  redactBlurRadius,
+  redactReference,
+  redactionAt,
+  redactionBounds,
+  redactionCorners,
+  resizeRedaction,
+  rotateRedactions,
+  type RedactBox,
+  type RedactBrush,
+  type RedactStyle,
+  type Redaction,
+} from './state/redactions';
+export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
 export { applyLook, createLook, lookMatches, parseLooks, type Look } from './state/looks';
 export {
   FILTER_PRESETS,

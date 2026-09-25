@@ -40,7 +40,12 @@
     clip-path: inset(0 calc((1 - var(--iu-compare)) * 100%) 0 0);
   }
 
-  .iu-stage__annotations[data-compare] {
+  .iu-stage__redactions {
+    pointer-events: none;
+  }
+
+  .iu-stage__annotations[data-compare],
+  .iu-stage__redactions[data-compare] {
     clip-path: inset(0 0 0 calc(var(--iu-compare) * 100%));
   }
 

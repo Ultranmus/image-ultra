@@ -182,7 +182,7 @@ export function getShapeBounds(shape: Shape, textHeight?: number): Box {
   return pointsBox(getShapeCorners(shape, textHeight));
 }
 
-function distanceToSegment(p: Point, a: Point, b: Point): number {
+export function distanceToSegment(p: Point, a: Point, b: Point): number {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const len2 = dx * dx + dy * dy;

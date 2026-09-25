@@ -1,6 +1,7 @@
 import { parseAnnotations } from './parseAnnotations';
 import type { Shape } from './annotations';
 import { parseRedactions, type Redaction } from './redactions';
+import { parseBackground, parseFrame, type BackgroundState, type FrameState } from './frame';
 /**
  * EditState — the single, serializable description of every edit.
  * The source image is never modified; rendering = source image + EditState.
@@ -197,6 +198,10 @@ export interface EditState {
   annotations: Shape[];
   /** Hidden areas (pixelate / blur / solid), drawn under the annotations (see `redactions.ts`). */
   redactions: Redaction[];
+  /** Decorative frame over the photo's edges (see `frame.ts`). */
+  frame: FrameState | null;
+  /** What shows through transparent parts (colour, image or a blurred copy). */
+  background: BackgroundState | null;
   /** Output size in pixels, or `null` to keep the crop's size. */
   resize: ResizeState | null;
   assets: Record<string, EditAsset>;
@@ -250,6 +255,8 @@ export function createEditState(): EditState {
     filter: null,
     annotations: [],
     redactions: [],
+    frame: null,
+    background: null,
     resize: null,
     assets: {},
   };
@@ -348,6 +355,8 @@ export function parseEditState(input: unknown): EditState {
   state.filter = parseFilter(value['filter']);
   state.annotations = parseAnnotations(value['annotations']);
   state.redactions = parseRedactions(value['redactions']);
+  state.frame = parseFrame(value['frame']);
+  state.background = parseBackground(value['background']);
 
   if (isRecord(value['resize'])) {
     const width = finite(value['resize']['width']);

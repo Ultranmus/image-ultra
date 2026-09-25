@@ -13,7 +13,9 @@ import {
   ensureAnnotationFonts,
   getOrientedToOutput,
   loadAnnotationAssets,
+  loadAssetBitmap,
 } from '../render/annotations';
+import { drawBackground, drawFrame } from '../render/frame';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
 import { drawRedactions } from '../render/redactions';
 import type { AnyCanvas, RendererKind } from '../render/renderer';
@@ -108,49 +110,75 @@ export async function renderToCanvas(
         checker: null,
         smooth: true,
       });
-      // Copy onto a 2D canvas: flattens onto a background if asked and gives a uniform encoder.
-      const out = createCanvas(size.width, size.height);
-      const ctx = out.getContext('2d') as
-        CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
-      if (!ctx) throw new Error('image-ultra: no 2D canvas context available.');
-      if (options.background) {
-        ctx.fillStyle = options.background;
-        ctx.fillRect(0, 0, size.width, size.height);
-      }
+      // Copy onto a 2D canvas: a uniform encoder, and room for the 2D layers below.
+      let out = createCanvas(size.width, size.height);
+      let ctx = context2d(out);
       ctx.drawImage(canvas, 0, 0);
 
-      // Redactions, then vector annotations on top (sharp at any size), clipped to a round crop.
-      const hasRedactions = state.redactions.length > 0;
-      const hasAnnotations = state.annotations.length > 0;
-      if (hasRedactions || hasAnnotations) {
-        const [assets] = await Promise.all([
-          hasAnnotations ? loadAnnotationAssets(state) : new Map<string, ImageBitmap>(),
-          ensureAnnotationFonts(state.annotations),
-        ]);
-        const transform = compose(scaleBy(scale), getOrientedToOutput(image, state));
+      const transform = compose(scaleBy(scale), getOrientedToOutput(image, state));
+      const roundClip = (c: Context2D) => {
+        if (state.geometry.cropShape !== 'ellipse') return;
+        c.beginPath();
+        c.ellipse(
+          size.width / 2,
+          size.height / 2,
+          size.width / 2,
+          size.height / 2,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        c.clip();
+      };
+
+      // 1. Redactions (from the rendered pixels), inside a round crop.
+      if (state.redactions.length > 0) {
         ctx.save();
-        if (state.geometry.cropShape === 'ellipse') {
-          ctx.beginPath();
-          ctx.ellipse(
-            size.width / 2,
-            size.height / 2,
-            size.width / 2,
-            size.height / 2,
-            0,
-            0,
-            Math.PI * 2,
-          );
-          ctx.clip();
-        }
-        if (hasRedactions) {
-          drawRedactions(ctx, out, state.redactions, {
-            transform,
-            reference: redactReference(getOrientedSize(image, state.geometry)),
-          });
-        }
-        if (hasAnnotations) drawAnnotations(ctx, state.annotations, { transform, assets });
+        roundClip(ctx);
+        drawRedactions(ctx, out, state.redactions, {
+          transform,
+          reference: redactReference(getOrientedSize(image, state.geometry)),
+        });
         ctx.restore();
       }
+
+      // 2. Fill underneath (its blur uses the already redacted result), or flatten for JPEG.
+      if (state.background || options.background) {
+        const flat = createCanvas(size.width, size.height);
+        const fctx = context2d(flat);
+        if (options.background) {
+          fctx.fillStyle = options.background;
+          fctx.fillRect(0, 0, size.width, size.height);
+        }
+        if (state.background) {
+          const asset =
+            state.background.kind === 'image' ? state.assets[state.background.assetId] : undefined;
+          const bitmap = asset ? await loadAssetBitmap(asset.src) : null;
+          drawBackground(fctx, state.background, size, {
+            result: out,
+            ...(bitmap && { image: bitmap }),
+          });
+        }
+        fctx.drawImage(out, 0, 0);
+        out = flat;
+        ctx = fctx;
+      }
+
+      // 3. Vector annotations (sharp at any size), inside a round crop.
+      if (state.annotations.length > 0) {
+        const [assets] = await Promise.all([
+          loadAnnotationAssets(state),
+          ensureAnnotationFonts(state.annotations),
+        ]);
+        ctx.save();
+        roundClip(ctx);
+        drawAnnotations(ctx, state.annotations, { transform, assets });
+        ctx.restore();
+      }
+
+      // 4. The frame on top of everything.
+      if (state.frame) drawFrame(ctx, state.frame, size);
+
       return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };
     } catch (error) {
       lastError = error;
@@ -236,4 +264,12 @@ export function fitOutput(
       height: Math.max(1, Math.round(full.height * scale)),
     },
   };
+}
+
+type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+function context2d(canvas: AnyCanvas): Context2D {
+  const ctx = canvas.getContext('2d') as Context2D | null;
+  if (!ctx) throw new Error('image-ultra: no 2D canvas context available.');
+  return ctx;
 }

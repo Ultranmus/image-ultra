@@ -804,3 +804,45 @@
     text-align: center;
   }
 }
+
+/* ── ColorStrip ────────────────────────────────────────── */
+@layer image-ultra {
+  /* Inline row of colours (+ custom picker at the end); scrolls sideways when narrow. */
+  .iu-colorstrip {
+    display: flex;
+    gap: var(--iu-space-2);
+    max-width: 100%;
+    padding: var(--iu-space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .iu-colorstrip__swatch {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--iu-border-strong);
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-dot);
+    cursor: pointer;
+  }
+
+  .iu-colorstrip__swatch[aria-checked='true'] {
+    box-shadow:
+      0 0 0 2px var(--iu-surface-1),
+      0 0 0 4px var(--iu-accent-text);
+  }
+
+  .iu-colorstrip__swatch:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  /* Custom: a rainbow ring around the chosen custom colour (or a full rainbow when none). */
+  .iu-colorstrip__custom {
+    background:
+      radial-gradient(circle, var(--iu-dot, transparent) 0 55%, transparent 56%),
+      conic-gradient(#ff3b30, #ffcc00, #34c759, #00c7be, #0a84ff, #af52de, #ff3b30);
+  }
+}

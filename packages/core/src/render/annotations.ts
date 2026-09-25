@@ -157,6 +157,19 @@ export function textIndexAt(shape: TextShape, point: Point): number {
 
 const assetCache = new Map<string, Promise<ImageBitmap | null>>();
 
+/** Decodes an asset's image once (cached by source); `null` if it can't be loaded. */
+export function loadAssetBitmap(src: string): Promise<ImageBitmap | null> {
+  let pending = assetCache.get(src);
+  if (!pending) {
+    pending = loadImage(src).then(
+      (img) => img.bitmap,
+      () => null,
+    );
+    assetCache.set(src, pending);
+  }
+  return pending;
+}
+
 /** Loads every image used by image shapes (cached by source). */
 export async function loadAnnotationAssets(state: EditState): Promise<Map<string, ImageBitmap>> {
   const result = new Map<string, ImageBitmap>();
@@ -165,15 +178,7 @@ export async function loadAnnotationAssets(state: EditState): Promise<Map<string
       if (shape.type !== 'image') return;
       const asset = state.assets[shape.assetId];
       if (!asset) return;
-      let pending = assetCache.get(asset.src);
-      if (!pending) {
-        pending = loadImage(asset.src).then(
-          (img) => img.bitmap,
-          () => null,
-        );
-        assetCache.set(asset.src, pending);
-      }
-      const bitmap = await pending;
+      const bitmap = await loadAssetBitmap(asset.src);
       if (bitmap) result.set(shape.assetId, bitmap);
     }),
   );

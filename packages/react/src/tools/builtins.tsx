@@ -21,6 +21,8 @@ import { FilterControls } from './filter/FilterControls';
 import { AnnotateControls } from './annotate/AnnotateControls';
 import { AnnotateOverlay } from './annotate/AnnotateOverlay';
 import { RedactControls } from './redact/RedactControls';
+import { FrameControls } from './frame/FrameControls';
+import { FillControls } from './fill/FillControls';
 import { RedactOverlay } from './redact/RedactOverlay';
 
 /** Placeholder panel for tools whose UI arrives in a later phase. */
@@ -54,8 +56,8 @@ export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
     StageOverlay: RedactOverlay,
   }),
   sticker: placeholder('sticker', IconSticker),
-  frame: placeholder('frame', IconFrame),
-  fill: placeholder('fill', IconFill),
+  frame: defineTool({ id: 'frame', icon: IconFrame, Controls: FrameControls }),
+  fill: defineTool({ id: 'fill', icon: IconFill, Controls: FillControls }),
   resize: defineTool({ id: 'resize', icon: IconResize, Controls: ResizeControls }),
   watermark: placeholder('watermark', IconWatermark),
 };

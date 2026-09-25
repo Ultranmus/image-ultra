@@ -30,6 +30,8 @@ uniform bool u_checker;
 uniform vec3 u_checkerA;
 uniform vec3 u_checkerB;
 uniform float u_checkerSize;
+// The canvas expects premultiplied colour (on-screen previews): transparent pixels must be black.
+uniform bool u_premultiply;
 
 out vec4 outColor;
 
@@ -70,7 +72,7 @@ void writeFinal(vec3 c, float alpha) {
     vec3 bg = mod(cell.x + cell.y, 2.0) < 1.0 ? u_checkerA : u_checkerB;
     outColor = vec4(mix(bg, c, alpha), 1.0);
   } else {
-    outColor = vec4(c, alpha);
+    outColor = u_premultiply ? vec4(c * alpha, alpha) : vec4(c, alpha);
   }
 }
 `;

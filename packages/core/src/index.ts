@@ -158,6 +158,7 @@ export {
   getOrientedToOutput,
   layoutText,
   loadAnnotationAssets,
+  loadAssetBitmap,
   measureTextHeight,
   textFont,
   textIndexAt,
@@ -185,6 +186,16 @@ export {
   type Redaction,
 } from './state/redactions';
 export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
+export {
+  DEFAULT_FRAME_COLOR,
+  DEFAULT_FRAME_SIZE,
+  FRAME_SIZE_RANGE,
+  FRAME_STYLES,
+  type BackgroundState,
+  type FrameState,
+  type FrameStyle,
+} from './state/frame';
+export { drawBackground, drawFrame, type DrawBackgroundOptions } from './render/frame';
 export { applyLook, createLook, lookMatches, parseLooks, type Look } from './state/looks';
 export {
   FILTER_PRESETS,

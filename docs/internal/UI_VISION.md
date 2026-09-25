@@ -142,6 +142,16 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   inside the outline and drag to move, the brush size control changes a selected brush area, Delete removes,
   Esc deselects, hover outline. Brush size is set in its popover (no circle around the cursor). Selected area → the controls edit it. Compare's "before" side shows
   no redactions.
+- **Frame** ControlBar: a thumbnail PresetStrip (the current photo with each frame): None, Border,
+  Rounded, Bevel, Line, Double line, Inset, Plus, Lumber, Corners, Polaroid. Row 2 (not for None): Size RulerSlider (1–15 % of
+  the photo's short side) + colour button. Frames are drawn over the photo's edges — the image size
+  never changes — on top of everything else (annotations included).
+- **Fill** ControlBar: SegmentedControl None · Colour · Image · Blurred photo on top; the chosen
+  kind's options **underneath** (owner): Colour = an inline **ColorStrip** (32px round swatches like
+  the filter strip, selected = accent ring, the last button = custom colour → popover with the HSV
+  picker); Image = "Choose image…" + a small preview; None / Blurred photo = a muted hint that Fill
+  shows where the photo is transparent (PNGs, round crops). Rows scroll sideways on narrow editors.
+  JPEG export uses the fill instead of white.
 - **Cursors on the photo (Annotate + Redact):** move anywhere inside the selected element's box (a
   drag there moves it, even the empty middle of a line or polygon),
   pointer over any other element (a click selects it), resize cursors on handles (turned with the

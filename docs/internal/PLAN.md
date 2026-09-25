@@ -129,7 +129,7 @@ Approved 2026-09-25 (order below). Multi-select moved to Phase 7; Sticker added 
 - [x] **6.1** Before/after compare (hold `\` or the Compare button; click = split view with a
       draggable divider), History popover (jump to any step), keyboard shortcuts popover (`?`)
 - [x] **6.2** Redact (pixelate default / blur / solid; Box + Brush; select, move, resize, delete)
-- [ ] **6.3** Frames & borders; Fill = background colour/image behind transparent areas
+- [x] **6.3** Frames & borders; Fill = background colour/image behind transparent areas
 - [ ] **6.4** Watermark (text/image, position presets, tile, opacity); Sticker (built-in set + own
       images, placed like shapes)
 - [ ] **6.5** EXIF strip option on export; copy / paste shapes (⌘C / ⌘V, also between photos)

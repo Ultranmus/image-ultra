@@ -50,6 +50,7 @@ import {
   type SizeStep,
 } from './state';
 import { shapeActions } from './actions';
+import { fileToAsset } from '../assets';
 
 const MODE_ICONS: Record<AnnotateMode, (p: IconProps) => React.JSX.Element> = {
   select: IconPointer,
@@ -543,39 +544,19 @@ function SizeChooser({
   );
 }
 
-/** Reads an image file into a (downscaled) data-URL asset + an image shape centred on the crop. */
+/** Reads an image file into an asset + an image shape centred on the crop. */
 async function createImageShape(
   file: File,
   image: { width: number; height: number },
   edit: EditState,
 ) {
-  if (!file.type.startsWith('image/')) return null;
-  const bitmap = await createImageBitmap(file);
-  const k = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-  const w = Math.max(1, Math.round(bitmap.width * k));
-  const h = Math.max(1, Math.round(bitmap.height * k));
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  const src = canvas.toDataURL('image/webp', 0.9);
+  const asset = await fileToAsset(file, 'annotate');
+  if (!asset) return null;
   const crop = getCropRect(image, edit.geometry);
   const width = crop.width * 0.4;
-  const height = (width * h) / w;
-  const id = `asset-${createShapeId()}`;
+  const height = (width * asset.value.height) / asset.value.width;
   return {
-    asset: {
-      id,
-      value: {
-        kind: 'raster' as const,
-        src,
-        width: w,
-        height: h,
-        mimeType: 'image/webp',
-        createdBy: 'annotate',
-      },
-    },
+    asset,
     shape: {
       id: createShapeId(),
       type: 'image' as const,
@@ -585,7 +566,7 @@ async function createImageShape(
       y: crop.y + (crop.height - height) / 2,
       width,
       height,
-      assetId: id,
+      assetId: asset.id,
     },
   };
 }

@@ -144,7 +144,8 @@ function hsvToHex({ h, s, v }: Hsv): string {
     .join('')}`;
 }
 
-function HsvPicker({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
+/** Saturation/brightness area, hue slider, hex input and eyedropper. */
+export function HsvPicker({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
   const labels = useLabels();
   const [hsv, setHsv] = useState(() => hexToHsv(value));
   const [text, setText] = useState(value);

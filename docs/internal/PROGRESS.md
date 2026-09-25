@@ -324,3 +324,27 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   box, not only from the stroke; the move cursor shows there (DECISIONS #71). Tests: 65 e2e.
 - Annotate (owner): switching tools from the ControlBar left an unfinished polygon's points on the
   photo — any tool change now drops the draft, like Esc. Tests: 66 e2e.
+
+## 2026-09-26 · Phase 6.3 — Frame & Fill
+
+- Plan approved (owner): frames draw over the photo's edges (size unchanged); "extend canvas" moved to
+  Phase 7 (BACKLOG → Planned later). DECISIONS #72–73.
+- Core: `EditState.frame` (border / rounded / line / double / corners / polaroid, size, colour) and
+  `EditState.background` (colour / image asset / blur), parsing; `drawFrame` + `drawBackground`
+  (`render/frame.ts`); `loadAssetBitmap` (cached asset decode). Export order: photo → redactions →
+  fill underneath (blur taken from the redacted result) → annotations → frame; JPEG uses the fill.
+- Preview: fill canvas under the GPU canvas, rendered without the checkerboard; frame on the top 2D
+  layer (clipped to "after" in compare). Found while building: with the checkerboard off, the preview
+  canvas (premultiplied) showed colour in transparent pixels → shader premultiplies when the canvas
+  does (`u_premultiply`). Blur fill samples the solid middle of the result so corners never darken.
+- Frame tool: thumbnail strip (current photo + each frame), Size ruler (1–15 %), colour. Fill tool:
+  None / Colour / Image / Blurred photo, colour picker or "Choose image…" with preview, hint.
+  `tools/assets.ts` (`fileToAsset`) shared with Annotate's image insert.
+- Tests: 98 unit (+ frame/fill parsing) · 70 e2e (+ `frame-fill.spec.ts`: border pixels & size,
+  size/colour/style switching, Polaroid bottom, colour fill in PNG + JPEG corners, blur and image
+  fills, None).
+- More frames (owner, compared with Pintura): Bevel, Inset, Plus, Lumber — 10 styles + None;
+  thumbnails draw frames thicker so thin styles read at 52px. Tests: 71 e2e.
+- Fill layout (owner): options moved under the kind switch; Colour is now an inline `ColorStrip`
+  (new reusable control: swatches + custom picker button → HSV popover; `HsvPicker` exported);
+  responsive to 320px. Tests: 72 e2e.

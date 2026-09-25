@@ -1,4 +1,10 @@
-import type { CurveChannel, FinetuneState, RedactStyle, ToolId } from '@image-ultra/core';
+import type {
+  CurveChannel,
+  FinetuneState,
+  FrameStyle,
+  RedactStyle,
+  ToolId,
+} from '@image-ultra/core';
 
 /** Every user-facing string. Pass a partial object to `labels` to translate or rename. */
 export interface Labels {
@@ -155,6 +161,18 @@ export interface Labels {
   redactMove: string;
   redactHint: string;
   redactBlurHint: string;
+
+  /* Frame & Fill */
+  frames: string;
+  frameNone: string;
+  frameStyles: Record<FrameStyle, string>;
+  frameSize: string;
+  frameColor: string;
+  fillKind: string;
+  fillKinds: Record<'none' | 'color' | 'image' | 'blur', string>;
+  backgroundColor: string;
+  fillChooseImage: string;
+  fillHint: string;
 
   /* Colour picker */
   color: string;
@@ -346,6 +364,28 @@ export const defaultLabels: Labels = {
   redactHint: 'Drag over a face, name or number to hide it.',
   redactBlurHint: 'For faces, names and numbers, Pixelate or Solid is safer.',
 
+  frames: 'Frames',
+  frameNone: 'None',
+  frameStyles: {
+    border: 'Border',
+    rounded: 'Rounded',
+    bevel: 'Bevel',
+    line: 'Line',
+    double: 'Double line',
+    inset: 'Inset',
+    plus: 'Plus',
+    lumber: 'Lumber',
+    corners: 'Corners',
+    polaroid: 'Polaroid',
+  },
+  frameSize: 'Size',
+  frameColor: 'Frame colour',
+  fillKind: 'Fill',
+  fillKinds: { none: 'None', color: 'Colour', image: 'Image', blur: 'Blurred photo' },
+  backgroundColor: 'Fill colour',
+  fillChooseImage: 'Choose image…',
+  fillHint: 'Fill shows where the photo is transparent — PNGs and round crops.',
+
   color: 'Colour',
   colorNone: 'None',
   colorCustom: 'Custom colour',
@@ -360,7 +400,14 @@ export const defaultLabels: Labels = {
   removeLook: 'Remove look',
 };
 
-type NestedKey = 'tools' | 'finetune' | 'curveChannels' | 'annotateModes' | 'redactStyles';
+type NestedKey =
+  | 'tools'
+  | 'finetune'
+  | 'curveChannels'
+  | 'annotateModes'
+  | 'redactStyles'
+  | 'frameStyles'
+  | 'fillKinds';
 
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
   [K in NestedKey]?: Partial<Labels[K]>;
@@ -376,5 +423,7 @@ export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
     curveChannels: { ...defaultLabels.curveChannels, ...overrides.curveChannels },
     annotateModes: { ...defaultLabels.annotateModes, ...overrides.annotateModes },
     redactStyles: { ...defaultLabels.redactStyles, ...overrides.redactStyles },
+    frameStyles: { ...defaultLabels.frameStyles, ...overrides.frameStyles },
+    fillKinds: { ...defaultLabels.fillKinds, ...overrides.fillKinds },
   };
 }

@@ -89,6 +89,11 @@ export class WebGLRenderer implements Renderer {
     }
   }
 
+  /** Whether the canvas composites premultiplied colour (on-screen previews). */
+  private get premultiplied(): boolean {
+    return this.gl.getContextAttributes()?.premultipliedAlpha === true;
+  }
+
   isReady(image: LoadedImage): boolean {
     return this.uploads.has(image.bitmap);
   }
@@ -145,6 +150,7 @@ export class WebGLRenderer implements Renderer {
       );
       const checker = params.checker;
       gl.uniform1i(this.loc(p, 'u_checker'), checker ? 1 : 0);
+      gl.uniform1i(this.loc(p, 'u_premultiply'), this.premultiplied ? 1 : 0);
       if (checker) {
         gl.uniform3fv(this.loc(p, 'u_checkerA'), cssColorToRgb(checker.a));
         gl.uniform3fv(this.loc(p, 'u_checkerB'), cssColorToRgb(checker.b));

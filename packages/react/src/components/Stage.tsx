@@ -15,7 +15,10 @@ import {
   ensureAnnotationFonts,
   getImageBounds,
   getOrientedToOutput,
+  drawBackground,
+  drawFrame,
   drawRedactions,
+  loadAssetBitmap,
   getBeforeState,
   getOrientedSize,
   redactReference,
@@ -62,6 +65,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   const annotationsRef = useRef<HTMLCanvasElement>(null);
   const beforeRef = useRef<HTMLCanvasElement>(null);
   const redactRef = useRef<HTMLCanvasElement>(null);
+  const backgroundRef = useRef<HTMLCanvasElement>(null);
   const compare = useEditorState((s) => s.compare);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropTarget, setIsDropTarget] = useState(false);
@@ -85,8 +89,24 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     const canvas = canvasRef.current;
     const beforeCanvas = beforeRef.current;
     const redactCanvas = redactRef.current;
+    const backgroundCanvas = backgroundRef.current;
     const container = containerRef.current;
-    if (!canvas || !beforeCanvas || !redactCanvas || !container) return;
+    if (!canvas || !beforeCanvas || !redactCanvas || !backgroundCanvas || !container) return;
+    // Fill images, decoded once per source; a redraw follows when one arrives.
+    const fillImages = new Map<string, ImageBitmap | null>();
+    const fillImage = (state: EditorState): ImageBitmap | undefined => {
+      const bg = state.edit.background;
+      const asset = bg?.kind === 'image' ? state.edit.assets[bg.assetId] : undefined;
+      if (!asset) return undefined;
+      if (!fillImages.has(asset.src)) {
+        fillImages.set(asset.src, null);
+        void loadAssetBitmap(asset.src).then((bitmap) => {
+          fillImages.set(asset.src, bitmap);
+          if (!disposed) schedule();
+        });
+      }
+      return fillImages.get(asset.src) ?? undefined;
+    };
     // A preview that can't be drawn shows the error screen instead of throwing (never uncaught).
     const fail = (error: unknown) => {
       if (disposed) return;
@@ -135,6 +155,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         renderPreview(renderer, container, state);
         // Same task as the GPU frame: its canvas can still be read (no preserveDrawingBuffer).
         paintRedactions(redactCanvas, canvas, state);
+        paintBackground(backgroundCanvas, [canvas, redactCanvas], state, fillImage(state));
         if (state.compare !== null) drawBefore(state, image);
       } catch (error) {
         fail(error);
@@ -196,7 +217,18 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, w, h);
       const { image, edit, viewport: vp, cropView } = state;
-      if (!image || edit.annotations.length === 0) return;
+      if (!image) return;
+      // The frame goes on top of everything (annotations too), in the result view.
+      const paintFrame = () => {
+        if (!edit.frame || cropView) return;
+        ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
+        drawFrame(ctx, edit.frame, getOutputSize(image, edit));
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      };
+      if (edit.annotations.length === 0) {
+        paintFrame();
+        return;
+      }
 
       // Images and fonts load asynchronously; redraw once they're ready.
       if (assetsFor !== edit.assets) {
@@ -235,6 +267,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         ...(editingId && { skip: new Set([editingId]) }),
       });
       ctx.restore();
+      paintFrame();
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(draw);
@@ -374,6 +407,13 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       onDrop={onDrop}
     >
       <canvas
+        ref={backgroundRef}
+        className="iu-stage__canvas iu-stage__background"
+        data-hidden={status !== 'ready' ? '' : undefined}
+        aria-hidden="true"
+      />
+
+      <canvas
         ref={canvasRef}
         className="iu-stage__canvas"
         data-hidden={status !== 'ready' ? '' : undefined}
@@ -463,6 +503,52 @@ function errorMessage(error: Error | null, labels: Labels): string {
     case 'network':
       return labels.loadErrorNetwork;
   }
+}
+
+/**
+ * The Fill for the preview, on a canvas under the GPU canvas (which then skips the checkerboard).
+ * Its blur is taken from the frame just drawn — GPU image plus redactions — so hidden areas stay
+ * hidden. Result view only.
+ */
+function paintBackground(
+  target: HTMLCanvasElement,
+  sources: HTMLCanvasElement[],
+  state: EditorState,
+  image: ImageBitmap | undefined,
+) {
+  const main = sources[0]!;
+  if (target.width !== main.width) target.width = main.width;
+  if (target.height !== main.height) target.height = main.height;
+  const ctx = target.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, target.width, target.height);
+  const { image: photo, edit, viewport: vp, cropView } = state;
+  if (!photo || !edit.background || cropView) return;
+  const dpr = window.devicePixelRatio || 1;
+  const out = getOutputSize(photo, edit);
+  let result: HTMLCanvasElement | OffscreenCanvas = main;
+  let resultRect: { x: number; y: number; width: number; height: number } | undefined;
+  if (edit.background.kind === 'blur') {
+    // The result's area on the stage, GPU image + redactions flattened into one small copy.
+    const x = Math.max(0, vp.x * dpr);
+    const y = Math.max(0, vp.y * dpr);
+    const w = Math.min(main.width, (vp.x + out.width * vp.scale) * dpr) - x;
+    const h = Math.min(main.height, (vp.y + out.height * vp.scale) * dpr) - y;
+    if (w < 1 || h < 1) return;
+    const flat = new OffscreenCanvas(Math.ceil(w), Math.ceil(h));
+    const fctx = flat.getContext('2d');
+    if (!fctx) return;
+    for (const source of sources) fctx.drawImage(source, x, y, w, h, 0, 0, w, h);
+    result = flat;
+    resultRect = { x: 0, y: 0, width: flat.width, height: flat.height };
+  }
+  ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
+  drawBackground(ctx, edit.background, out, {
+    result,
+    ...(resultRect && { resultRect }),
+    ...(image && { image }),
+  });
 }
 
 /** Oriented px → stage canvas (device) px, in the result view or the Adjust crop view. */
@@ -555,8 +641,10 @@ function renderPreview(renderer: Renderer, container: HTMLElement, state: Editor
 
   // Canvas px → stage CSS px → output px.
   const k = 1 / (dpr * vp.scale);
+  // With a Fill, transparent parts show the fill layer underneath instead of the checkerboard.
   renderer.render({
     ...common,
+    ...(edit.background && { checker: null }),
     state: edit,
     outputSize: getOutputSize(image, edit),
     canvasToOutput: [k, 0, 0, k, -vp.x / vp.scale, -vp.y / vp.scale],

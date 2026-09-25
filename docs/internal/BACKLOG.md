@@ -118,6 +118,22 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       and Esc cleared them; the ControlBar tool buttons didn't. Fix: any tool change drops the
       unfinished polygon (like Esc).
 
+### Owner review of Phase 6.3 (2026-09-26)
+
+- [x] **More frame styles** (owner, compared with Pintura's strip) — add Bevel, Inset (edge lines
+      that don't meet), Plus (lines crossing a little past the corners) and Lumber (lines crossing
+      edge to edge). Ours already cover Mat (Border), Line, Zebra (Double line), Hook (Corners),
+      Polaroid. Drawn our own way — no Pintura code/assets.
+
+- [x] **Fill layout** (owner) _(fixed 2026-09-26)_ — the options sat to the right of the kind switch; the colour was one
+      button + popover. Fix: options below the switch; Colour = an inline strip of swatches (like the
+      filter strip) with a custom-colour picker button at the end; responsive down to 320px.
+
+### Planned later
+
+- [ ] **Extend the canvas** (e.g. "make it square" with the Fill showing on the sides, for social
+      posts) — belongs with Resize — _Phase 7_ (owner, 2026-09-25)
+
 ### Found during Phase 5.1
 
 - [ ] **Owner's `.ico` crash not reproduced** — ask which browser/file. Chrome decodes ICO; Safari

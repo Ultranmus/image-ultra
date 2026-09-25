@@ -15,6 +15,7 @@ import {
   getImageBounds,
   getOrientedToOutput,
   getOutputSize,
+  ImageLoadError,
   loadAnnotationAssets,
   scale,
   translate,
@@ -25,6 +26,7 @@ import {
   type Renderer,
 } from '@image-ultra/core';
 import { ToolIdContext, useEditorState, useEditorStore, useLabels } from '../context';
+import type { Labels } from '../i18n';
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
 import { IconAlert, IconImage, IconUpload } from '../icons/Icon';
 import { getAnnotateState } from '../tools/annotate/state';
@@ -43,6 +45,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   const store = useEditorStore();
   const labels = useLabels();
   const status = useEditorState((s) => s.status);
+  const error = useEditorState((s) => s.error);
   const isFitted = useEditorState((s) => s.isFitted);
   const cropping = useEditorState((s) => s.cropView !== null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,8 +73,19 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
-    // Premultiplied: the preview always has the checkerboard, so pixels are opaque or empty.
-    const renderer = createRenderer(canvas, { premultipliedAlpha: true });
+    // A preview that can't be drawn shows the error screen instead of throwing (never uncaught).
+    const fail = (error: unknown) => {
+      if (disposed) return;
+      store.getState().fail(error instanceof Error ? error : new Error(String(error)));
+    };
+    let renderer: Renderer;
+    try {
+      // Premultiplied: the preview always has the checkerboard, so pixels are opaque or empty.
+      renderer = createRenderer(canvas, { premultipliedAlpha: true });
+    } catch (error) {
+      store.getState().fail(error instanceof Error ? error : new Error(String(error)));
+      return;
+    }
     let frame = 0;
     let disposed = false;
     const draw = () => {
@@ -79,13 +93,17 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       const state = store.getState();
       const { image } = state;
       if (!image || state.stageSize.width === 0) return;
-      if (!renderer.isReady(image)) {
-        void renderer.prepare(image).then(() => {
-          if (!disposed) schedule();
-        });
-        return;
+      try {
+        if (!renderer.isReady(image)) {
+          renderer.prepare(image).then(() => {
+            if (!disposed) schedule();
+          }, fail);
+          return;
+        }
+        renderPreview(renderer, container, state);
+      } catch (error) {
+        fail(error);
       }
-      renderPreview(renderer, container, state);
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(draw);
@@ -230,7 +248,12 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
 
   // Pointer pan (1 pointer) and pinch zoom (2 pointers).
   const pointers = useRef(new Map<number, Point>());
+  // Did the last press reach the stage, or did a tool overlay claim it (stopPropagation)?
+  // Double-click zoom only follows unclaimed presses, e.g. never while editing a text box.
+  const pressClaimed = useRef(false);
+
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    pressClaimed.current = false;
     if (status !== 'ready' || event.button !== 0 || cropping) return;
     const element = containerRef.current;
     if (!element) return;
@@ -268,6 +291,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   };
 
   const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (pressClaimed.current) return;
     const element = containerRef.current;
     if (!element || status !== 'ready' || cropping) return;
     const state = store.getState();
@@ -304,6 +328,9 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       data-pannable={status === 'ready' && !isFitted && !cropping ? '' : undefined}
       data-dragging={isDragging ? '' : undefined}
       data-drop-target={isDropTarget ? '' : undefined}
+      onPointerDownCapture={() => {
+        pressClaimed.current = true;
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
@@ -347,7 +374,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
               {status === 'error' ? <IconAlert size={28} /> : <IconImage size={28} />}
             </span>
             <p className="iu-empty__title">
-              {status === 'error' ? labels.loadError : labels.emptyTitle}
+              {status === 'error' ? errorMessage(error, labels) : labels.emptyTitle}
             </p>
             <p className="iu-empty__hint">{labels.emptyHint}</p>
             <label className="iu-button iu-button--text" data-variant="secondary">
@@ -368,6 +395,20 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       )}
     </div>
   );
+}
+
+function errorMessage(error: Error | null, labels: Labels): string {
+  if (!(error instanceof ImageLoadError)) return labels.loadError;
+  switch (error.code) {
+    case 'unsupported':
+      return labels.loadErrorUnsupported.replace('{format}', (error.format ?? '?').toUpperCase());
+    case 'damaged':
+      return labels.loadErrorDamaged;
+    case 'not-image':
+      return labels.loadErrorNotImage;
+    case 'network':
+      return labels.loadErrorNetwork;
+  }
 }
 
 /** Renders into the stage canvas: the edited result, or the whole image while cropping. */

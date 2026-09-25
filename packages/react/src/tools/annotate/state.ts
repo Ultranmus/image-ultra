@@ -190,7 +190,7 @@ export function createPath(
   };
 }
 
-export function createText(at: Point, style: AnnotateStyle, ref: number): Shape {
+export function createText(at: Point, style: AnnotateStyle, ref: number, text: string): Shape {
   const fontSize = fontSizeFor(style.fontSize, ref);
   return {
     id: createShapeId(),
@@ -200,7 +200,7 @@ export function createText(at: Point, style: AnnotateStyle, ref: number): Shape 
     x: at.x,
     y: at.y - fontSize * 0.6,
     width: Math.max(fontSize * 4, ref * 0.4),
-    text: '',
+    text,
     fontFamily: style.fontFamily,
     fontSize,
     fontWeight: style.fontWeight,

@@ -90,6 +90,8 @@ export interface ViewportChangeOptions {
 export interface EditorActions {
   /** Opens an image. `state` restores previously saved edits. Clears history. */
   load(source: ImageSource, options?: { state?: EditState }): Promise<void>;
+  /** Show the error screen, e.g. when the preview can't be drawn. */
+  fail(error: Error): void;
   setActiveTool(tool: string): void;
   setCropView(view: CropView | null): void;
   /** Replace one tool's transient UI state. */
@@ -262,6 +264,13 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
             error: error instanceof Error ? error : new Error(String(error)),
           });
         }
+      },
+
+      fail(error) {
+        loadController?.abort();
+        get().image?.bitmap.close();
+        stopAnimation();
+        set({ status: 'error', error, image: null });
       },
 
       setActiveTool(tool) {

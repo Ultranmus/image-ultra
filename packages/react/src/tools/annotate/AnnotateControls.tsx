@@ -2,7 +2,6 @@ import { useRef, type ReactNode } from 'react';
 import {
   createShapeId,
   getCropRect,
-  moveShape,
   type EditState,
   type Shape,
   type TextAlign,
@@ -49,6 +48,7 @@ import {
   type AnnotateStyle,
   type SizeStep,
 } from './state';
+import { shapeActions } from './actions';
 
 export const MODE_SHORTCUTS: Record<AnnotateMode, string> = {
   select: 'V',
@@ -148,21 +148,16 @@ export function AnnotateControls() {
   const fontSize = selected?.type === 'text' ? selected.fontSize : fontSizeFor(style.fontSize, ref);
   const opacity = selected?.opacity ?? style.opacity;
 
+  const actions = shapeActions(store, labels);
   const duplicate = () => {
     if (!selected) return;
-    const copy = { ...moveShape(selected, ref * 0.03, ref * 0.03), id: createShapeId() };
-    store.getState().update(labels.duplicate, (draft) => {
-      const index = draft.annotations.findIndex((s) => s.id === selected.id);
-      draft.annotations.splice(index + 1, 0, copy);
-    });
-    setUi((u) => ({ ...u, selectedId: copy.id }));
+    const copyId = actions.duplicate(selected, ref * 0.03);
+    setUi((u) => ({ ...u, selectedId: copyId }));
   };
 
   const remove = () => {
     if (!selected) return;
-    store.getState().update(labels.deleteShape, (draft) => {
-      draft.annotations = draft.annotations.filter((s) => s.id !== selected.id);
-    });
+    actions.remove(selected.id);
     setUi((u) => ({ ...u, selectedId: null }));
   };
 

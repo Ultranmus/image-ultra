@@ -73,7 +73,7 @@ Rule: text/icons in accent colour use `--iu-accent-text`, never `--iu-accent` / 
 | `--iu-size-rail` / `--iu-size-rail-mobile` | `72px` (desktop width) / `64px` (mobile height)                                                |
 | `--iu-size-controlbar`                     | `148px`                                                                                        |
 | `--iu-size-touch`                          | `40px`                                                                                         |
-| `--iu-z-overlay/popover/toast`             | `10 / 20 / 30`                                                                                 |
+| `--iu-z-overlay/popover/toast`             | `10 / 20 / 30` (tooltips use the toast layer, above popovers and menus)                        |
 
 ## `ThemeOverrides` (public, typed)
 

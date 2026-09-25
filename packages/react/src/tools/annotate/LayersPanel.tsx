@@ -1,6 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { defaultShapeName, type Shape } from '@image-ultra/core';
 import { useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
+import { shapeActions } from './actions';
+import { ShapeMenu } from './ShapeMenu';
 import {
   IconChevronDown,
   IconChevronUp,
@@ -11,6 +14,7 @@ import {
   IconImage,
   IconLine,
   IconLock,
+  IconMore,
   IconPen,
   IconSquare,
   IconText,
@@ -27,39 +31,38 @@ const TYPE_ICONS: Record<Shape['type'], (p: IconProps) => React.JSX.Element> = {
   image: IconImage,
 };
 
-/** Floating list of annotations, top layer first: select, show/hide, lock, reorder. */
+/**
+ * Floating list of annotations, top layer first: select, show/hide, lock, reorder, and a "⋯" menu
+ * with every shape action.
+ */
 export function LayersPanel({
   shapes,
   selectedId,
+  revealId,
   onSelect,
   onClose,
 }: {
   shapes: readonly Shape[];
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  /** Scroll to this layer and focus it ("Show in Layers"). Changes to a new object each time. */
+  revealId: { id: string } | null;
+  onSelect: (id: string | null) => void;
   onClose: () => void;
 }) {
   const labels = useLabels();
   const store = useEditorStore();
+  const actions = shapeActions(store, labels);
   const ordered = [...shapes].reverse();
+  const listRef = useRef<HTMLUListElement>(null);
 
-  const patch = (label: string, id: string, change: (s: Shape) => void) =>
-    store.getState().update(label, (draft) => {
-      const s = draft.annotations.find((x) => x.id === id);
-      if (s) change(s as Shape);
-    });
-
-  /** Moves a shape one step up (towards the top) or down in the stack. */
-  const reorder = (id: string, direction: 1 | -1) =>
-    store
-      .getState()
-      .update(direction === 1 ? labels.bringForward : labels.sendBackward, (draft) => {
-        const i = draft.annotations.findIndex((s) => s.id === id);
-        const j = i + direction;
-        if (i < 0 || j < 0 || j >= draft.annotations.length) return;
-        const [item] = draft.annotations.splice(i, 1);
-        draft.annotations.splice(j, 0, item!);
-      });
+  useEffect(() => {
+    if (!revealId) return;
+    const row = listRef.current?.querySelector<HTMLElement>(
+      `[data-layer-id="${CSS.escape(revealId.id)}"] .iu-layers__name`,
+    );
+    row?.scrollIntoView({ block: 'nearest' });
+    row?.focus({ preventScroll: true });
+  }, [revealId]);
 
   return (
     <section
@@ -80,7 +83,7 @@ export function LayersPanel({
       {ordered.length === 0 ? (
         <p className="iu-layers__empty">{labels.noLayers}</p>
       ) : (
-        <ul className="iu-layers__list">
+        <ul ref={listRef} className="iu-layers__list">
           {ordered.map((shape, index) => {
             const Icon = TYPE_ICONS[shape.type];
             const name = shape.name ?? defaultShapeName(shape);
@@ -88,6 +91,7 @@ export function LayersPanel({
               <li
                 key={shape.id}
                 className="iu-layers__row"
+                data-layer-id={shape.id}
                 data-selected={shape.id === selectedId ? '' : undefined}
                 data-hidden={shape.hidden ? '' : undefined}
               >
@@ -99,7 +103,7 @@ export function LayersPanel({
                   onKeyDown={(e) => {
                     if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
                       e.preventDefault();
-                      reorder(shape.id, e.key === 'ArrowUp' ? 1 : -1);
+                      actions.move(shape.id, e.key === 'ArrowUp' ? 'forward' : 'backward');
                     }
                   }}
                 >
@@ -110,37 +114,36 @@ export function LayersPanel({
                   size="sm"
                   label={shape.hidden ? labels.showLayer : labels.hideLayer}
                   icon={shape.hidden ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-                  onClick={() =>
-                    patch(shape.hidden ? labels.showLayer : labels.hideLayer, shape.id, (s) => {
-                      if (s.hidden) delete s.hidden;
-                      else s.hidden = true;
-                    })
-                  }
+                  onClick={() => actions.toggleHidden(shape)}
                 />
                 <IconButton
                   size="sm"
                   label={shape.locked ? labels.unlockLayer : labels.lockLayer}
                   icon={shape.locked ? <IconLock size={16} /> : <IconUnlock size={16} />}
-                  onClick={() =>
-                    patch(shape.locked ? labels.unlockLayer : labels.lockLayer, shape.id, (s) => {
-                      if (s.locked) delete s.locked;
-                      else s.locked = true;
-                    })
-                  }
+                  onClick={() => actions.toggleLocked(shape)}
                 />
                 <IconButton
                   size="sm"
                   label={labels.bringForward}
                   icon={<IconChevronUp size={16} />}
                   disabled={index === 0}
-                  onClick={() => reorder(shape.id, 1)}
+                  onClick={() => actions.move(shape.id, 'forward')}
                 />
                 <IconButton
                   size="sm"
                   label={labels.sendBackward}
                   icon={<IconChevronDown size={16} />}
                   disabled={index === ordered.length - 1}
-                  onClick={() => reorder(shape.id, -1)}
+                  onClick={() => actions.move(shape.id, 'backward')}
+                />
+                <ShapeMenu
+                  shape={shape}
+                  onSelect={onSelect}
+                  side="bottom"
+                  align="end"
+                  trigger={
+                    <IconButton size="sm" label={labels.shapeMenu} icon={<IconMore size={16} />} />
+                  }
                 />
               </li>
             );

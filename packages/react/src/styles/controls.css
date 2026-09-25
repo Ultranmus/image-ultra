@@ -78,41 +78,6 @@
     background: var(--iu-surface-3);
   }
 
-  /* Tooltip (desktop hover only). Replaced by an accessible popover primitive later if needed. */
-  @media (hover: hover) {
-    .iu-root [data-tooltip]::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      top: calc(100% + var(--iu-space-1));
-      left: 50%;
-      z-index: var(--iu-z-popover);
-      padding: var(--iu-space-1) var(--iu-space-2);
-      border-radius: var(--iu-radius-sm);
-      background: var(--iu-surface-3);
-      color: var(--iu-text);
-      box-shadow: var(--iu-shadow-popover);
-      font-size: var(--iu-text-xs);
-      font-weight: var(--iu-weight-medium);
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transform: translate(-50%, -2px);
-      transition:
-        opacity var(--iu-duration-fast) var(--iu-ease),
-        transform var(--iu-duration-fast) var(--iu-ease);
-    }
-
-    .iu-root [data-tooltip]:hover:not(:disabled)::after {
-      opacity: 1;
-      transform: translate(-50%, 0);
-      transition-delay: 400ms;
-    }
-  }
-
-  .iu-root [data-tooltip] {
-    position: relative;
-  }
-
   .iu-sr-only {
     position: absolute;
     width: 1px;
@@ -468,6 +433,38 @@
     display: contents;
   }
 
+  /* One shared tooltip for every [data-tooltip] element (TooltipLayer), fixed so panels never
+     clip it. Hidden until measured and placed. */
+  .iu-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--iu-z-toast);
+    max-width: min(280px, calc(100vw - 16px));
+    padding: var(--iu-space-1) var(--iu-space-2);
+    border-radius: var(--iu-radius-sm);
+    background: var(--iu-surface-3);
+    color: var(--iu-text);
+    box-shadow: var(--iu-shadow-popover);
+    font-family: var(--iu-font-family), var(--iu-font-fallback);
+    font-size: var(--iu-text-xs);
+    font-weight: var(--iu-weight-medium);
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .iu-tooltip[data-placed] {
+    visibility: visible;
+    animation: iu-tooltip-in var(--iu-duration-fast) var(--iu-ease);
+  }
+
+  @keyframes iu-tooltip-in {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+  }
+
   .iu-popover {
     z-index: var(--iu-z-popover);
     display: flex;
@@ -519,6 +516,41 @@
     background: var(--iu-surface-2);
   }
 
+  /* Shape context menu (Radix Dropdown Menu): compact rows, keyboard highlight, disabled rows. */
+  .iu-contextmenu {
+    gap: 0;
+    min-width: 200px;
+    padding: var(--iu-space-1);
+  }
+
+  .iu-contextmenu .iu-menu__item {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    font-size: var(--iu-text-md);
+    outline: none;
+    user-select: none;
+  }
+
+  .iu-contextmenu .iu-menu__item[data-highlighted] {
+    background: var(--iu-surface-2);
+  }
+
+  .iu-contextmenu .iu-menu__item[data-danger] {
+    color: var(--iu-danger);
+  }
+
+  .iu-contextmenu .iu-menu__item[data-disabled] {
+    color: var(--iu-text-subtle);
+    cursor: default;
+  }
+
+  .iu-menu__separator {
+    height: 1px;
+    margin: var(--iu-space-1) 0;
+    background: var(--iu-border);
+  }
+
   .iu-menu__item[aria-selected='true'] {
     background: var(--iu-accent-soft);
     color: var(--iu-accent-text);
@@ -542,6 +574,8 @@
     display: grid;
     grid-template-columns: repeat(7, 24px);
     gap: 8px;
+    /* Spread across the popover's width (set by the picker below) instead of leaving a gap. */
+    justify-content: space-between;
   }
 
   .iu-swatch {
@@ -562,18 +596,6 @@
   .iu-swatch:focus-visible {
     outline: none;
     box-shadow: var(--iu-focus-ring);
-  }
-
-  .iu-swatch--none {
-    background:
-      linear-gradient(
-        135deg,
-        transparent 45%,
-        var(--iu-danger) 45%,
-        var(--iu-danger) 55%,
-        transparent 55%
-      ),
-      var(--iu-surface-1);
   }
 
   .iu-swatch--custom {
@@ -655,13 +677,15 @@
       inset 0 0 0 5px var(--iu-surface-1);
   }
 
+  /* "No colour" = the usual transparency checkerboard (works in both themes). */
+  .iu-swatch--none,
   .iu-colorbutton__dot[data-none] {
-    background: linear-gradient(
-      135deg,
-      transparent 45%,
-      var(--iu-danger) 45%,
-      var(--iu-danger) 55%,
-      transparent 55%
-    );
+    background:
+      repeating-conic-gradient(
+          color-mix(in srgb, var(--iu-text) 32%, transparent) 0 25%,
+          transparent 0 50%
+        )
+        50% / 8px 8px,
+      var(--iu-surface-1);
   }
 }

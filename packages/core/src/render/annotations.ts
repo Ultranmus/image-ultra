@@ -2,6 +2,7 @@ import { loadImage } from '../loader/loadImage';
 import {
   boxCenter,
   getShapeBox,
+  rotatePoint,
   type LineShape,
   type Shape,
   type TextShape,
@@ -106,6 +107,50 @@ export function layoutText(shape: TextShape, measure: Measurer | null = measurer
 /** Height of a text shape's box (wrapped). */
 export function measureTextHeight(shape: TextShape): number {
   return layoutText(shape).height;
+}
+
+/**
+ * Index in `shape.text` closest to `point` (oriented px), e.g. to put the caret where the user
+ * clicked. Follows the same wrapping, alignment and rotation as the drawn text.
+ */
+export function textIndexAt(shape: TextShape, point: Point): number {
+  const measure = measurer();
+  const layout = layoutText(shape, measure);
+  const box = getShapeBox(shape, layout.height);
+  const p = rotatePoint(point, boxCenter(box), -shape.rotation);
+  const lastRow = Math.max(0, layout.lines.length - 1);
+  const row = Math.min(Math.max(Math.floor((p.y - box.y) / layout.lineHeight), 0), lastRow);
+
+  // Wrapped lines drop the spaces they broke at: find each one's start in the original text.
+  let start = 0;
+  let cursor = 0;
+  for (let i = 0; i <= row; i++) {
+    const found = shape.text.indexOf(layout.lines[i] ?? '', cursor);
+    start = found >= 0 ? found : cursor;
+    cursor = start + (layout.lines[i]?.length ?? 0);
+  }
+  const line = layout.lines[row] ?? '';
+  if (measure) measure.font = textFont(shape);
+  const width = (text: string) =>
+    measure ? measure.measureText(text).width : text.length * shape.fontSize * 0.55;
+  const lineWidth = width(line);
+  const left =
+    shape.align === 'center'
+      ? box.x + (box.width - lineWidth) / 2
+      : shape.align === 'right'
+        ? box.x + box.width - lineWidth
+        : box.x;
+  const x = p.x - left;
+  let best = 0;
+  let bestDistance = Infinity;
+  for (let i = 0; i <= line.length; i++) {
+    const distance = Math.abs(width(line.slice(0, i)) - x);
+    if (distance < bestDistance) {
+      best = i;
+      bestDistance = distance;
+    }
+  }
+  return start + best;
 }
 
 /* ── Assets & fonts ────────────────────────────────────────────────────── */

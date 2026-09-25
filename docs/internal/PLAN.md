@@ -109,6 +109,19 @@ docs/internal (these notes)
 - [x] **AI-ready hook:** `MaskBrushOverlay` + core `drawMask` / `rasterizeMask` / `simplifyPoints`
       **Exit:** draw, edit text inline, layer ordering. ✅
 
+### Phase 5.1 — Owner fixes (before Phase 6)
+
+Details and suggested fixes in `BACKLOG.md` → "Next — fix before Phase 6".
+
+- [x] Tooltips never clipped (portalled Tooltip component, replaces CSS `data-tooltip`)
+- [x] Unsupported/broken images show the editor's own clear error (ICO etc.), never a framework error
+- [x] Clicking an existing shape with any drawing tool switches to Select and selects it
+- [x] New text boxes never vanish (start with "Text", selected)
+- [x] Text tool: clicking an existing text box edits it instead of creating a new one
+- [x] Context menu on shapes (canvas right-click + Layers "⋯"): unlock, show/hide, order,
+      duplicate, delete, show in Layers — works for locked shapes too
+      **Exit:** all six fixed + 4 from owner review, 46 e2e green. ✅ Approved 2026-09-25.
+
 ### Phase 6 — Extras
 
 - [ ] Watermark (text/image, position presets, tile, opacity)

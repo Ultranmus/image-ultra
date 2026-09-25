@@ -57,6 +57,16 @@ describe('annotations', () => {
     expect(hitTestShape(line, { x: 50, y: 3 }, 1)).toBe(true);
     expect(hitTestShape(line, { x: 50, y: 10 }, 1)).toBe(false);
     expect(shapeAt([rect(), rect({ id: 'top', locked: true })], { x: 20, y: 30 }, 0)?.id).toBe('r');
+    const withLocked = shapeAt(
+      [rect(), rect({ id: 'top', locked: true })],
+      { x: 20, y: 30 },
+      0,
+      undefined,
+      {
+        includeLocked: true,
+      },
+    );
+    expect(withLocked?.id).toBe('top');
   });
 
   it('moves and resizes', () => {

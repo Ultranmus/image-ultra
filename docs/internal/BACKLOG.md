@@ -5,6 +5,82 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ## Open
 
+### Phase 5.1 — owner-reported (2026-09-24) · all fixed 2026-09-25
+
+- [x] **1. Tooltips get clipped inside panels** (seen in the Layers panel)
+  - Now: tooltips are CSS `::after` pseudo-elements, so any ancestor with `overflow: hidden/auto`
+    cuts them off — the Layers list (`overflow-y: auto`), and likely the ControlBar
+    (`overflow: hidden`) and scrolling chip/tool rows too.
+  - Fix: a real `Tooltip` component portalled into `.iu-portal` (Radix Tooltip, like Popover) with
+    collision handling (flips side near edges), 400ms delay, hidden on touch; replace all
+    `data-tooltip` uses. Verify in Layers, ControlBar rows, ToolRail and TopBar.
+- [x] **2. Unsupported images (e.g. `.ico`) show a framework error instead of a proper message**
+  - Now: opening a `.ico` (or other format the browser can't decode as a bitmap) ends in the
+    Next.js dev error overlay instead of the editor's own error screen. Cause to confirm when fixing
+    (likely an uncaught rejection / `console.error` path around `loadImage` → `createImageBitmap`).
+  - Fix: every load failure lands in the editor's error state (never uncaught, never
+    `console.error` when `onError` is given); a specific message per case: "This file type isn't
+    supported (ICO)", "The file is damaged", "Couldn't download the image (CORS/404)". Check the file
+    type/extension up front; try an `<img>` decode fallback so formats the browser _can_ show (ICO,
+    SVG, AVIF, HEIC on Safari…) still open. Add e2e tests with a `.ico`, a corrupt file and a
+    non-image.
+- [x] **3. Clicking a drawn shape while a drawing tool is active draws again**
+  - Now: with Polygon (and every other drawing tool) active, clicking on an existing shape starts
+    a new shape / adds polygon points on top of it. The user has to click the Select icon first.
+  - Fix: in every drawing mode, a click (not a drag) that lands on an existing shape switches to
+    Select mode and selects that shape. Drawing still starts on empty photo area (and a drag that
+    starts on a shape with Pen should keep drawing — decide: Pen draws over shapes only when
+    dragging). Polygon: a click on a shape before the first point is placed selects it.
+- [x] **4. An empty new text box disappears**
+  - Now: Text tool → click → click elsewhere without typing → the box is discarded.
+  - Fix: a new text box starts with placeholder content "Text", fully selected so typing replaces
+    it; it's never auto-removed. Only an explicit Delete removes text. (If the user erases all
+    characters and leaves, keep the box with the placeholder, or remove — decide with owner; default:
+    restore "Text".)
+- [x] **5. Clicking an existing text box with the Text tool creates a new box instead of editing it**
+  - Now: when focus isn't in the previous box, clicking on it commits/discards it and makes a new
+    one elsewhere (hit-testing misses empty/unfocused text).
+  - Fix: in Text mode, clicking any existing text box (including empty ones) selects it and enters
+    editing with the caret at the click position; only clicks on empty photo area create new text.
+- [x] **6. Locked (and hidden) shapes can't be unlocked/shown from the canvas — no context menu**
+  - Now: locked shapes can't be selected on the photo, and there's no right-click menu, so the only
+    way back is the Layers panel.
+  - Fix: a right-click / long-press **context menu** on the photo for the shape under the pointer
+    (hit-test includes locked shapes): Unlock/Lock, Hide/Show, Bring forward, Send backward,
+    Bring to front, Send to back, Duplicate, Delete, "Show in Layers" (opens the panel with the row
+    highlighted). Same menu from a "⋯" button on each Layers row. Keyboard: Shift+F10 / Menu key on
+    the selected shape. Built on Radix Context Menu / Dropdown Menu, portalled like popovers.
+  - **Done 2026-09-25:** #1 `TooltipLayer` (DECISIONS #55). #2 typed `ImageLoadError` + format
+    sniffing + `<img>` fallback + `store.fail()` for render errors (#56) — could not reproduce the
+    exact `.ico` crash in Chrome (ICO opens fine there); every load/render path is now covered and
+    tested. #3 (#57). #4 restore "Text" (owner's choice) (#58). #5 caret at the click (#58).
+    #6 shape menu (#59). e2e: `loading.spec.ts` + 5 new Annotate tests.
+
+### Owner review of Phase 5.1 (2026-09-25)
+
+- [x] **Colour popover: empty space right of the swatches** _(fixed 2026-09-25)_ — the swatch grid uses fixed 24px
+      columns, so when the popover is wider (hex + "Pick from screen" row) the spare width collects
+      on the right. Fix: spread the columns across the full width (`justify-content: space-between`).
+- [x] **Double-clicking text zooms the photo** _(fixed 2026-09-25, DECISIONS #60)_ — editing text needed a double-click, which also
+      reached the Stage's double-click zoom. Fix: a click on the _already selected_ text box enters
+      editing (caret at the click); double-clicks on shapes / the text editor never zoom.
+
+- [x] **"No colour" swatch shows a red slash** _(fixed 2026-09-25)_ — owner expects the usual transparency checkerboard.
+      Fix: checkerboard (theme-aware) on the None swatch and on colour buttons set to none.
+- [x] **Selection stays when clicking outside** _(fixed 2026-09-25, DECISIONS #61)_ — with a shape selected, clicking outside the editor
+      or on empty toolbar space keeps it selected. Fix: deselect on a press outside the editor or on
+      non-interactive editor chrome; presses on controls (they edit the selection), popovers, menus
+      and the Layers panel keep it.
+
+### Found during Phase 5.1
+
+- [ ] **Owner's `.ico` crash not reproduced** — ask which browser/file. Chrome decodes ICO; Safari
+      may not (would now show "This file type (ICO) isn't supported.") — _check with owner_
+- [ ] **Hidden shapes can't be reached from the photo** (they're invisible, so right-click can't hit
+      them) — Layers "⋯" / eye covers it; a "Show all" could come with multi-select — _Phase 6/7_
+- [ ] **Touch long-press on a drawing tool** cancels the stroke it started; fine for now, verify on a
+      real phone in Phase 7 (mobile pass)
+
 ### From Phase 5 — Annotate
 
 - [ ] **Multi-select** (Shift-click, marquee) and group move/align — _Phase 6/7_

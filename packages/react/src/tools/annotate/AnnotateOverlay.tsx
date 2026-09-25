@@ -9,7 +9,6 @@ import {
 import {
   applyToPoint,
   boxCenter,
-  createShapeId,
   getCropRect,
   getShapeBounds,
   getShapeBox,
@@ -22,6 +21,7 @@ import {
   setShapeBox,
   shapeAt,
   simplifyPoints,
+  textIndexAt,
   type Affine,
   type Box,
   type BoxHandle,
@@ -30,13 +30,16 @@ import {
   type TextShape,
 } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
+import { shapeActions } from './actions';
 import { LayersPanel } from './LayersPanel';
+import { ShapeMenu } from './ShapeMenu';
 import { MODE_SHORTCUTS } from './AnnotateControls';
 import { snapAngle, snapBox } from './snapping';
 import {
   createPath,
   createShape,
   createText,
+  getAnnotateState,
   getOrientedToStage,
   referenceSize,
   useAnnotateState,
@@ -48,11 +51,22 @@ const DRAG_START = 3;
 const HIT_TOLERANCE = 6;
 const SNAP = 6;
 const ROTATE_HANDLE = 28;
+/** Touch long-press that opens the shape menu (iOS has no native `contextmenu` event). */
+const LONG_PRESS_MS = 500;
 
 const BOX_HANDLES: BoxHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 type Interaction =
-  | { kind: 'move'; pointerId: number; start: Point; shape: Shape }
+  | {
+      kind: 'move';
+      pointerId: number;
+      start: Point;
+      startScreen: Point;
+      shape: Shape;
+      /** Text tool on a text box: a click (no drag) starts editing it instead. */
+      editOnClick: boolean;
+      dragged: boolean;
+    }
   | { kind: 'resize'; pointerId: number; start: Point; shape: Shape; box: Box; handle: BoxHandle }
   | { kind: 'rotate'; pointerId: number; center: Point; startAngle: number; shape: Shape }
   | { kind: 'endpoint'; pointerId: number; index: 0 | 1; shape: Shape }
@@ -63,8 +77,14 @@ type Interaction =
       start: Point;
       startScreen: Point;
       id: string | null;
+      /** Shape under the pointer: a click (no drag) selects it instead of drawing. */
+      hitId: string | null;
     }
-  | { kind: 'pen'; pointerId: number; points: Point[]; id: string };
+  | { kind: 'pen'; pointerId: number; points: Point[]; id: string; hitId: string | null };
+
+/** Editor elements a press on which keeps the current selection. */
+const INTERACTIVE =
+  'button, input, select, textarea, label, a[href], [role="slider"], [role="radio"], [role="tab"], [role="menuitem"], [contenteditable="true"]';
 
 const textHeight = (s: Shape) => (s.type === 'text' ? measureTextHeight(s) : undefined);
 
@@ -84,7 +104,13 @@ export function AnnotateOverlay() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [polygon, setPolygon] = useState<Point[]>([]);
   const [cursor, setCursor] = useState<Point | null>(null);
-
+  /** How the text editor opens: everything selected (new box) or the caret at an index. */
+  const [editCaret, setEditCaret] = useState<number | 'all'>('all');
+  /** Open shape menu: which shape, and where on the stage it opens. */
+  const [menu, setMenu] = useState<{ shapeId: string; at: Point } | null>(null);
+  const [revealLayer, setRevealLayer] = useState<{ id: string } | null>(null);
+  const longPress = useRef<{ timer: number; screen: Point } | null>(null);
+  const keepMenuFocus = useRef(false);
   const toStage: Affine | null = image ? getOrientedToStage(image, edit, viewport) : null;
   const fromStage = toStage ? invert(toStage) : null;
   /** Screen px per oriented px (average for a non-uniform resize). */
@@ -96,9 +122,9 @@ export function AnnotateOverlay() {
   const ref = image ? referenceSize(image, edit) : 1000;
 
   // Latest values for the window-level keyboard handler.
-  const latest = useRef({ ui, selected, polygon, k, ref });
+  const latest = useRef({ ui, selected, polygon, k, ref, menu, toStage });
   useEffect(() => {
-    latest.current = { ui, selected, polygon, k, ref };
+    latest.current = { ui, selected, polygon, k, ref, menu, toStage };
   });
 
   const local = (event: { clientX: number; clientY: number }): Point => {
@@ -115,30 +141,54 @@ export function AnnotateOverlay() {
   const replace = (label: string, shape: Shape) =>
     update(label, (list) => list.map((s) => (s.id === shape.id ? shape : s)));
   const select = (id: string | null) => setUi((u) => ({ ...u, selectedId: id }));
+  /** A click on a shape with a drawing tool: switch to Select and select it. */
+  const selectWithSelectTool = (id: string) => {
+    setPolygon([]);
+    setUi((u) => ({ ...u, mode: 'select', selectedId: id }));
+  };
+  const actions = shapeActions(store, labels);
 
+  /* ── Shape menu ─────────────────────────────────────────────────── */
+
+  const openMenu = (shapeId: string, at: Point) => {
+    keepMenuFocus.current = false;
+    select(shapeId);
+    setMenu({ shapeId, at });
+  };
+  /** Menu for the selected shape, opened from the keyboard: anchored below its centre. */
+  const openMenuForSelection = () => {
+    const { selected: sel, toStage: m } = latest.current;
+    if (!sel || !m) return false;
+    const corners = getShapeCorners(sel, textHeight(sel)).map((c) => applyToPoint(m, c));
+    const x = corners.reduce((sum, c) => sum + c.x, 0) / corners.length;
+    const y = Math.max(...corners.map((c) => c.y));
+    keepMenuFocus.current = false;
+    setMenu({ shapeId: sel.id, at: { x, y } });
+    return true;
+  };
+  const cancelLongPress = () => {
+    if (longPress.current) window.clearTimeout(longPress.current.timer);
+    longPress.current = null;
+  };
   /* ── Text editing ───────────────────────────────────────────────── */
 
-  const startEditing = (shape: TextShape, isNew: boolean) => {
+  /** Opens the in-place editor. `caret`: index to put the caret at; default = end of the text. */
+  const startEditing = (shape: TextShape, isNew: boolean, caret?: number) => {
     creatingText.current = isNew;
     if (!isNew) store.getState().beginChange(labels.editText);
+    setEditCaret(isNew ? 'all' : (caret ?? shape.text.length));
     setUi((u) => ({ ...u, selectedId: shape.id, editingId: shape.id }));
   };
 
+  /** Leaves the editor. Text never vanishes: an emptied box gets its default text back. */
   const commitText = () => {
     const state = store.getState();
     const current = state.edit.annotations.find((s) => s.id === latest.current.ui.editingId);
     if (!current || current.type !== 'text') return;
-    if (current.text.trim() === '') {
-      if (creatingText.current) state.cancelChange();
-      else {
-        update(labels.deleteShape, (list) => list.filter((s) => s.id !== current.id));
-        state.endChange();
-      }
-      setUi((u) => ({ ...u, editingId: null, selectedId: null }));
-    } else {
-      state.endChange();
-      setUi((u) => ({ ...u, editingId: null }));
-    }
+    if (current.text.trim() === '')
+      replace(labels.editText, { ...current, text: labels.textDefault });
+    state.endChange();
+    setUi((u) => ({ ...u, editingId: null }));
     creatingText.current = false;
   };
 
@@ -162,11 +212,22 @@ export function AnnotateOverlay() {
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!image || event.button !== 0 || !fromStage) return;
-    if ((event.target as HTMLElement).closest('.iu-textedit, .iu-layers')) return;
+    if ((event.target as HTMLElement).closest('.iu-textedit, .iu-layers')) {
+      // The text editor / Layers panel handle their own presses (no stage pan or zoom).
+      event.stopPropagation();
+      return;
+    }
     // Take keyboard focus so Delete / Enter / Escape / shortcuts work after clicking the photo.
     rootRef.current?.focus({ preventScroll: true });
     if (ui.editingId) commitText();
     const screen = local(event);
+    cancelLongPress();
+    if (event.pointerType === 'touch') {
+      longPress.current = {
+        screen,
+        timer: window.setTimeout(() => onLongPress(screen), LONG_PRESS_MS),
+      };
+    }
     const p = toO(screen);
     const tol = HIT_TOLERANCE / k;
     const handle = (event.target as Element).closest('[data-handle]')?.getAttribute('data-handle');
@@ -210,7 +271,47 @@ export function AnnotateOverlay() {
       return;
     }
 
-    // 2. Polygon: each click adds a point; clicking the first point closes it.
+    const hit = shapeAt(shapes, p, tol, measureTextHeight);
+    const move = (shape: Shape, editOnClick = false) => {
+      interaction.current = {
+        kind: 'move',
+        pointerId: event.pointerId,
+        start: p,
+        startScreen: screen,
+        shape,
+        editOnClick,
+        dragged: false,
+      };
+      store.getState().beginChange(labels.annotateModes.select);
+    };
+
+    // 2. Select tool, or grabbing the already selected shape with any tool: move it.
+    if (hit && (ui.mode === 'select' || hit.id === ui.selectedId)) {
+      capture();
+      select(hit.id);
+      // Text: a click on the box that's already selected (or any box with the Text tool) edits it.
+      move(hit, hit.type === 'text' && (ui.mode === 'text' || hit.id === ui.selectedId));
+      return;
+    }
+
+    // 3. Text tool on a text box: a click edits it (caret where clicked), a drag moves it.
+    if (ui.mode === 'text' && hit?.type === 'text') {
+      capture();
+      event.preventDefault();
+      select(hit.id);
+      move(hit, true);
+      return;
+    }
+
+    // 4. Text / Polygon (before its first point) on another shape: switch to Select, pick it up.
+    if (hit && (ui.mode === 'text' || (ui.mode === 'polygon' && polygon.length === 0))) {
+      capture();
+      selectWithSelectTool(hit.id);
+      move(hit);
+      return;
+    }
+
+    // 5. Polygon: each click adds a point; clicking the first point closes it.
     if (ui.mode === 'polygon') {
       capture();
       const first = polygon[0];
@@ -226,40 +327,35 @@ export function AnnotateOverlay() {
       return;
     }
 
-    // 3. Pen: always draws.
+    // 6. Pen draws, also over shapes; a click without drawing on a shape selects it (on release).
     if (ui.mode === 'pen') {
       capture();
       const shape = createPath([p], false, true, ui.style, ref);
       store.getState().beginChange(labels.annotateModes.pen);
       update(labels.annotateModes.pen, (list) => [...list, shape]);
-      interaction.current = { kind: 'pen', pointerId: event.pointerId, points: [p], id: shape.id };
+      interaction.current = {
+        kind: 'pen',
+        pointerId: event.pointerId,
+        points: [p],
+        id: shape.id,
+        hitId: hit?.id ?? null,
+      };
       return;
     }
 
-    const hit = shapeAt(shapes, p, tol, measureTextHeight);
-
-    // 4. Text tool: click text to select, empty space to type.
-    if (ui.mode === 'text' && !(hit && hit.type === 'text')) {
+    // 7. Text tool on empty photo: a new box reading "Text", all selected so typing replaces it.
+    if (ui.mode === 'text') {
       capture();
       // Stop the browser's mouse-down focus change, which would blur the new text box at once.
       event.preventDefault();
-      const shape = createText(p, ui.style, ref);
+      const shape = createText(p, ui.style, ref, labels.textDefault);
       store.getState().beginChange(labels.annotateModes.text);
       update(labels.annotateModes.text, (list) => [...list, shape]);
       startEditing(shape as TextShape, true);
       return;
     }
 
-    // 5. Select / move (any tool can grab the already selected shape).
-    if (hit && (ui.mode === 'select' || ui.mode === 'text' || hit.id === ui.selectedId)) {
-      capture();
-      select(hit.id);
-      interaction.current = { kind: 'move', pointerId: event.pointerId, start: p, shape: hit };
-      store.getState().beginChange(labels.annotateModes.select);
-      return;
-    }
-
-    // 6. Shape tools start a new shape (created once the pointer moves).
+    // 8. Shape tools start a new shape once the pointer moves (a click on a shape selects it).
     if (ui.mode !== 'select') {
       capture();
       interaction.current = {
@@ -269,11 +365,12 @@ export function AnnotateOverlay() {
         start: p,
         startScreen: screen,
         id: null,
+        hitId: hit?.id ?? null,
       };
       return;
     }
 
-    // 7. Empty space with Select: deselect and let the stage pan.
+    // 9. Empty space with Select: deselect and let the stage pan.
     select(null);
   };
 
@@ -283,6 +380,9 @@ export function AnnotateOverlay() {
     const p = toO(screen);
     const it = interaction.current;
     if (ui.mode === 'polygon') setCursor(p);
+    const press = longPress.current;
+    if (press && Math.hypot(screen.x - press.screen.x, screen.y - press.screen.y) >= DRAG_START)
+      cancelLongPress();
     if (!it) {
       if (ui.mode === 'select')
         setHoverId(shapeAt(shapes, p, HIT_TOLERANCE / k, measureTextHeight)?.id ?? null);
@@ -292,6 +392,12 @@ export function AnnotateOverlay() {
 
     switch (it.kind) {
       case 'move': {
+        if (
+          !it.dragged &&
+          Math.hypot(screen.x - it.startScreen.x, screen.y - it.startScreen.y) < DRAG_START
+        )
+          break;
+        it.dragged = true;
         const moved = moveShape(it.shape, p.x - it.start.x, p.y - it.start.y);
         if (event.altKey) {
           setGuides([]);
@@ -388,10 +494,32 @@ export function AnnotateOverlay() {
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    cancelLongPress();
     const it = interaction.current;
     if (!it || it.pointerId !== event.pointerId) return;
     interaction.current = null;
     setGuides([]);
+    if (it.kind === 'move' && it.editOnClick && !it.dragged) {
+      store.getState().endChange();
+      const current = store.getState().edit.annotations.find((s) => s.id === it.shape.id);
+      if (current?.type === 'text') startEditing(current, false, textIndexAt(current, it.start));
+      return;
+    }
+    if (it.kind === 'move' && !it.dragged && ui.mode !== 'select') {
+      // A click on a shape with a drawing tool: it's selected, and Select becomes the tool.
+      store.getState().endChange();
+      selectWithSelectTool(it.shape.id);
+      return;
+    }
+    if (it.kind === 'create' && !it.id && it.hitId) {
+      selectWithSelectTool(it.hitId);
+      return;
+    }
+    if (it.kind === 'pen' && it.hitId && it.points.length === 1) {
+      store.getState().cancelChange();
+      selectWithSelectTool(it.hitId);
+      return;
+    }
     if (it.kind === 'create' && !it.id) {
       // A click without dragging: drop a default-size shape centred on the point.
       const mode = it.mode as Parameters<typeof createShape>[0];
@@ -422,13 +550,60 @@ export function AnnotateOverlay() {
     if (it.kind !== 'create' || it.id) store.getState().endChange();
   };
 
+  /** Touch long-press: drop whatever the press started and open the menu for the shape under it. */
+  function onLongPress(screen: Point) {
+    longPress.current = null;
+    if (!fromStage || latest.current.menu) return;
+    const hit = shapeAt(shapes, toO(screen), HIT_TOLERANCE / k, measureTextHeight, {
+      includeLocked: true,
+    });
+    if (!hit) return;
+    const it = interaction.current;
+    interaction.current = null;
+    if (it && rootRef.current?.hasPointerCapture(it.pointerId))
+      rootRef.current.releasePointerCapture(it.pointerId);
+    if (store.getState().pendingChange) store.getState().cancelChange();
+    setGuides([]);
+    openMenu(hit.id, screen);
+  }
+
+  /** Right-click (and Android long-press) on a shape — locked ones too — opens its menu. */
+  const onContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    // Text being edited keeps the browser's own menu (copy / paste / spelling).
+    if ((event.target as HTMLElement).closest('.iu-textedit')) return;
+    event.preventDefault();
+    if (!fromStage || interaction.current || menu) return;
+    const fromPointer =
+      event.button === 2 || (event.nativeEvent as globalThis.PointerEvent).pointerType === 'touch';
+    if (!fromPointer) {
+      // Keyboard (Menu key): the selected shape's menu.
+      openMenuForSelection();
+      return;
+    }
+    const screen = local(event);
+    const hit = shapeAt(shapes, toO(screen), HIT_TOLERANCE / k, measureTextHeight, {
+      includeLocked: true,
+    });
+    if (hit) openMenu(hit.id, screen);
+  };
+
   const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (!fromStage) return;
+    // Double-clicks on the text editor / Layers panel are theirs (e.g. select a word): no zoom.
+    if ((event.target as HTMLElement).closest('.iu-textedit, .iu-layers')) {
+      event.stopPropagation();
+      return;
+    }
     if (ui.mode === 'polygon') {
+      event.stopPropagation();
       finishPolygon(polygon);
       return;
     }
     const hit = shapeAt(shapes, toO(local(event)), HIT_TOLERANCE / k, measureTextHeight);
+    // On a shape, a double-click never zooms the photo (the Stage zooms on empty photo only).
+    if (hit) event.stopPropagation();
+    // The second click of the double-click may already have opened the editor.
+    if (getAnnotateState(store).editingId) return;
     if (hit?.type === 'text' && !hit.locked) startEditing(hit, false);
   };
 
@@ -448,7 +623,9 @@ export function AnnotateOverlay() {
       const mod = e.metaKey || e.ctrlKey;
       const state = store.getState();
 
-      if (e.key === 'Escape') {
+      if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+        if (!openMenuForSelection()) return;
+      } else if (e.key === 'Escape') {
         if (poly.length) setPolygon([]);
         else if (u.selectedId) setUi((v) => ({ ...v, selectedId: null }));
         else return;
@@ -457,17 +634,11 @@ export function AnnotateOverlay() {
         else if (sel?.type === 'text' && !sel.locked) startEditing(sel, false);
         else return;
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !sel.locked) {
-        state.update(labels.deleteShape, (draft) => {
-          draft.annotations = draft.annotations.filter((s) => s.id !== sel.id);
-        });
+        actions.remove(sel.id);
         setUi((v) => ({ ...v, selectedId: null }));
       } else if (mod && e.key.toLowerCase() === 'd' && sel) {
-        const copy = { ...moveShape(sel, r * 0.03, r * 0.03), id: createShapeId() };
-        state.update(labels.duplicate, (draft) => {
-          const index = draft.annotations.findIndex((s) => s.id === sel.id);
-          draft.annotations.splice(index + 1, 0, copy);
-        });
-        setUi((v) => ({ ...v, selectedId: copy.id }));
+        const copyId = actions.duplicate(sel, r * 0.03);
+        setUi((v) => ({ ...v, selectedId: copyId }));
       } else if (e.key.startsWith('Arrow') && sel && !sel.locked && !mod) {
         const step = (e.shiftKey ? 10 : 1) / scale;
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
@@ -492,6 +663,28 @@ export function AnnotateOverlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reads latest values from a ref
   }, [store]);
 
+  // A press outside the editor, or on empty editor chrome (toolbar background…), deselects.
+  // Controls keep the selection — they edit it — and so do popovers, menus and the Layers panel.
+  useEffect(() => {
+    const layer = rootRef.current;
+    const root = layer?.closest('.iu-root');
+    if (!layer || !root) return;
+    const onPointerDown = (event: globalThis.PointerEvent) => {
+      if (!latest.current.ui.selectedId) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      if (
+        root.contains(target) &&
+        (layer.contains(target) || target.closest('.iu-portal') || target.closest(INTERACTIVE))
+      )
+        return;
+      setUi((u) => ({ ...u, selectedId: null }));
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads latest values from a ref
+  }, []);
+
   // Leaving the tool mid-edit: commit text, drop an unfinished polygon.
   useEffect(
     () => () => {
@@ -510,6 +703,7 @@ export function AnnotateOverlay() {
       .map((p) => `${p.x},${p.y}`)
       .join(' ');
   const hover = hoverId && hoverId !== ui.selectedId ? shapes.find((s) => s.id === hoverId) : null;
+  const menuShape = menu ? (shapes.find((s) => s.id === menu.shapeId) ?? null) : null;
 
   return (
     <div
@@ -524,6 +718,7 @@ export function AnnotateOverlay() {
       onPointerCancel={onPointerUp}
       onPointerLeave={() => setHoverId(null)}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
     >
       <svg className="iu-annotate-layer__svg" width={stage.width} height={stage.height}>
         {hover && (
@@ -568,6 +763,7 @@ export function AnnotateOverlay() {
           toStage={toStage}
           scale={k}
           placeholder={labels.textPlaceholder}
+          caret={editCaret}
           onChange={(text) => replace(labels.editText, { ...editing, text })}
           onDone={commitText}
         />
@@ -576,8 +772,36 @@ export function AnnotateOverlay() {
         <LayersPanel
           shapes={shapes}
           selectedId={ui.selectedId}
+          revealId={revealLayer}
           onSelect={(id) => select(id)}
           onClose={() => setUi((u) => ({ ...u, layersOpen: false }))}
+        />
+      )}
+      {menuShape && menu && (
+        <ShapeMenu
+          open
+          onOpenChange={(open) => {
+            if (open) return;
+            // The anchor can't take focus: give it back to the photo now, so shortcuts keep
+            // working (unless "Show in Layers" moved it to the Layers row).
+            // (Radix can report the close twice, so the flag is only reset when a menu opens.)
+            if (!keepMenuFocus.current) rootRef.current?.focus({ preventScroll: true });
+            setMenu(null);
+          }}
+          shape={menuShape}
+          onSelect={select}
+          onShowInLayers={() => {
+            keepMenuFocus.current = true;
+            setUi((u) => ({ ...u, layersOpen: true, selectedId: menuShape.id }));
+            setRevealLayer({ id: menuShape.id });
+          }}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          trigger={
+            <span
+              className="iu-annotate__menu-anchor"
+              style={{ left: menu.at.x, top: menu.at.y }}
+            />
+          }
         />
       )}
     </div>
@@ -672,6 +896,7 @@ function TextEditor({
   toStage,
   scale,
   placeholder,
+  caret,
   onChange,
   onDone,
 }: {
@@ -679,6 +904,8 @@ function TextEditor({
   toStage: Affine;
   scale: number;
   placeholder: string;
+  /** `'all'` selects the whole text (a new box: typing replaces it), a number places the caret. */
+  caret: number | 'all';
   onChange: (text: string) => void;
   onDone: () => void;
 }) {
@@ -689,10 +916,12 @@ function TextEditor({
       const el = ref.current;
       if (!el) return;
       el.focus();
-      // Caret at the end: re-editing shouldn't replace the text on the first keystroke.
-      el.setSelectionRange(el.value.length, el.value.length);
+      if (caret === 'all') el.select();
+      else el.setSelectionRange(caret, caret);
     });
     return () => cancelAnimationFrame(frame);
+    // Only when the editor opens; later caret moves belong to the user.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const box = getShapeBox(shape, measureTextHeight(shape));
   const c = applyToPoint(toStage, boxCenter(box));

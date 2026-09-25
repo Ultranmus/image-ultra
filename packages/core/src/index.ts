@@ -1,7 +1,13 @@
 export type { EditorStatus, ImageSource, LoadedImage, Point, Size, ToolId } from './types';
 export { TOOL_IDS } from './types';
 
-export { loadImage, ImageLoadError, type LoadImageOptions } from './loader/loadImage';
+export {
+  loadImage,
+  ImageLoadError,
+  type ImageLoadErrorCode,
+  type LoadImageOptions,
+} from './loader/loadImage';
+export { detectImageFormat, type ImageFormat } from './loader/detectFormat';
 
 /* Edit state */
 export {
@@ -152,6 +158,7 @@ export {
   loadAnnotationAssets,
   measureTextHeight,
   textFont,
+  textIndexAt,
   type DrawAnnotationsOptions,
   type TextLayout,
 } from './render/annotations';

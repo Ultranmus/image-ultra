@@ -32,6 +32,7 @@ import { themeOverridesToStyle, type ThemeMode, type ThemeOverrides } from '../t
 import { ControlBar } from './ControlBar';
 import { Stage } from './Stage';
 import { ToolRail } from './ToolRail';
+import { TooltipLayer } from './TooltipLayer';
 import { TopBar } from './TopBar';
 
 const MOTION_MS = 320;
@@ -75,7 +76,10 @@ export interface ImageEditorProps {
   fonts?: FontOption[];
   /** Shows a Cancel button in the TopBar when provided. */
   onCancel?: () => void;
-  /** Load, export or `initialState` errors. Defaults to `console.error`. */
+  /**
+   * Load, export or `initialState` errors. The editor already shows load errors on screen, so
+   * without this they're only logged with `console.warn`.
+   */
   onError?: (error: Error) => void;
   className?: string;
   style?: CSSProperties;
@@ -131,6 +135,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   const labels = useMemo(() => mergeLabels(labelOverrides), [labelOverrides]);
   const [looks, setLooks] = useLooksState(controlledLooks, onLooksChange, persistLooks);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const [rootElement, setRootElement] = useState<HTMLElement | null>(null);
   const context = useMemo<EditorContextValue>(
     () => ({ store, labels, looks, setLooks, portalContainer, fonts }),
     // setLooks is recreated each render but only reads refs/state setters.
@@ -148,7 +153,9 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   const reportError = (error: unknown) => {
     const err = error instanceof Error ? error : new Error(String(error));
     if (latest.current.onError) latest.current.onError(err);
-    else console.error(err);
+    // warn, not error: a bad file is a user mistake, not a crash (and dev overlays treat
+    // console.error as an application error).
+    else console.warn(err);
   };
 
   const parseInitial = (): EditState | undefined => {
@@ -260,6 +267,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   return (
     <EditorContext.Provider value={context}>
       <div
+        ref={setRootElement}
         className={['iu-root', className].filter(Boolean).join(' ')}
         data-iu-theme={theme === 'auto' ? undefined : theme}
         style={{ ...themeOverridesToStyle(themeOverrides), ...style }}
@@ -275,6 +283,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
         </div>
         {/* Popovers render here so they inherit the theme variables. */}
         <div ref={setPortalContainer} className="iu-portal" />
+        <TooltipLayer root={rootElement} container={portalContainer} />
         <div className="iu-sr-only" aria-live="polite">
           {activeTool ? toolLabel(activeTool, labels) : ''}
         </div>

@@ -17,6 +17,11 @@ export interface Labels {
   toolbarLabel: string;
   loading: string;
   loadError: string;
+  /** `{format}` is replaced with the file type, e.g. `HEIC`. */
+  loadErrorUnsupported: string;
+  loadErrorDamaged: string;
+  loadErrorNotImage: string;
+  loadErrorNetwork: string;
   emptyTitle: string;
   emptyHint: string;
   browse: string;
@@ -97,6 +102,11 @@ export interface Labels {
   noLayers: string;
   bringForward: string;
   sendBackward: string;
+  bringToFront: string;
+  sendToBack: string;
+  showInLayers: string;
+  /** Accessible name of the "⋯" menu button on each layer and of the canvas context menu. */
+  shapeMenu: string;
   showLayer: string;
   hideLayer: string;
   lockLayer: string;
@@ -108,6 +118,8 @@ export interface Labels {
   annotateHint: string;
   polygonHint: string;
   textPlaceholder: string;
+  /** Content of a new text box (selected, so typing replaces it). */
+  textDefault: string;
   editText: string;
   rotate: string;
 
@@ -153,6 +165,10 @@ export const defaultLabels: Labels = {
   toolbarLabel: 'Editing tools',
   loading: 'Loading image…',
   loadError: 'This image could not be loaded.',
+  loadErrorUnsupported: 'This file type ({format}) isn’t supported.',
+  loadErrorDamaged: 'This image file is damaged and can’t be opened.',
+  loadErrorNotImage: 'This file isn’t an image.',
+  loadErrorNetwork: 'Couldn’t download the image.',
   emptyTitle: 'Drop an image here',
   emptyHint: 'PNG, JPEG, WebP, GIF or AVIF',
   browse: 'Browse files',
@@ -249,6 +265,10 @@ export const defaultLabels: Labels = {
   noLayers: 'Nothing drawn yet',
   bringForward: 'Bring forward',
   sendBackward: 'Send backward',
+  bringToFront: 'Bring to front',
+  sendToBack: 'Send to back',
+  showInLayers: 'Show in Layers',
+  shapeMenu: 'Layer actions',
   showLayer: 'Show',
   hideLayer: 'Hide',
   lockLayer: 'Lock',
@@ -260,6 +280,7 @@ export const defaultLabels: Labels = {
   annotateHint: 'Pick a tool and draw on the photo, or select a shape to change it.',
   polygonHint: 'Click to add points · click the first point or press Enter to finish · Esc cancels',
   textPlaceholder: 'Type something',
+  textDefault: 'Text',
   editText: 'Edit text',
   rotate: 'Rotate',
 

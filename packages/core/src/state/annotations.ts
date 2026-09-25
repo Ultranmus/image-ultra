@@ -251,16 +251,17 @@ export function hitTestShape(
   }
 }
 
-/** Topmost visible, unlocked shape at `point`, or `null`. */
+/** Topmost visible shape at `point` (unlocked only, unless `includeLocked`), or `null`. */
 export function shapeAt(
   shapes: readonly Shape[],
   point: Point,
   tolerance: number,
   textHeights: (shape: TextShape) => number | undefined = () => undefined,
+  options: { includeLocked?: boolean } = {},
 ): Shape | null {
   for (let i = shapes.length - 1; i >= 0; i--) {
     const s = shapes[i]!;
-    if (s.locked || s.hidden) continue;
+    if ((s.locked && !options.includeLocked) || s.hidden) continue;
     if (hitTestShape(s, point, tolerance, s.type === 'text' ? textHeights(s) : undefined)) return s;
   }
   return null;

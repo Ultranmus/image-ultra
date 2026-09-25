@@ -107,8 +107,26 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - **Annotate stage:** accent selection outline, white square handles (10px visual, rotated with the
   shape, direction-aware cursors), a round rotate handle 28px above the top edge, round endpoint
   handles for lines, pink dashed snap guides, hover outline in Select mode. Text is edited in place
-  (transparent textarea over the canvas, dashed accent outline). Layers = floating panel top-right.
-- **Popovers** (Radix, portalled inside `.iu-root`) are the only floating UI besides the Layers panel.
+  (transparent textarea over the canvas, dashed accent outline). Layers = floating panel top-right;
+  each row: name, show/hide, lock, up/down, and "⋯" (the shape menu).
+- **Annotate clicks:** with any drawing tool, a click on an existing shape selects it and switches to
+  Select (a drag still draws). Select tool: click the already selected text box → edit it. Double-
+  clicking a shape never zooms the photo. Clicking outside the editor or on empty toolbar space
+  deselects; clicking a control keeps the selection. "No colour" = transparency checkerboard. Text tool: click a text box → edit it, caret where you clicked; click
+  empty photo → new box reading "Text", all selected so typing replaces it. Text never disappears on
+  its own — an emptied box goes back to "Text"; only Delete removes it.
+- **Shape menu** (right-click / long-press on a shape, including locked ones; Shift+F10 or the Menu
+  key for the selected shape; "⋯" in Layers): Lock/Unlock, Hide/Show · Bring to front, Bring forward,
+  Send backward, Send to back · Duplicate, Delete · Show in Layers. Compact 32px rows, separators,
+  Delete in the danger colour, disabled rows muted. Same surface as popovers.
+- **Popovers and menus** (Radix, portalled inside `.iu-root`) are the only floating UI besides the
+  Layers panel and tooltips.
+- **Tooltips:** one shared tooltip for every `data-tooltip` element — below the element (flips above
+  near the bottom edge, stays inside the window), 400ms hover delay, instant between neighbours,
+  shown on keyboard focus, never on touch. Never clipped by panels.
+- **Load errors** use the empty-state screen with a specific title: "This file type (HEIC) isn't
+  supported.", "This image file is damaged and can't be opened.", "This file isn't an image.",
+  "Couldn't download the image." — plus Browse files. Never a framework/browser error.
 - Dense panels use small 24px IconButtons (`size="sm"`) for secondary actions (per-editor reset).
 - Placeholder tools show one muted line ("coming soon") until their phase.
 

@@ -677,6 +677,14 @@
   .iu-stage__annotations {
     pointer-events: none;
   }
+
+  /* Invisible point the canvas context menu opens from (right-click / long-press position). */
+  .iu-annotate__menu-anchor {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
 }
 
 @layer image-ultra {

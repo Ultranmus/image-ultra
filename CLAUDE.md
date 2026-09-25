@@ -5,6 +5,8 @@ Feature reference: Filerobot Image Editor. UX reference: Pintura. We copy **neit
 
 ## Read these before any work (source of truth)
 
+0. `docs/internal/HANDOFF.md` — **where the last session stopped and what's next. Start here; update it before ending a session.**
+
 1. `docs/internal/PLAN.md` — phases, task checklist, what is next
 2. `docs/internal/UI_VISION.md` — the experience, layout, interaction and visual rules. **Never invent UI outside this.**
 3. `docs/internal/THEMING.md` — every design token. Components use tokens only.

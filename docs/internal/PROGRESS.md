@@ -188,3 +188,57 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Investigated "GPU stall due to ReadPixels": headless-Chrome-only (reproduced with a bare WebGL page);
   none in a headed browser. Preview canvas switched to premultiplied alpha anyway (DECISIONS #54).
 - Playground got a favicon (the only 404 in a headed browser).
+
+## 2026-09-24 · Owner review of Phase 5 → Phase 5.1 planned
+
+- Owner reported 6 issues (clipped tooltips, `.ico` shows a framework error, drawing tools don't
+  switch to Select when clicking a shape, empty text boxes vanish, Text tool makes a new box instead
+  of editing the clicked one, no way to unlock/show shapes from the canvas).
+- Recorded with suggested fixes in `BACKLOG.md` ("Next — fix before Phase 6") and as
+  **Phase 5.1** in `PLAN.md`. Phase 6 starts after these are fixed.
+
+## 2026-09-25 · Phase 5.1 — owner fixes
+
+- **Tooltips** (`components/TooltipLayer.tsx`): one shared tooltip for every `data-tooltip` element,
+  rendered in `.iu-portal` with fixed positioning — no longer clipped by the Layers list or ControlBar.
+  Flips above near the bottom, stays inside the window, instant between neighbours, keyboard focus
+  shows it, touch doesn't. CSS `::after` tooltip removed.
+- **Image loading** (`core/loader`): `detectImageFormat` sniffs the real format from the first bytes;
+  `ImageLoadError` now has `code` (`unsupported` / `damaged` / `not-image` / `network`) and `format`.
+  `<img>` decode fallback → SVGs (incl. viewBox-only) now open. HTTP errors say so. New store action
+  `fail()`; the Stage catches renderer errors (a `renderer.prepare()` rejection was uncaught before).
+  Error screen shows a specific message; default `onError` logs with `console.warn`.
+  Couldn't reproduce the owner's `.ico` crash in Chrome (ICO decodes fine) — see BACKLOG.
+- **Annotate clicks**: a click on a shape with any drawing tool selects it and switches to Select;
+  drags still draw. Polygon selects only before its first point.
+- **Text**: new box reads "Text", all selected; an emptied box gets "Text" back (owner chose this over
+  removing it). Text tool + click on a text box edits it with the caret at the click
+  (`core: textIndexAt`), drag moves it.
+- **Shape menu** (`ShapeMenu.tsx`, Radix Dropdown Menu): right-click (incl. locked shapes),
+  long-press, Shift+F10 / Menu key, "⋯" on Layers rows. Lock, Hide, 4 order moves, Duplicate,
+  Delete, Show in Layers. Shared actions in `annotate/actions.ts` (Layers, ControlBar, shortcuts use
+  them too). `shapeAt(..., { includeLocked })` in core.
+- Fix found while testing: after a menu action focus fell to `<body>`, so shortcuts stopped working
+  (Radix restores focus a tick later, and reports the close twice) → focus returns to the photo on close.
+- Tests: 85 unit (+ format sniffing, `textIndexAt`, locked hit-test) · 44 e2e (+ `loading.spec.ts`:
+  ICO, SVG, damaged JPEG, HEIC, non-image, 404; Annotate: text never vanishes, caret-at-click edit,
+  click-selects-with-any-tool, context menu/unlock/Show in Layers/⋯, tooltip not clipped).
+
+**Next:** owner reviews Phase 5.1 in the playground → then Phase 6 — Extras.
+
+## 2026-09-25 · Phase 5.1 — owner review round 1
+
+- Colour popover: swatch rows spread across the full width (spare space was collecting on the right).
+- Text: in Select mode, a click on the already selected text box enters editing (caret at the click);
+  double-clicking a shape or the text editor no longer zooms the photo. Root cause: `dblclick` is
+  dispatched to the stage itself (common ancestor of both clicks), so the Stage now skips its zoom when
+  the press was claimed by a tool overlay (DECISIONS #60).
+- Tests: 45 e2e (+ click-selected-text-to-edit, no zoom on text, empty photo still zooms).
+
+## 2026-09-25 · Phase 5.1 — owner review round 2
+
+- "No colour" swatch and colour buttons set to none show a transparency checkerboard instead of a red
+  slash (both themes).
+- Annotate: a press outside the editor or on empty toolbar space deselects the shape; controls,
+  popovers, menus and the Layers panel keep it (DECISIONS #61).
+- Tests: 46 e2e (+ deselect on outside / empty ControlBar, controls keep selection).

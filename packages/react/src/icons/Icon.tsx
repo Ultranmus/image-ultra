@@ -342,3 +342,11 @@ export const IconTextSize = createIcon(
   'TextSize',
   <path d="M3.5 7V5.5h10V7M8.5 5.5V19M6.5 19h4M14 12.5v-1h6.5v1M17.25 11.5V19M15.75 19h3" />,
 );
+export const IconMore = createIcon(
+  'More',
+  <>
+    <circle cx="5.5" cy="12" r="0.9" fill="currentColor" />
+    <circle cx="12" cy="12" r="0.9" fill="currentColor" />
+    <circle cx="18.5" cy="12" r="0.9" fill="currentColor" />
+  </>,
+);

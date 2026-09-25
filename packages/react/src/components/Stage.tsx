@@ -6,6 +6,7 @@ import {
   type MouseEvent,
   type PointerEvent,
   type ComponentType,
+  type CSSProperties,
 } from 'react';
 import {
   compose,
@@ -14,6 +15,7 @@ import {
   ensureAnnotationFonts,
   getImageBounds,
   getOrientedToOutput,
+  getBeforeState,
   getOutputSize,
   ImageLoadError,
   loadAnnotationAssets,
@@ -22,11 +24,14 @@ import {
   panBy,
   zoomAt,
   type EditorState,
+  type EditState,
+  type LoadedImage,
   type Point,
   type Renderer,
 } from '@image-ultra/core';
 import { ToolIdContext, useEditorState, useEditorStore, useLabels } from '../context';
 import type { Labels } from '../i18n';
+import { CompareDivider } from './CompareDivider';
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
 import { IconAlert, IconImage, IconUpload } from '../icons/Icon';
 import { getAnnotateState } from '../tools/annotate/state';
@@ -51,6 +56,8 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const annotationsRef = useRef<HTMLCanvasElement>(null);
+  const beforeRef = useRef<HTMLCanvasElement>(null);
+  const compare = useEditorState((s) => s.compare);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropTarget, setIsDropTarget] = useState(false);
   const showLoading = useDelayedFlag(status === 'loading', LOADING_DELAY_MS);
@@ -71,8 +78,9 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   // Paint outside React: subscribe to the store and redraw at most once per frame.
   useEffect(() => {
     const canvas = canvasRef.current;
+    const beforeCanvas = beforeRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas || !beforeCanvas || !container) return;
     // A preview that can't be drawn shows the error screen instead of throwing (never uncaught).
     const fail = (error: unknown) => {
       if (disposed) return;
@@ -88,6 +96,24 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     }
     let frame = 0;
     let disposed = false;
+    // "Before" side of compare: its own canvas + renderer, created the first time it's needed.
+    let beforeRenderer: Renderer | null = null;
+    let beforeFor: EditState | null = null;
+    let beforeState: EditState | null = null;
+    const drawBefore = (state: EditorState, image: LoadedImage) => {
+      beforeRenderer ??= createRenderer(beforeCanvas, { premultipliedAlpha: true });
+      if (!beforeRenderer.isReady(image)) {
+        beforeRenderer.prepare(image).then(() => {
+          if (!disposed) schedule();
+        }, fail);
+        return;
+      }
+      if (beforeFor !== state.edit) {
+        beforeFor = state.edit;
+        beforeState = getBeforeState(state.edit);
+      }
+      renderPreview(beforeRenderer, container, { ...state, edit: beforeState! });
+    };
     const draw = () => {
       frame = 0;
       const state = store.getState();
@@ -101,6 +127,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
           return;
         }
         renderPreview(renderer, container, state);
+        if (state.compare !== null) drawBefore(state, image);
       } catch (error) {
         fail(error);
       }
@@ -115,7 +142,8 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         state.image !== prev.image ||
         state.stageSize !== prev.stageSize ||
         state.edit !== prev.edit ||
-        state.cropView !== prev.cropView
+        state.cropView !== prev.cropView ||
+        (state.compare === null) !== (prev.compare === null)
       ) {
         schedule();
       }
@@ -135,6 +163,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       themeObserver.disconnect();
       cancelAnimationFrame(frame);
       renderer.dispose();
+      beforeRenderer?.dispose();
     };
   }, [store]);
 
@@ -320,6 +349,9 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     openFile(event.dataTransfer.files[0]);
   };
 
+  const compareStyle =
+    compare === null ? undefined : ({ ['--iu-compare']: compare } as CSSProperties);
+
   return (
     <div
       ref={containerRef}
@@ -348,9 +380,19 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       />
 
       <canvas
+        ref={beforeRef}
+        className="iu-stage__canvas iu-stage__before"
+        data-hidden={status !== 'ready' || compare === null ? '' : undefined}
+        style={compareStyle}
+        aria-hidden="true"
+      />
+
+      <canvas
         ref={annotationsRef}
         className="iu-stage__canvas iu-stage__annotations"
         data-hidden={status !== 'ready' ? '' : undefined}
+        data-compare={compare !== null ? '' : undefined}
+        style={compareStyle}
         aria-hidden="true"
       />
 
@@ -359,6 +401,8 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
           <Overlay />
         </ToolIdContext.Provider>
       )}
+
+      {status === 'ready' && compare !== null && <CompareDivider split={compare} />}
 
       {showLoading && (
         <div className="iu-stage__overlay" role="status">

@@ -17,6 +17,7 @@ export {
   EditStateError,
   MAX_OUTPUT_SIDE,
   createEditState,
+  getBeforeState,
   createCurvesState,
   createFinetuneState,
   createGeometryState,
@@ -89,6 +90,7 @@ export {
   pushHistory,
   redoHistory,
   undoHistory,
+  jumpHistory,
   type History,
   type HistoryEntry,
 } from './history/history';

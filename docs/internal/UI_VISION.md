@@ -29,7 +29,7 @@ the component is wrong (or this doc must be updated first, deliberately).
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ TopBar:  [✕ Cancel] [↺ Reset]     [↶][↷]  [− 100% +]  [Done ▸] │  48px
+│ TopBar: [✕][↺]    [↶][↷][🕘] │ [◧] │ [− 100% +]      [⌨][Done ▸] │  48px
 ├────────┬─────────────────────────────────────────────────────┤
 │ Tool   │                                                     │
 │ Rail   │                    STAGE                            │
@@ -45,7 +45,7 @@ the component is wrong (or this doc must be updated first, deliberately).
 ### Mobile / narrow (container width < 768px)
 
 ```
-TopBar (compact: ✕  ↶ ↷  Done)
+TopBar (compact: ✕ ↺  ↶ ↷ 🕘 ◧ 100%  ✓)
 STAGE
 ControlBar (contextual)
 ToolRail (horizontal, scrollable, bottom — thumb zone)
@@ -107,7 +107,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - **Annotate stage:** accent selection outline, white square handles (10px visual, rotated with the
   shape, direction-aware cursors), a round rotate handle 28px above the top edge, round endpoint
   handles for lines, pink dashed snap guides, hover outline in Select mode. Text is edited in place
-  (transparent textarea over the canvas, dashed accent outline). Layers = floating panel top-right;
+  (transparent textarea over the canvas, dashed accent outline) and keeps its resize/rotate handles
+  while editing — resize or rotate without leaving the text (like Canva). Layers = floating panel top-right;
   each row: name, show/hide, lock, up/down, and "⋯" (the shape menu).
 - **Annotate clicks:** with any drawing tool, a click on an existing shape selects it and switches to
   Select (a drag still draws). Select tool: click the already selected text box → edit it. Double-
@@ -119,6 +120,16 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   key for the selected shape; "⋯" in Layers): Lock/Unlock, Hide/Show · Bring to front, Bring forward,
   Send backward, Send to back · Duplicate, Delete · Show in Layers. Compact 32px rows, separators,
   Delete in the danger colour, disabled rows muted. Same surface as popovers.
+- **TopBar extras:** 🕘 History popover (list: "Original" + each step label, current step in
+  accent, later steps muted = redo-able; click jumps). ◧ Compare: press-and-hold shows the whole
+  "before" image, a click toggles split view (aria-pressed). ⌨ Keyboard shortcuts popover (also `?`):
+  two groups, General and Annotate, key caps in mono on `--iu-surface-2`. Below 768px only ⌨ and
+  the dividers hide; below 480px zoom is just the % button (tap = fit ↔ 100%, pinch to zoom) and
+  Done shows only its icon; below 360px TopBar buttons are 34px
+  (2px gaps) so it fits at 320px. Buttons always keep a gap: hover/active backgrounds never touch.
+- **Split compare:** thin white divider (`--iu-crop-frame`) across the stage with a round 28px grab
+  handle (role=slider, ←/→ move it), "Before" / "After" pills at the top on each side
+  (`--iu-overlay` background). Before = same crop/rotation, no colour or annotations.
 - **Popovers and menus** (Radix, portalled inside `.iu-root`) are the only floating UI besides the
   Layers panel and tooltips.
 - **Tooltips:** one shared tooltip for every `data-tooltip` element — below the element (flips above

@@ -493,6 +493,11 @@
     pointer-events: none;
   }
 
+  /* Handles of the text box being edited sit above the text box itself. */
+  .iu-annotate-layer__svg--above {
+    z-index: calc(var(--iu-z-popover) + 1);
+  }
+
   .iu-annotate__selection,
   .iu-annotate__hover {
     fill: none;

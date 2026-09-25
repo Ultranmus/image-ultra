@@ -124,16 +124,20 @@ Details and suggested fixes in `BACKLOG.md` → "Next — fix before Phase 6".
 
 ### Phase 6 — Extras
 
-- [ ] Watermark (text/image, position presets, tile, opacity)
-- [ ] Redact (blur / pixelate / solid)
-- [ ] Frames & borders, background fill (color/image)
-- [ ] Before/after compare (hold + split slider)
-- [ ] History panel, keyboard shortcuts + help overlay
-- [ ] EXIF strip option on export
+Approved 2026-09-25 (order below). Multi-select moved to Phase 7; Sticker added here (DECISIONS #62).
+
+- [x] **6.1** Before/after compare (hold `\` or the Compare button; click = split view with a
+      draggable divider), History popover (jump to any step), keyboard shortcuts popover (`?`)
+- [ ] **6.2** Redact (blur / pixelate / solid)
+- [ ] **6.3** Frames & borders; Fill = background colour/image behind transparent areas
+- [ ] **6.4** Watermark (text/image, position presets, tile, opacity); Sticker (built-in set + own
+      images, placed like shapes)
+- [ ] **6.5** EXIF strip option on export; copy / paste shapes (⌘C / ⌘V, also between photos)
 
 ### Phase 7 — Polish
 
 - [ ] Work through `BACKLOG.md` items tagged _Phase 7_
+- [ ] Multi-select (Shift-click, marquee) + group move/align
 
 - [ ] Mobile layout & thumb-zone controls, gestures
 - [ ] Motion pass, reduced-motion

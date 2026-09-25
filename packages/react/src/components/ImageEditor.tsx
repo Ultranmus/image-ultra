@@ -22,6 +22,7 @@ import {
   type Look,
   type ToolId,
 } from '@image-ultra/core';
+import { useCompareHold } from '../hooks/useCompareHold';
 import { useLooksState } from '../hooks/useLooksState';
 import { resolveTools, type ToolInput } from '../tools/builtins';
 import { toolLabel } from '../tools/toolLabel';
@@ -143,6 +144,8 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     [store, labels, looks, portalContainer, fonts],
   );
   const [saving, setSaving] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const compareHold = useCompareHold(store);
 
   // Latest callbacks/options without re-running effects when parents pass new closures.
   const latest = useRef({ initialState, exportOptions, onSave, onChange, onError });
@@ -248,6 +251,16 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
       event.preventDefault();
       return;
     }
+    if (event.key === '\\') {
+      event.preventDefault();
+      if (!event.repeat) compareHold.start();
+      return;
+    }
+    if (event.key === '?') {
+      event.preventDefault();
+      setShortcutsOpen(true);
+      return;
+    }
     const handled: Record<string, () => void> = {
       '+': () => state.zoomBy(1.25, { animate: true }),
       '=': () => state.zoomBy(1.25, { animate: true }),
@@ -272,8 +285,21 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
         data-iu-theme={theme === 'auto' ? undefined : theme}
         style={{ ...themeOverridesToStyle(themeOverrides), ...style }}
         onKeyDown={onKeyDown}
+        onKeyUp={(event) => {
+          if (event.key === '\\') compareHold.end();
+        }}
+        onBlur={(event) => {
+          // Focus left the editor while holding \ (e.g. switched window): stop comparing.
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) compareHold.end();
+        }}
       >
-        <TopBar onCancel={onCancel} onDone={() => void save()} saving={saving} />
+        <TopBar
+          onCancel={onCancel}
+          onDone={() => void save()}
+          saving={saving}
+          shortcutsOpen={shortcutsOpen}
+          onShortcutsOpenChange={setShortcutsOpen}
+        />
         <div className="iu-body">
           <ToolRail tools={resolvedTools} idPrefix={idPrefix} />
           <main className="iu-main">

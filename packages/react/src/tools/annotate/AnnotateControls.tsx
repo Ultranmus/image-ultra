@@ -40,6 +40,7 @@ import {
 import type { IconProps } from '../../icons/Icon';
 import {
   fontSizeFor,
+  MODE_SHORTCUTS,
   nearestStep,
   referenceSize,
   strokeWidthFor,
@@ -49,17 +50,6 @@ import {
   type SizeStep,
 } from './state';
 import { shapeActions } from './actions';
-
-export const MODE_SHORTCUTS: Record<AnnotateMode, string> = {
-  select: 'V',
-  pen: 'P',
-  line: 'L',
-  arrow: 'A',
-  rect: 'R',
-  ellipse: 'O',
-  polygon: 'G',
-  text: 'T',
-};
 
 const MODE_ICONS: Record<AnnotateMode, (p: IconProps) => React.JSX.Element> = {
   select: IconPointer,

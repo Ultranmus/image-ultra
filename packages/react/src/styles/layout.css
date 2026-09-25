@@ -209,9 +209,51 @@
       padding: var(--iu-space-1);
     }
 
+    /* Compact TopBar: no dividers or shortcuts (no keyboard on phones); zoom + history stay. */
     .iu-topbar__divider,
-    .iu-zoom {
+    .iu-topbar .iu-topbar__shortcuts {
       display: none;
+    }
+
+    .iu-topbar {
+      gap: var(--iu-space-1);
+      padding: 0 var(--iu-space-1);
+    }
+  }
+
+  /* Phones: zoom is the % button (tap = fit ↔ 100%) plus pinch; Done shows only its icon. */
+  @container iu (max-width: 479px) {
+    .iu-zoom > .iu-button {
+      display: none;
+    }
+
+    .iu-zoom__value {
+      min-width: var(--iu-size-zoom-compact);
+    }
+
+    .iu-topbar__end .iu-button--text {
+      padding: 0;
+    }
+
+    .iu-topbar__end .iu-button--text .iu-button__label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+
+  /* The smallest supported editor (320px): slightly smaller TopBar buttons so everything fits. */
+  @container iu (max-width: 359px) {
+    .iu-topbar__group {
+      gap: 2px;
+    }
+
+    .iu-topbar .iu-button {
+      min-width: var(--iu-size-topbar-compact);
+      height: var(--iu-size-topbar-compact);
     }
   }
 

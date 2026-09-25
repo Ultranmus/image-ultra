@@ -72,6 +72,21 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       non-interactive editor chrome; presses on controls (they edit the selection), popovers, menus
       and the Layers panel keep it.
 
+### Owner review of Phase 6.1 (2026-09-25) · fixed same day
+
+- [x] **Mobile TopBar: show zoom and History** (hide only Keyboard shortcuts). Must still fit at
+      320px wide: compact zoom (−/+ drop below 480px, the % button stays and pinch zooms), Done
+      icon-only below 480px, slightly smaller TopBar buttons below 360px.
+- [x] **Text box stays in edit mode after clicking the toolbar** (dashed outline remains). Safari
+      doesn't move focus to a clicked button, so the text editor never blurs and never commits.
+      Fix: any press outside the text editor commits the text explicitly (not via blur).
+- [x] **Text tool: a click on the dark area outside the photo creates a text box there** (and it stays
+      selected). Fix: new text only on the photo; outside it the click commits and deselects.
+
+- [x] **Text: editing and resizing are two separate modes** _(fixed 2026-09-25, DECISIONS #67)_ — while editing, the handles disappear,
+      so resizing needs Select tool → click the text again. Owner wants it like Canva: a text box being
+      edited keeps its outline + resize/rotate handles, usable without leaving editing.
+
 ### Found during Phase 5.1
 
 - [ ] **Owner's `.ico` crash not reproduced** — ask which browser/file. Chrome decodes ICO; Safari
@@ -83,7 +98,7 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### From Phase 5 — Annotate
 
-- [ ] **Multi-select** (Shift-click, marquee) and group move/align — _Phase 6/7_
+- [ ] **Multi-select** (Shift-click, marquee) and group move/align — _Phase 7_ (owner, 2026-09-25)
 - [ ] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _Phase 6_
 - [ ] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _Phase 7_
 - [ ] **Phone layout: Annotate rows scroll sideways** — _Phase 7 (mobile pass)_

@@ -7,6 +7,7 @@ import {
   pushHistory,
   redoHistory,
   undoHistory,
+  jumpHistory,
   type History,
 } from '../history/history';
 import { loadImage } from '../loader/loadImage';
@@ -78,6 +79,11 @@ export interface EditorState {
    * shared between a tool's Controls and StageOverlay. Not part of the edit or history.
    */
   toolState: Record<string, unknown>;
+  /**
+   * Before/after compare (UI only, never part of the edit): `null` = off, `1` = the whole image
+   * shows "before", `0…1` = split view with the divider at that fraction of the stage width.
+   */
+  compare: number | null;
 }
 
 export interface ViewportChangeOptions {
@@ -113,6 +119,9 @@ export interface EditorActions {
   cancelChange(): void;
   undo(): void;
   redo(): void;
+  /** Jump through history: negative = back, positive = forward (one change, one `onChange`). */
+  jump(steps: number): void;
+  setCompare(value: number | null): void;
   /** Back to `initialEdit`, as an undoable step. */
   reset(): void;
   /** Replace the whole edit state, e.g. from saved JSON. Clears history. */
@@ -232,12 +241,13 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
       pendingChange: null,
       tasks: [],
       toolState: {},
+      compare: null,
 
       async load(source, loadOptions = {}) {
         loadController?.abort();
         const controller = new AbortController();
         loadController = controller;
-        set({ status: 'loading', error: null });
+        set({ status: 'loading', error: null, compare: null });
         try {
           const image = await loadImage(source, { signal: controller.signal });
           if (controller.signal.aborted) {
@@ -371,6 +381,16 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
         endPending();
         const result = redoHistory(get().history, get().edit);
         if (result) commitEdit(result.state, { history: result.history });
+      },
+
+      jump(steps) {
+        endPending();
+        const result = jumpHistory(get().history, get().edit, steps);
+        if (result) commitEdit(result.state, { history: result.history });
+      },
+
+      setCompare(value) {
+        set({ compare: value === null ? null : Math.min(1, Math.max(0, value)) });
       },
 
       reset() {

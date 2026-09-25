@@ -242,3 +242,43 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Annotate: a press outside the editor or on empty toolbar space deselects the shape; controls,
   popovers, menus and the Layers panel keep it (DECISIONS #61).
 - Tests: 46 e2e (+ deselect on outside / empty ControlBar, controls keep selection).
+
+## 2026-09-25 · Phase 6.1 — compare, history, shortcuts
+
+- Plan approved: Phase 6 in five steps; Sticker added, multi-select → Phase 7 (DECISIONS #62).
+- **Compare** (DECISIONS #63): TopBar button — click toggles split view (draggable divider, ←/→ on
+  it, Before/After pills), press-and-hold or hold `\` shows the whole original. "Before" = same
+  framing, no look/annotations (`getBeforeState`), drawn on a lazily created second canvas + renderer,
+  clipped with CSS; annotations clipped to the "after" side. Store: `compare`, `setCompare`.
+- **History popover** (DECISIONS #64): "Original" + every step, current in accent, redo-able steps
+  muted; click jumps (`store.jump(steps)` → `jumpHistory`, one change / one `onChange`).
+- **Keyboard shortcuts popover**: TopBar ⌨ button or `?`; General + Annotate groups, ⌘/Ctrl per
+  platform. `MODE_SHORTCUTS` moved to `annotate/state.ts`.
+- History, ⌨ and zoom hide below 768px; Compare stays.
+- Tests: 89 unit (+ `jumpHistory`, store jump/compare, `getBeforeState`) · 50 e2e
+  (+ `extras.spec.ts`: split/drag/keys, hold `\` and button, history jumps, `?`).
+
+## 2026-09-25 · Phase 6.1 — owner review round 1
+
+- Phone TopBar now keeps History and zoom (% button; −/+ from 480px up), hides only Keyboard
+  shortcuts; Done icon-only below 480px; 36px buttons below 360px. Verified no overflow at 390/320px.
+  (Also fixed: the hide rules lost to `.iu-button`'s `display` on equal specificity.)
+- Text editing now ends on any press outside the photo layer (Safari never blurred the text box when
+  a toolbar button was clicked, so it stayed in edit mode with its dashed outline).
+- Text tool no longer creates boxes on the dark area around the photo; shape tools don't drop a
+  default shape there on a plain click (DECISIONS #66).
+- Tests: 53 e2e (+ phone TopBar at 390/320, Safari-style press ends editing, no text off-photo).
+
+## 2026-09-25 · Phase 6.1 — owner review round 2
+
+- Owner: with Compare active, hovering the zoom % button showed the two backgrounds touching. The
+  phone TopBar had `gap: 0`; buttons now keep 4px (2px at ≤ 359px, with 34px buttons and a 44px
+  zoom % button so 320px still fits). An attempted focus-ring change was reverted at the owner's request.
+- Tests: 53 e2e (phone TopBar test also checks the gap).
+
+## 2026-09-25 · Phase 6.1 — owner review round 3
+
+- Text boxes no longer have separate "edit" and "resize" modes (owner, like Canva): handles stay
+  visible while typing and can be dragged without leaving editing; typing + resizing is one undo step
+  (DECISIONS #67).
+- Tests: 54 e2e (+ resize a text box mid-edit and keep typing).

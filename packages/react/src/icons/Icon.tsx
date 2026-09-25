@@ -350,3 +350,24 @@ export const IconMore = createIcon(
     <circle cx="18.5" cy="12" r="0.9" fill="currentColor" />
   </>,
 );
+export const IconCompare = createIcon(
+  'Compare',
+  <>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <path d="M12 2.5v19M7 9.5l-2 2.5 2 2.5M17 9.5l2 2.5-2 2.5" />
+  </>,
+);
+export const IconHistory = createIcon(
+  'History',
+  <>
+    <path d="M3.75 12a8.25 8.25 0 1 0 2.5-5.9" />
+    <path d="M3.5 4v4h4M12 7.5V12l3 2" />
+  </>,
+);
+export const IconKeyboard = createIcon(
+  'Keyboard',
+  <>
+    <rect x="2.5" y="6" width="19" height="12" rx="2" />
+    <path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M8 14h8" />
+  </>,
+);

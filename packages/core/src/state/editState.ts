@@ -251,6 +251,14 @@ export function createEditState(): EditState {
   };
 }
 
+/**
+ * The "before" side of compare: the same framing (geometry + resize) with every look and overlay
+ * removed, so it lines up exactly with the edited result.
+ */
+export function getBeforeState(state: EditState): EditState {
+  return { ...createEditState(), geometry: state.geometry, resize: state.resize };
+}
+
 /** Largest output side we accept (also the practical GPU limit on most devices). */
 export const MAX_OUTPUT_SIDE = 16384;
 

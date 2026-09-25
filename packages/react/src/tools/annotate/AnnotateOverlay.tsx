@@ -33,7 +33,7 @@ import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { shapeActions } from './actions';
 import { LayersPanel } from './LayersPanel';
 import { ShapeMenu } from './ShapeMenu';
-import { MODE_SHORTCUTS } from './AnnotateControls';
+
 import { snapAngle, snapBox } from './snapping';
 import {
   createPath,
@@ -41,6 +41,7 @@ import {
   createText,
   getAnnotateState,
   getOrientedToStage,
+  MODE_SHORTCUTS,
   referenceSize,
   useAnnotateState,
   type AnnotateMode,
@@ -123,6 +124,9 @@ export function AnnotateOverlay() {
 
   // Latest values for the window-level keyboard handler.
   const latest = useRef({ ui, selected, polygon, k, ref, menu, toStage });
+  const commitRef = useRef(() => {});
+  /** The current drag started on a handle of the text being edited (editing continues after). */
+  const handleWhileEditing = useRef(false);
   useEffect(() => {
     latest.current = { ui, selected, polygon, k, ref, menu, toStage };
   });
@@ -140,6 +144,14 @@ export function AnnotateOverlay() {
     });
   const replace = (label: string, shape: Shape) =>
     update(label, (list) => list.map((s) => (s.id === shape.id ? shape : s)));
+  /** Is this point (oriented px) on the visible photo, i.e. inside the crop? */
+  const onPhoto = (p: Point): boolean => {
+    if (!image) return false;
+    const crop = getCropRect(image, edit.geometry);
+    return (
+      p.x >= crop.x && p.x <= crop.x + crop.width && p.y >= crop.y && p.y <= crop.y + crop.height
+    );
+  };
   const select = (id: string | null) => setUi((u) => ({ ...u, selectedId: id }));
   /** A click on a shape with a drawing tool: switch to Select and select it. */
   const selectWithSelectTool = (id: string) => {
@@ -192,6 +204,10 @@ export function AnnotateOverlay() {
     creatingText.current = false;
   };
 
+  useEffect(() => {
+    commitRef.current = commitText;
+  });
+
   /* ── Polygon ────────────────────────────────────────────────────── */
 
   const finishPolygon = (points: Point[]) => {
@@ -217,9 +233,18 @@ export function AnnotateOverlay() {
       event.stopPropagation();
       return;
     }
-    // Take keyboard focus so Delete / Enter / Escape / shortcuts work after clicking the photo.
-    rootRef.current?.focus({ preventScroll: true });
-    if (ui.editingId) commitText();
+    const handle = (event.target as Element).closest('[data-handle]')?.getAttribute('data-handle');
+    // A handle of the text box being edited: resize/rotate it and keep typing (like Canva). Keep the
+    // focus in the text box — no blur, so editing doesn't end.
+    const editingHandle = Boolean(handle && ui.editingId && selected?.id === ui.editingId);
+    handleWhileEditing.current = editingHandle;
+    if (editingHandle) {
+      event.preventDefault();
+    } else {
+      // Take keyboard focus so Delete / Enter / Escape / shortcuts work after clicking the photo.
+      rootRef.current?.focus({ preventScroll: true });
+      if (ui.editingId) commitText();
+    }
     const screen = local(event);
     cancelLongPress();
     if (event.pointerType === 'touch') {
@@ -230,7 +255,10 @@ export function AnnotateOverlay() {
     }
     const p = toO(screen);
     const tol = HIT_TOLERANCE / k;
-    const handle = (event.target as Element).closest('[data-handle]')?.getAttribute('data-handle');
+    // While editing, the resize joins the open "Edit text" step instead of starting its own.
+    const beginChange = (label: string) => {
+      if (!editingHandle) store.getState().beginChange(label);
+    };
     const capture = () => {
       event.stopPropagation();
       rootRef.current?.setPointerCapture(event.pointerId);
@@ -248,7 +276,7 @@ export function AnnotateOverlay() {
           startAngle: Math.atan2(screen.y - c.y, screen.x - c.x),
           shape: selected,
         };
-        store.getState().beginChange(labels.rotate);
+        beginChange(labels.rotate);
       } else if (handle === 'p0' || handle === 'p1') {
         interaction.current = {
           kind: 'endpoint',
@@ -256,7 +284,7 @@ export function AnnotateOverlay() {
           index: handle === 'p0' ? 0 : 1,
           shape: selected,
         };
-        store.getState().beginChange(labels.annotateModes.line);
+        beginChange(labels.annotateModes.line);
       } else {
         interaction.current = {
           kind: 'resize',
@@ -266,7 +294,7 @@ export function AnnotateOverlay() {
           box: getShapeBox(selected, textHeight(selected)),
           handle: handle as BoxHandle,
         };
-        store.getState().beginChange(labels.strokeWidth);
+        beginChange(labels.strokeWidth);
       }
       return;
     }
@@ -344,6 +372,11 @@ export function AnnotateOverlay() {
     }
 
     // 7. Text tool on empty photo: a new box reading "Text", all selected so typing replaces it.
+    //    Outside the photo (the dark stage around it) a click only deselects.
+    if (ui.mode === 'text' && !onPhoto(p)) {
+      select(null);
+      return;
+    }
     if (ui.mode === 'text') {
       capture();
       // Stop the browser's mouse-down focus change, which would blur the new text box at once.
@@ -520,6 +553,11 @@ export function AnnotateOverlay() {
       selectWithSelectTool(it.hitId);
       return;
     }
+    if (it.kind === 'create' && !it.id && !onPhoto(it.start)) {
+      // A click (no drag) outside the photo doesn't drop a shape there.
+      select(null);
+      return;
+    }
     if (it.kind === 'create' && !it.id) {
       // A click without dragging: drop a default-size shape centred on the point.
       const mode = it.mode as Parameters<typeof createShape>[0];
@@ -546,6 +584,10 @@ export function AnnotateOverlay() {
         });
       }
       select(it.id);
+    }
+    if (handleWhileEditing.current) {
+      handleWhileEditing.current = false;
+      return; // still editing: the "Edit text" step stays open
     }
     if (it.kind !== 'create' || it.id) store.getState().endChange();
   };
@@ -618,7 +660,7 @@ export function AnnotateOverlay() {
       if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
         return;
       // Keys inside popovers / the layers panel belong to them (e.g. Escape closes the popover).
-      if (target.closest('.iu-popover, .iu-layers')) return;
+      if (target.closest('.iu-popover, .iu-layers, .iu-compare')) return;
       const { ui: u, selected: sel, polygon: poly, k: scale, ref: r } = latest.current;
       const mod = e.metaKey || e.ctrlKey;
       const state = store.getState();
@@ -670,9 +712,12 @@ export function AnnotateOverlay() {
     const root = layer?.closest('.iu-root');
     if (!layer || !root) return;
     const onPointerDown = (event: globalThis.PointerEvent) => {
-      if (!latest.current.ui.selectedId) return;
       const target = event.target instanceof Element ? event.target : null;
       if (!target) return;
+      // Leaving a text box by pressing anywhere outside the photo layer finishes editing. Don't
+      // rely on the editor's blur: Safari doesn't move focus to a clicked button, so it never fires.
+      if (latest.current.ui.editingId && !layer.contains(target)) commitRef.current();
+      if (!latest.current.ui.selectedId) return;
       if (
         root.contains(target) &&
         (layer.contains(target) || target.closest('.iu-portal') || target.closest(INTERACTIVE))
@@ -768,6 +813,16 @@ export function AnnotateOverlay() {
           onDone={commitText}
         />
       )}
+      {editing && selected?.id === editing.id && !selected.locked && (
+        // Handles stay while typing (drawn above the text box so they can be grabbed).
+        <svg
+          className="iu-annotate-layer__svg iu-annotate-layer__svg--above"
+          width={stage.width}
+          height={stage.height}
+        >
+          <Selection shape={selected} toS={toS} outline={false} />
+        </svg>
+      )}
       {ui.layersOpen && (
         <LayersPanel
           shapes={shapes}
@@ -809,7 +864,16 @@ export function AnnotateOverlay() {
 }
 
 /** Outline + handles for the selected shape. */
-function Selection({ shape, toS }: { shape: Shape; toS: (p: Point) => Point }) {
+function Selection({
+  shape,
+  toS,
+  outline: showOutline = true,
+}: {
+  shape: Shape;
+  toS: (p: Point) => Point;
+  /** `false` while editing text: the text box draws its own (dashed) outline. */
+  outline?: boolean;
+}) {
   const labels = useLabels();
   const corners = getShapeCorners(shape, textHeight(shape)).map(toS);
   const outline = corners.map((p) => `${p.x},${p.y}`).join(' ');
@@ -862,7 +926,7 @@ function Selection({ shape, toS }: { shape: Shape; toS: (p: Point) => Point }) {
 
   return (
     <g>
-      <polygon className="iu-annotate__selection" points={outline} />
+      {showOutline && <polygon className="iu-annotate__selection" points={outline} />}
       <line className="iu-annotate__stem" x1={top.x} y1={top.y} x2={rot.x} y2={rot.y} />
       <circle
         className="iu-annotate__handle iu-annotate__handle--rotate"

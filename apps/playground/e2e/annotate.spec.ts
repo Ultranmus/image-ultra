@@ -122,6 +122,63 @@ test.describe('Annotate tool', () => {
     expect(await shapes(page)).toMatchObject([{ type: 'text', text: 'Text' }]);
   });
 
+  test('a press outside the photo layer finishes text editing, even without a blur', async ({
+    page,
+  }) => {
+    await openAnnotate(page);
+    await page.getByRole('radio', { name: /^Text/ }).click();
+    const p = await stagePoint(page, 0.3, 0.7);
+    await page.mouse.click(p.x, p.y);
+    await page.waitForTimeout(100);
+    await page.keyboard.type('Hi');
+    await expect(page.locator('.iu-textedit')).toBeVisible();
+    // Like Safari: a press on a toolbar button that doesn't take focus from the text box.
+    await page.getByRole('radio', { name: /Rectangle/ }).dispatchEvent('pointerdown', {
+      bubbles: true,
+    });
+    await expect(page.locator('.iu-textedit')).toHaveCount(0);
+    expect(await shapes(page)).toMatchObject([{ type: 'text', text: 'Hi' }]);
+    expect(await historySteps(page)).toBe(1);
+  });
+
+  test('Text tool: a click outside the photo makes no text box', async ({ page }) => {
+    await openAnnotate(page);
+    await page.getByRole('radio', { name: /^Text/ }).click();
+    const photo = (await page.locator('.iu-stage').boundingBox())!;
+    // The sample photo is landscape, so the stage has dark bands above and below it.
+    await page.mouse.click(photo.x + photo.width / 2, photo.y + 4);
+    await expect(page.locator('.iu-textedit')).toHaveCount(0);
+    expect(await shapes(page)).toHaveLength(0);
+  });
+
+  test('text keeps its handles while editing: resize without leaving editing', async ({ page }) => {
+    await openAnnotate(page);
+    await page.getByRole('radio', { name: /^Text/ }).click();
+    const p = await stagePoint(page, 0.3, 0.6);
+    await page.mouse.click(p.x, p.y);
+    await page.waitForTimeout(100);
+    await page.keyboard.type('Hello');
+    const handles = page.locator('.iu-annotate-layer__svg--above .iu-annotate__handle');
+    await expect(handles.first()).toBeVisible();
+    const before = (await shapes(page))[0] as { width: number };
+
+    const e = (await page
+      .locator('.iu-annotate-layer__svg--above [data-handle="e"]')
+      .boundingBox())!;
+    await page.mouse.move(e.x + e.width / 2, e.y + e.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(e.x + 80, e.y + e.height / 2, { steps: 4 });
+    await page.mouse.up();
+
+    await expect(page.locator('.iu-textedit')).toBeFocused(); // still editing
+    await page.keyboard.type(' world');
+    await page.keyboard.press('Escape');
+    const [text] = (await shapes(page)) as { text: string; width: number }[];
+    expect(text!.text).toBe('Hello world');
+    expect(text!.width).toBeGreaterThan(before.width);
+    expect(await historySteps(page)).toBe(1); // typing + resize = one step
+  });
+
   test('Text tool: clicking an existing box edits it with the caret where you click', async ({
     page,
   }) => {

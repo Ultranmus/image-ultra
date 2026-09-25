@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHistory, pushHistory, redoHistory, undoHistory } from './history';
+import { createHistory, jumpHistory, pushHistory, redoHistory, undoHistory } from './history';
 
 describe('history', () => {
   it('undoes and redoes in order, and a new change clears redo', () => {
@@ -21,5 +21,16 @@ describe('history', () => {
     let h = createHistory<number>();
     for (let i = 0; i < 5; i++) h = pushHistory(h, i, `s${i}`, 3);
     expect(h.past.map((e) => e.state)).toEqual([2, 3, 4]);
+  });
+
+  it('jumps several steps at once and stops at either end', () => {
+    let h = createHistory<number>();
+    for (let i = 0; i < 3; i++) h = pushHistory(h, i, `s${i}`); // current = 3
+    const back = jumpHistory(h, 3, -2)!;
+    expect(back.state).toBe(1);
+    expect(back.history.future.map((e) => e.state)).toEqual([2, 3]);
+    expect(jumpHistory(back.history, back.state, 5)!.state).toBe(3);
+    expect(jumpHistory(h, 3, -10)!.state).toBe(0);
+    expect(jumpHistory(h, 3, 1)).toBeNull();
   });
 });

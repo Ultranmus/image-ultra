@@ -84,3 +84,39 @@ describe('editor store edits', () => {
     expect(store.getState().tasks).toEqual([]);
   });
 });
+
+describe('editor store: jump & compare', () => {
+  it('jumps through history as one change', () => {
+    const store = createEditorStore();
+    const s = store.getState;
+    s().update('a', (d) => {
+      d.finetune.brightness = 0.1;
+    });
+    s().update('b', (d) => {
+      d.finetune.brightness = 0.2;
+    });
+    s().update('c', (d) => {
+      d.finetune.brightness = 0.3;
+    });
+    let changes = 0;
+    store.subscribe((next, prev) => {
+      if (next.edit !== prev.edit) changes++;
+    });
+    s().jump(-3);
+    expect(s().edit.finetune.brightness).toBe(0);
+    expect(changes).toBe(1);
+    s().jump(2);
+    expect(s().edit.finetune.brightness).toBe(0.2);
+    expect(s().history.future).toHaveLength(1);
+  });
+
+  it('keeps compare between 0 and 1, outside the edit', () => {
+    const store = createEditorStore();
+    const edit = store.getState().edit;
+    store.getState().setCompare(1.4);
+    expect(store.getState().compare).toBe(1);
+    store.getState().setCompare(null);
+    expect(store.getState().compare).toBeNull();
+    expect(store.getState().edit).toBe(edit);
+  });
+});

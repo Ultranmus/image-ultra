@@ -18,6 +18,18 @@ import { useToolState } from '../../context';
 
 export type AnnotateMode =
   'select' | 'pen' | 'line' | 'arrow' | 'rect' | 'ellipse' | 'polygon' | 'text';
+/** Single-key shortcuts for the drawing tools (active while Annotate is open). */
+export const MODE_SHORTCUTS: Record<AnnotateMode, string> = {
+  select: 'V',
+  pen: 'P',
+  line: 'L',
+  arrow: 'A',
+  rect: 'R',
+  ellipse: 'O',
+  polygon: 'G',
+  text: 'T',
+};
+
 export type SizeStep = 'S' | 'M' | 'L' | 'XL';
 
 /** Style used for new shapes; updated whenever the user styles something (Pintura-like memory). */

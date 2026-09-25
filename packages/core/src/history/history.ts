@@ -57,3 +57,25 @@ export function redoHistory<T>(
     history: { past: [...history.past, { state: current, label: entry.label }], future: rest },
   };
 }
+
+/**
+ * Moves `steps` through history in one go: negative = back (undo), positive = forward (redo).
+ * Stops at either end. Returns `null` when nothing changes.
+ */
+export function jumpHistory<T>(
+  history: History<T>,
+  current: T,
+  steps: number,
+): { history: History<T>; state: T } | null {
+  type Step = { history: History<T>; state: T };
+  let at: Step = { history, state: current };
+  let moved = false;
+  for (let i = 0; i < Math.abs(steps); i++) {
+    const next: Step | null =
+      steps < 0 ? undoHistory(at.history, at.state) : redoHistory(at.history, at.state);
+    if (!next) break;
+    at = next;
+    moved = true;
+  }
+  return moved ? at : null;
+}

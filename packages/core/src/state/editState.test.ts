@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEditState, EditStateError, parseEditState } from './editState';
+import { createEditState, EditStateError, getBeforeState, parseEditState } from './editState';
 
 describe('parseEditState', () => {
   it('round-trips through JSON', () => {
@@ -60,5 +60,35 @@ describe('parseEditState', () => {
     expect(() => parseEditState({ version: 2 })).toThrow(EditStateError);
     expect(() => parseEditState('not json')).toThrow(EditStateError);
     expect(() => parseEditState(42)).toThrow(EditStateError);
+  });
+});
+
+describe('getBeforeState', () => {
+  it('keeps the framing and drops the look', () => {
+    const edited = createEditState();
+    edited.geometry.rotation = 90;
+    edited.resize = { width: 100, height: 50 };
+    edited.finetune.contrast = 0.4;
+    edited.annotations = [
+      {
+        id: 'r',
+        type: 'rect',
+        rotation: 0,
+        opacity: 1,
+        x: 0,
+        y: 0,
+        width: 5,
+        height: 5,
+        fill: null,
+        stroke: '#fff',
+        strokeWidth: 1,
+        cornerRadius: 0,
+      },
+    ];
+    const before = getBeforeState(edited);
+    expect(before.geometry).toBe(edited.geometry);
+    expect(before.resize).toBe(edited.resize);
+    expect(before.finetune.contrast).toBe(0);
+    expect(before.annotations).toEqual([]);
   });
 });

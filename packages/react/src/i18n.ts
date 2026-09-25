@@ -12,6 +12,22 @@ export interface Labels {
   zoomOut: string;
   zoomFit: string;
   zoomLevel: string;
+  zoomActual: string;
+  /** Compare button tooltip ("hold" = press and hold). */
+  compare: string;
+  showOriginal: string;
+  before: string;
+  after: string;
+  /** Accessible name of the split-view divider. */
+  compareDivider: string;
+  history: string;
+  historyOriginal: string;
+  shortcuts: string;
+  shortcutsGeneral: string;
+  shortcutsShow: string;
+  nudge: string;
+  finishOrEdit: string;
+  deselect: string;
   /** Built-in tool names. Custom tools pass their own `label`. */
   tools: Record<ToolId, string>;
   toolbarLabel: string;
@@ -150,6 +166,20 @@ export const defaultLabels: Labels = {
   zoomOut: 'Zoom out',
   zoomFit: 'Fit to screen',
   zoomLevel: 'Zoom level',
+  zoomActual: 'Actual size (100%)',
+  compare: 'Compare · hold to see the original',
+  showOriginal: 'Show the original (hold)',
+  before: 'Before',
+  after: 'After',
+  compareDivider: 'Before / after divider',
+  history: 'History',
+  historyOriginal: 'Original',
+  shortcuts: 'Keyboard shortcuts',
+  shortcutsGeneral: 'General',
+  shortcutsShow: 'Show keyboard shortcuts',
+  nudge: 'Move the selected shape (Shift: 10×)',
+  finishOrEdit: 'Finish polygon · edit text',
+  deselect: 'Deselect · cancel',
   tools: {
     adjust: 'Adjust',
     finetune: 'Finetune',

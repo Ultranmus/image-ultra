@@ -1,27 +1,46 @@
 import { selectCanRedo, selectCanUndo, selectIsDirty } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../context';
+import { useRef } from 'react';
 import {
   IconCheck,
   IconClose,
+  IconCompare,
+  IconHistory,
+  IconKeyboard,
   IconMinus,
   IconPlus,
   IconRedo,
   IconReset,
   IconUndo,
 } from '../icons/Icon';
+import { Popover } from '../controls/Popover';
+import { useCompareHold } from '../hooks/useCompareHold';
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
+import { HistoryPanel } from './HistoryPanel';
 import { IconButton } from './IconButton';
+import { ShortcutsPanel } from './ShortcutsPanel';
 
 const ZOOM_STEP = 1.25;
+/** Pressing the Compare button this long shows the original until released. */
+const HOLD_MS = 250;
 
 export interface TopBarProps {
   onCancel?: (() => void) | undefined;
   onDone: () => void;
   /** Export in progress: Done is disabled and, after a short delay, says "Saving…". */
   saving: boolean;
+  /** Keyboard shortcuts popover (also opened with `?`). */
+  shortcutsOpen: boolean;
+  onShortcutsOpenChange: (open: boolean) => void;
 }
 
-export function TopBar({ onCancel, onDone, saving }: TopBarProps) {
+export function TopBar({
+  onCancel,
+  onDone,
+  saving,
+  shortcutsOpen,
+  onShortcutsOpenChange,
+}: TopBarProps) {
   const store = useEditorStore();
   const labels = useLabels();
   const ready = useEditorState((s) => s.status === 'ready');
@@ -67,6 +86,22 @@ export function TopBar({ onCancel, onDone, saving }: TopBarProps) {
           disabled={!ready || !canRedo}
           onClick={() => store.getState().redo()}
         />
+        <Popover
+          label={labels.history}
+          side="bottom"
+          trigger={
+            <IconButton
+              className="iu-topbar__history"
+              label={labels.history}
+              icon={<IconHistory />}
+              disabled={!ready || (!canUndo && !canRedo)}
+            />
+          }
+        >
+          <HistoryPanel />
+        </Popover>
+        <span className="iu-topbar__divider" aria-hidden="true" />
+        <CompareButton disabled={!ready} />
         <span className="iu-topbar__divider" aria-hidden="true" />
         <div className="iu-zoom" role="group" aria-label={labels.zoomLevel}>
           <IconButton
@@ -95,6 +130,21 @@ export function TopBar({ onCancel, onDone, saving }: TopBarProps) {
       </div>
 
       <div className="iu-topbar__group iu-topbar__end">
+        <Popover
+          label={labels.shortcuts}
+          side="bottom"
+          open={shortcutsOpen}
+          onOpenChange={onShortcutsOpenChange}
+          trigger={
+            <IconButton
+              className="iu-topbar__shortcuts"
+              label={labels.shortcuts}
+              icon={<IconKeyboard />}
+            />
+          }
+        >
+          <ShortcutsPanel />
+        </Popover>
         <IconButton
           label={showSaving ? labels.saving : labels.done}
           icon={<IconCheck size={18} />}
@@ -106,5 +156,50 @@ export function TopBar({ onCancel, onDone, saving }: TopBarProps) {
         />
       </div>
     </header>
+  );
+}
+
+/** Click = split view on/off; press and hold = the whole original until released. */
+function CompareButton({ disabled }: { disabled: boolean }) {
+  const store = useEditorStore();
+  const labels = useLabels();
+  const compare = useEditorState((s) => s.compare);
+  const hold = useCompareHold(store);
+  const timer = useRef(0);
+  const held = useRef(false);
+  const split = compare !== null && compare < 1;
+
+  const release = () => {
+    window.clearTimeout(timer.current);
+    hold.end();
+  };
+
+  return (
+    <IconButton
+      label={labels.compare}
+      icon={<IconCompare />}
+      disabled={disabled}
+      aria-pressed={split}
+      data-active={split ? '' : undefined}
+      onPointerDown={(event) => {
+        if (event.button !== 0) return;
+        held.current = false;
+        timer.current = window.setTimeout(() => {
+          held.current = true;
+          hold.start();
+        }, HOLD_MS);
+      }}
+      onPointerUp={release}
+      onPointerLeave={release}
+      onPointerCancel={release}
+      onClick={() => {
+        // A hold already did its job; only a quick click toggles the split view.
+        if (held.current) {
+          held.current = false;
+          return;
+        }
+        store.getState().setCompare(split ? null : 0.5);
+      }}
+    />
   );
 }

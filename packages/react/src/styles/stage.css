@@ -35,6 +35,93 @@
     display: block;
   }
 
+  /* Compare: "before" canvas shows left of the divider, annotations only right of it. */
+  .iu-stage__before {
+    clip-path: inset(0 calc((1 - var(--iu-compare)) * 100%) 0 0);
+  }
+
+  .iu-stage__annotations[data-compare] {
+    clip-path: inset(0 0 0 calc(var(--iu-compare) * 100%));
+  }
+
+  /* Above the tool overlay so the divider can always be grabbed; only the divider takes input. */
+  .iu-compare {
+    position: absolute;
+    inset: 0;
+    z-index: var(--iu-z-overlay);
+    pointer-events: none;
+  }
+
+  .iu-compare__pill {
+    position: absolute;
+    top: var(--iu-space-3);
+    padding: var(--iu-space-1) var(--iu-space-2);
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-overlay);
+    color: var(--iu-crop-frame);
+    font-size: var(--iu-text-xs);
+    font-weight: var(--iu-weight-semibold);
+    white-space: nowrap;
+  }
+
+  .iu-compare__pill[data-side='full'] {
+    left: var(--iu-space-3);
+  }
+
+  .iu-compare__pill[data-side='before'] {
+    right: calc((1 - var(--iu-compare)) * 100% + var(--iu-space-3));
+  }
+
+  .iu-compare__pill[data-side='after'] {
+    left: calc(var(--iu-compare) * 100% + var(--iu-space-3));
+  }
+
+  /* 24px-wide hit area around a 2px line. */
+  .iu-compare__divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--iu-compare) * 100%);
+    width: var(--iu-space-6);
+    margin-left: calc(var(--iu-space-6) / -2);
+    cursor: ew-resize;
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  .iu-compare__divider::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--iu-crop-frame);
+    box-shadow: 0 0 0 1px var(--iu-overlay);
+  }
+
+  .iu-compare__handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--iu-crop-frame);
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-overlay);
+    box-shadow: var(--iu-shadow-popover);
+    transform: translate(-50%, -50%);
+  }
+
+  .iu-compare__divider:focus-visible {
+    outline: none;
+  }
+
+  .iu-compare__divider:focus-visible .iu-compare__handle {
+    box-shadow: var(--iu-focus-ring);
+  }
+
   .iu-stage__overlay {
     position: absolute;
     inset: 0;

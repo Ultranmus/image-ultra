@@ -348,3 +348,40 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Fill layout (owner): options moved under the kind switch; Colour is now an inline `ColorStrip`
   (new reusable control: swatches + custom picker button → HSV popover; `HsvPicker` exported);
   responsive to 320px. Tests: 72 e2e.
+
+## 2026-09-26 · Phase 6.4 — Watermark & Sticker (started, paused)
+
+- Plan approved (owner): lockable `watermark` prop; stickers = our SVG set + emoji (rasterised) +
+  upload + `stickers` prop (DECISIONS #74–75). Done: watermark core (state, parse, draw, export,
+  preview) and the app props/lock enforcement. Remaining work is listed in HANDOFF.md.
+- Finished 2026-09-26: Watermark tool (`tools/watermark/WatermarkControls.tsx`: None · Text · Logo,
+  text field = one undo step, colour, bold, Position popover = 3×3 spots + Tile, Size ruler, Opacity
+  popover; locked → one muted line). Sticker tool (`tools/sticker/*`: 16 own SVG stickers, 40
+  emoji rasterised on insert, upload, app `stickers` first; placed centred and selected; stage =
+  `AnnotateOverlay selectOnly`; opacity / duplicate / delete). New exports: `WatermarkInput`,
+  `StickerOption`, `ColorStrip`, `HsvPicker`, `useStickers`, `useWatermarkLocked`. Playground:
+  "App watermark" switch + demo sticker. Tests: 101 unit · 77 e2e (+ `watermark-sticker.spec.ts`).
+
+## 2026-09-26 · Phase 6.4 — owner review round 1
+
+- Watermark: centred rows with more space; text field focus ring no longer clipped (`.iu-inspector`
+  rows get padding); Position + Opacity grouped; "Size" under its ruler. Same ruler label layout for
+  Frame Size and Redact Strength (`.iu-rulerfield`); Frame's row centred (`.iu-row-centered`).
+- Stickers: no divider after the app's stickers.
+- Regression caught while doing this: a CSS edit removed the Fill / Watermark / Sticker styles
+  (restored); e2e now checks sticker tile size and the watermark field width as a layout guard.
+- Open, waiting for the owner: a much bigger emoji / sticker library (see BACKLOG).
+- Emoji & sticker libraries (owner chose): full Unicode emoji (`emojibase-data`, lazy) with 9
+  categories + word-prefix search; ~1,850 Microsoft Fluent Emoji 3D stickers from the pinned npm
+  package on jsDelivr (`stickerLibrary` prop to self-host / turn off); new three-row Sticker bar.
+  Checked against the real CDN: no broken tiles. Tests: 78 e2e (the 3D test serves the images
+  locally via `page.route`).
+- Watermark (owner): Size now reaches 100 % (= fills the photo's width inside the margin; ruler
+  1–100 %, default 25 %); drag the watermark anywhere on the photo (dashed box overlay, arrow keys)
+  → `custom` position; the Tile button fits its text. Core `layoutWatermark` + `watermarkAspect`
+  (+ unit test). Tests: 102 unit · 79 e2e.
+- Watermark (owner): resizable (4 corner handles, proportions kept → Size) and rotatable (round
+  handle, `WatermarkState.rotation`) on the photo, like other elements. Tests: 79 e2e.
+- Watermark (owner): Font menu for text watermarks (same menu and `fonts` list as Annotate text).
+- Adjust (owner): the crop shade now covers only the photo outside the crop (SVG clip to the photo's
+  outline from `getImageQuad`), so the empty stage keeps the normal stage colour in both themes.

@@ -75,6 +75,8 @@ Rule: text/icons in accent colour use `--iu-accent-text`, never `--iu-accent` / 
 | `--iu-size-touch`                          | `40px`                                                                                         |
 | `--iu-size-topbar-compact`                 | `34px` (TopBar buttons when the editor is ≤ 359px wide)                                        |
 | `--iu-size-zoom-compact`                   | `44px` (zoom % button below 480px)                                                             |
+| `--iu-size-emoji`                          | `26px` (emoji glyphs in the Sticker strip)                                                     |
+| `--iu-size-sticker-tile`                   | `44px` (sticker / emoji tiles)                                                                 |
 | `--iu-z-overlay/popover/toast`             | `10 / 20 / 30` (tooltips use the toast layer, above popovers and menus)                        |
 
 ## `ThemeOverrides` (public, typed)

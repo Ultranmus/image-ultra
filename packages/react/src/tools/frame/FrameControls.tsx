@@ -84,13 +84,10 @@ export function FrameControls() {
 
   return (
     <div className="iu-filter">
-      <div className="iu-inspector iu-redact__inspector">
+      <div className="iu-inspector iu-row-centered">
         {frame && (
           <>
-            <div className="iu-redact__strength">
-              <span className="iu-redact__caption" aria-hidden="true">
-                {labels.frameSize}
-              </span>
+            <div className="iu-rulerfield">
               <RulerSlider
                 label={labels.frameSize}
                 value={Math.round(size * 100)}
@@ -104,6 +101,9 @@ export function FrameControls() {
                 onChange={(v) => change(labels.frameSize, { size: v / 100 })}
                 onChangeEnd={() => store.getState().endChange()}
               />
+              <span className="iu-rulerfield__label" aria-hidden="true">
+                {labels.frameSize}
+              </span>
             </div>
             <Popover
               label={labels.frameColor}

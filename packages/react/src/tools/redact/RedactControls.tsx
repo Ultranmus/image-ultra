@@ -146,10 +146,7 @@ export function RedactControls() {
             </Popover>
           </div>
         ) : (
-          <div className="iu-redact__strength">
-            <span className="iu-redact__caption" aria-hidden="true">
-              {labels.redactStrength}
-            </span>
+          <div className="iu-rulerfield">
             <RulerSlider
               label={labels.redactStrength}
               value={Math.round(strength * 100)}
@@ -163,6 +160,9 @@ export function RedactControls() {
               onChangeEnd={() => selected && store.getState().endChange()}
               onChange={(v) => apply(labels.redactStrength, { strength: v / 100 })}
             />
+            <span className="iu-rulerfield__label" aria-hidden="true">
+              {labels.redactStrength}
+            </span>
           </div>
         )}
         <p className="iu-controlbar__hint">

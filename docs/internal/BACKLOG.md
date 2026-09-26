@@ -129,6 +129,36 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       button + popover. Fix: options below the switch; Colour = an inline strip of swatches (like the
       filter strip) with a custom-colour picker button at the end; responsive down to 320px.
 
+### Owner review of Phase 6.4 (2026-09-26)
+
+- [x] **Sticker bar: empty space under the strip** — balance the ControlBar (tiles/rows fill it).
+- [x] **Divider after the app's sticker looks odd** — the app's stickers should read as part of one
+      list (no divider).
+- [x] **Watermark text field's focus ring is clipped top/bottom** — the scrolling row cuts the ring.
+- [x] **Watermark layout** — not enough space around the kind switch; the "Size" caption sits far
+      left and doesn't read as the ruler's label → put it under the ruler; Position and Opacity
+      together as one group. Apply the same "caption under the ruler" to Redact Strength and Frame
+      Size for consistency.
+- [x] **Far more emoji and stickers** (owner: "use a universal library") _(done 2026-09-26, DECISIONS #76)_ — full Unicode emoji set
+      with categories + search; a larger open-licensed sticker set. (Emojipedia's sticker art is
+      Apple/Google/… copyright — can't be used; needs an open-licensed set.) — _decide with owner_
+
+- [x] **Watermark size can't reach 100%** (ruler stopped at 30% of the short side). Fix: Size =
+      share of the largest fit — 100% fills the photo's width (inside the margin); ruler 1–100%.
+- [x] **Watermark can't be moved freely** — only 9 spots. Fix: drag it on the photo (Watermark tool
+      overlay) → a custom position (centre as a fraction of the photo); the grid then shows none.
+- [x] **"Tile across the photo" button too wide** in the Position popover → fit its text.
+
+- [x] **Watermark only moves — no resize / rotate handles** (owner) _(fixed 2026-09-26)_: give it corner resize handles
+      (aspect kept) and the rotate handle, like other elements (not for Tile).
+
+- [x] **Font choice for the text watermark** (owner) _(done 2026-09-26)_ — same font button + menu as Annotate text,
+      listing the app's `fonts`.
+
+- [x] **Adjust: the stage around the photo is dark in the light theme** (owner) _(fixed 2026-09-26)_ — the crop shade
+      covered the whole stage. Fix: shade only the photo outside the crop; the empty stage keeps
+      the normal stage colour, like every other tool.
+
 ### Planned later
 
 - [ ] **Extend the canvas** (e.g. "make it square" with the Fill showing on the sides, for social

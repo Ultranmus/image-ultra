@@ -2,6 +2,7 @@ import { parseAnnotations } from './parseAnnotations';
 import type { Shape } from './annotations';
 import { parseRedactions, type Redaction } from './redactions';
 import { parseBackground, parseFrame, type BackgroundState, type FrameState } from './frame';
+import { parseWatermark, type WatermarkState } from './watermark';
 /**
  * EditState — the single, serializable description of every edit.
  * The source image is never modified; rendering = source image + EditState.
@@ -202,6 +203,8 @@ export interface EditState {
   frame: FrameState | null;
   /** What shows through transparent parts (colour, image or a blurred copy). */
   background: BackgroundState | null;
+  /** Text or logo on top of everything (see `watermark.ts`). */
+  watermark: WatermarkState | null;
   /** Output size in pixels, or `null` to keep the crop's size. */
   resize: ResizeState | null;
   assets: Record<string, EditAsset>;
@@ -257,6 +260,7 @@ export function createEditState(): EditState {
     redactions: [],
     frame: null,
     background: null,
+    watermark: null,
     resize: null,
     assets: {},
   };
@@ -357,6 +361,7 @@ export function parseEditState(input: unknown): EditState {
   state.redactions = parseRedactions(value['redactions']);
   state.frame = parseFrame(value['frame']);
   state.background = parseBackground(value['background']);
+  state.watermark = parseWatermark(value['watermark']);
 
   if (isRecord(value['resize'])) {
     const width = finite(value['resize']['width']);

@@ -16,6 +16,8 @@ import { DevPanel } from './DevPanel';
 const ACCENTS = [undefined, '#ff5a1f', '#10b981', '#0ea5e9', '#f43f5e'] as const;
 const THEMES: ThemeMode[] = ['dark', 'light', 'auto'];
 type Frame = 'full' | 'tablet' | 'phone';
+// Demo of the `stickers` prop: the app's own stickers come first in the Sticker tool.
+const PLAYGROUND_STICKERS = [{ id: 'logo', label: 'Playground logo', src: '/icon.svg' }];
 const FRAME_WIDTH: Record<Frame, string> = { full: '100%', tablet: '820px', phone: '390px' };
 
 export default function PlaygroundPage() {
@@ -29,6 +31,7 @@ export default function PlaygroundPage() {
   const [editorKey, setEditorKey] = useState(0);
   const [saved, setSaved] = useState<{ result: ExportResult; url: string } | null>(null);
   const [log, setLog] = useState('Ready');
+  const [appWatermark, setAppWatermark] = useState<'off' | 'on' | 'locked'>('off');
 
   // Test hook for Playwright (e2e) — not part of the package API.
   useEffect(() => {
@@ -78,6 +81,16 @@ export default function PlaygroundPage() {
           </button>
         </div>
 
+        <Segmented
+          label="App watermark"
+          options={['off', 'on', 'locked'] as const}
+          value={appWatermark}
+          onChange={(v) => {
+            setAppWatermark(v);
+            setEditorKey((k) => k + 1); // the watermark prop is read when an image opens
+          }}
+        />
+
         <span className="pg-log" data-testid="log">
           {log}
         </span>
@@ -107,6 +120,11 @@ export default function PlaygroundPage() {
               }}
               onCancel={() => setLog('Cancel pressed')}
               onError={(error) => setLog(`Error: ${error.message}`)}
+              {...(appWatermark !== 'off' && {
+                watermark: { text: '© image-ultra playground', position: 'bottom-left' },
+                lockWatermark: appWatermark === 'locked',
+              })}
+              stickers={PLAYGROUND_STICKERS}
             />
           </div>
         </div>

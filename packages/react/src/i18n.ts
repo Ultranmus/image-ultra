@@ -1,9 +1,11 @@
+import type { EmojiGroup } from './tools/sticker/emojiData';
 import type {
   CurveChannel,
   FinetuneState,
   FrameStyle,
   RedactStyle,
   ToolId,
+  WatermarkPosition,
 } from '@image-ultra/core';
 
 /** Every user-facing string. Pass a partial object to `labels` to translate or rename. */
@@ -163,6 +165,28 @@ export interface Labels {
   redactBlurHint: string;
 
   /* Frame & Fill */
+  stickers: string;
+  stickerTabs: Record<'stickers' | 'emoji', string>;
+  stickerUpload: string;
+  stickerBasic: string;
+  stickerSearch: string;
+  stickerCategories: string;
+  emojiGroups: Record<EmojiGroup, string>;
+  stickerNoResults: string;
+  /** History label for placing a sticker. */
+  stickerAdd: string;
+  watermarkKind: string;
+  watermarkKinds: Record<'none' | 'text' | 'logo', string>;
+  watermarkText: string;
+  watermarkColor: string;
+  watermarkChooseLogo: string;
+  watermarkPosition: string;
+  watermarkPositions: Record<WatermarkPosition, string>;
+  watermarkSize: string;
+  watermarkBold: string;
+  watermarkLocked: string;
+  /** Accessible name of the draggable watermark on the photo. */
+  watermarkDrag: string;
   frames: string;
   frameNone: string;
   frameStyles: Record<FrameStyle, string>;
@@ -364,6 +388,48 @@ export const defaultLabels: Labels = {
   redactHint: 'Drag over a face, name or number to hide it.',
   redactBlurHint: 'For faces, names and numbers, Pixelate or Solid is safer.',
 
+  stickers: 'Stickers',
+  stickerTabs: { stickers: 'Stickers', emoji: 'Emoji' },
+  stickerUpload: 'Upload your own',
+  stickerBasic: 'Basic',
+  stickerSearch: 'Search',
+  stickerCategories: 'Categories',
+  emojiGroups: {
+    smileys: 'Smileys',
+    people: 'People',
+    animals: 'Animals & nature',
+    food: 'Food & drink',
+    travel: 'Travel & places',
+    activities: 'Activities',
+    objects: 'Objects',
+    symbols: 'Symbols',
+    flags: 'Flags',
+  },
+  stickerNoResults: 'Nothing found',
+  stickerAdd: 'Add sticker',
+  watermarkKind: 'Watermark',
+  watermarkKinds: { none: 'None', text: 'Text', logo: 'Logo' },
+  watermarkText: 'Watermark text',
+  watermarkColor: 'Watermark colour',
+  watermarkChooseLogo: 'Choose logo…',
+  watermarkPosition: 'Position',
+  watermarkPositions: {
+    'top-left': 'Top left',
+    top: 'Top',
+    'top-right': 'Top right',
+    left: 'Left',
+    center: 'Centre',
+    right: 'Right',
+    'bottom-left': 'Bottom left',
+    bottom: 'Bottom',
+    'bottom-right': 'Bottom right',
+    custom: 'Where you dragged it',
+    tile: 'Tile across the photo',
+  },
+  watermarkSize: 'Size',
+  watermarkBold: 'Bold',
+  watermarkLocked: 'This watermark is added by the app and can’t be changed.',
+  watermarkDrag: 'Watermark — drag or use the arrow keys to move it',
   frames: 'Frames',
   frameNone: 'None',
   frameStyles: {
@@ -407,6 +473,10 @@ type NestedKey =
   | 'annotateModes'
   | 'redactStyles'
   | 'frameStyles'
+  | 'watermarkKinds'
+  | 'stickerTabs'
+  | 'emojiGroups'
+  | 'watermarkPositions'
   | 'fillKinds';
 
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
@@ -424,6 +494,10 @@ export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
     annotateModes: { ...defaultLabels.annotateModes, ...overrides.annotateModes },
     redactStyles: { ...defaultLabels.redactStyles, ...overrides.redactStyles },
     frameStyles: { ...defaultLabels.frameStyles, ...overrides.frameStyles },
+    watermarkKinds: { ...defaultLabels.watermarkKinds, ...overrides.watermarkKinds },
+    stickerTabs: { ...defaultLabels.stickerTabs, ...overrides.stickerTabs },
+    emojiGroups: { ...defaultLabels.emojiGroups, ...overrides.emojiGroups },
+    watermarkPositions: { ...defaultLabels.watermarkPositions, ...overrides.watermarkPositions },
     fillKinds: { ...defaultLabels.fillKinds, ...overrides.fillKinds },
   };
 }

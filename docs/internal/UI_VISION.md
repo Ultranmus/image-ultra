@@ -80,7 +80,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   Vertical | Horizontal] — [reset]; RulerSlider for the selected angle; aspect PresetStrip
   (Free, Original, Circle, 1:1, 4:5, 5:4, 3:4, 4:3, 2:3, 3:2, 9:16, 16:9) with AspectGlyphs.
 - **Adjust stage (crop view):** the whole image is shown, framed so the crop is fitted and centred
-  (40px padding); outside the crop is shaded (`--iu-crop-shade`); thin white frame, L-shaped corner
+  (40px padding); the photo outside the crop is shaded (`--iu-crop-shade`, clipped to the photo's outline — the
+  empty stage around it keeps the normal stage colour, like every other tool); thin white frame, L-shaped corner
   handles + edge bars, 32px hit areas; thirds grid only while interacting; drag anywhere = move the
   image under the crop; arrow keys move the crop (focus the crop area). TopBar zoom is disabled here.
 - **Resize** ControlBar: [Width px] [lock] [Height px] + "Original size: W × H" (turns into a
@@ -152,6 +153,25 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   picker); Image = "Choose image…" + a small preview; None / Blurred photo = a muted hint that Fill
   shows where the photo is transparent (PNGs, round crops). Rows scroll sideways on narrow editors.
   JPEG export uses the fill instead of white.
+- **Watermark** ControlBar: row 1 = SegmentedControl None · Text · Logo, then the text field (Text)
+  or "Choose logo…" + preview (Logo), the colour button, Font (the same menu as Annotate text, the
+  app's `fonts`) and Bold (Text). Row 2 = Position and
+  Opacity buttons together (Position popover: 3×3 grid of spots + a "Tile" button as wide as its
+  text), then the Size ruler (1–100 %: 100 % fills the photo's width inside the margin). On the
+  photo the watermark behaves like other elements: dashed outline, 4 corner handles (resize, aspect
+  kept → Size) and the round rotate handle (soft snap to 90°, Shift = 15°); drag it (or arrow keys,
+  Shift = 5 %) anywhere → a custom position, and the grid then shows no spot. Not for Tile.
+  Rows are centred groups with 16px between them. **Ruler names sit under the ruler** (Watermark
+  Size, Frame Size, Redact Strength — `.iu-rulerfield`). Drawn on top of everything
+  (frame included). When the app locks it: one muted line "This watermark is added by the app" and
+  no controls.
+- **Sticker** ControlBar, three rows: (1) Stickers · Emoji, a Search field, Upload — and for a
+  selected sticker Opacity, Duplicate, Delete; (2) category chips — Stickers: **Basic** (the app's
+  stickers + ours), then Smileys, People, Animals & nature, Food & drink, Travel & places,
+  Activities, Objects, Symbols, Flags from the 3D library; Emoji: the same nine; hidden while
+  searching; (3) a strip of 44px tiles. Search matches the start of words in names and tags. A tap
+  places the sticker in the middle of the photo, selected; on the photo it behaves like an Annotate
+  shape in Select mode (move, resize, rotate, Delete, right-click menu).
 - **Cursors on the photo (Annotate + Redact):** move anywhere inside the selected element's box (a
   drag there moves it, even the empty middle of a line or polygon),
   pointer over any other element (a click selects it), resize cursors on handles (turned with the
@@ -167,7 +187,6 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   supported.", "This image file is damaged and can't be opened.", "This file isn't an image.",
   "Couldn't download the image." — plus Browse files. Never a framework/browser error.
 - Dense panels use small 24px IconButtons (`size="sm"`) for secondary actions (per-editor reset).
-- Placeholder tools show one muted line ("coming soon") until their phase.
 
 ## 6. Interaction details
 

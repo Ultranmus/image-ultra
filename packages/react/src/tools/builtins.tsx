@@ -1,5 +1,4 @@
 import { TOOL_IDS, type ToolId } from '@image-ultra/core';
-import { useLabels } from '../context';
 import {
   IconAdjust,
   IconAnnotate,
@@ -23,16 +22,15 @@ import { AnnotateOverlay } from './annotate/AnnotateOverlay';
 import { RedactControls } from './redact/RedactControls';
 import { FrameControls } from './frame/FrameControls';
 import { FillControls } from './fill/FillControls';
-import { RedactOverlay } from './redact/RedactOverlay';
+import { WatermarkControls } from './watermark/WatermarkControls';
+import { WatermarkOverlay } from './watermark/WatermarkOverlay';
+import { StickerControls } from './sticker/StickerControls';
 
-/** Placeholder panel for tools whose UI arrives in a later phase. */
-function ComingSoon() {
-  const labels = useLabels();
-  return <p className="iu-controlbar__hint">{labels.comingSoon}</p>;
+/** Stickers are image annotations: select, move, resize, rotate — no drawing tools. */
+function StickerOverlay() {
+  return <AnnotateOverlay selectOnly />;
 }
-
-const placeholder = (id: ToolId, icon: ToolDefinition['icon']) =>
-  defineTool({ id, icon, Controls: ComingSoon });
+import { RedactOverlay } from './redact/RedactOverlay';
 
 export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
   adjust: defineTool({
@@ -55,11 +53,21 @@ export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
     Controls: RedactControls,
     StageOverlay: RedactOverlay,
   }),
-  sticker: placeholder('sticker', IconSticker),
+  sticker: defineTool({
+    id: 'sticker',
+    icon: IconSticker,
+    Controls: StickerControls,
+    StageOverlay: StickerOverlay,
+  }),
   frame: defineTool({ id: 'frame', icon: IconFrame, Controls: FrameControls }),
   fill: defineTool({ id: 'fill', icon: IconFill, Controls: FillControls }),
   resize: defineTool({ id: 'resize', icon: IconResize, Controls: ResizeControls }),
-  watermark: placeholder('watermark', IconWatermark),
+  watermark: defineTool({
+    id: 'watermark',
+    icon: IconWatermark,
+    Controls: WatermarkControls,
+    StageOverlay: WatermarkOverlay,
+  }),
 };
 
 export type ToolInput = ToolId | ToolDefinition;

@@ -196,6 +196,20 @@ export {
   type FrameStyle,
 } from './state/frame';
 export { drawBackground, drawFrame, type DrawBackgroundOptions } from './render/frame';
+export {
+  DEFAULT_WATERMARK,
+  WATERMARK_POSITIONS,
+  parseWatermark,
+  type WatermarkPosition,
+  type WatermarkState,
+} from './state/watermark';
+export {
+  drawWatermark,
+  layoutWatermark,
+  watermarkAspect,
+  watermarkFont,
+  watermarkFullHeight,
+} from './render/watermark';
 export { applyLook, createLook, lookMatches, parseLooks, type Look } from './state/looks';
 export {
   FILTER_PRESETS,

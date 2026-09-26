@@ -11,7 +11,9 @@ import {
 } from 'react';
 import { useStore } from 'zustand';
 import {
+  createEditState,
   createEditorStore,
+  exportImage,
   parseEditState,
   type EditorStore,
   type EditRecipe,
@@ -26,7 +28,14 @@ import { useCompareHold } from '../hooks/useCompareHold';
 import { useLooksState } from '../hooks/useLooksState';
 import { resolveTools, type ToolInput } from '../tools/builtins';
 import { toolLabel } from '../tools/toolLabel';
-import { EditorContext, type EditorContextValue, type FontOption } from '../context';
+import {
+  EditorContext,
+  type EditorContextValue,
+  type FontOption,
+  type StickerOption,
+} from '../context';
+import { applyWatermarkInput, type WatermarkInput } from '../tools/watermark/input';
+import { DEFAULT_STICKER_LIBRARY_URL } from '../tools/sticker/emojiData';
 import { DEFAULT_FONTS } from '../fonts';
 import { mergeLabels, type LabelOverrides } from '../i18n';
 import { themeOverridesToStyle, type ThemeMode, type ThemeOverrides } from '../theme';
@@ -37,6 +46,7 @@ import { TooltipLayer } from './TooltipLayer';
 import { TopBar } from './TopBar';
 
 const MOTION_MS = 320;
+const NO_STICKERS: StickerOption[] = [];
 
 export interface ImageEditorProps {
   /** Image to edit. Omit to show the drop zone. */
@@ -75,6 +85,19 @@ export interface ImageEditorProps {
   persistLooks?: boolean | string;
   /** Fonts offered for text annotations (default: system font stacks). */
   fonts?: FontOption[];
+  /**
+   * A watermark to start with — text, or a logo via `logo` (image URL). With `lockWatermark` the
+   * user can't change or remove it, and every export applies it.
+   */
+  watermark?: WatermarkInput;
+  lockWatermark?: boolean;
+  /** Your own stickers, shown first in the Sticker tool. */
+  stickers?: StickerOption[];
+  /**
+   * The 3D sticker library (Microsoft Fluent Emoji 3D, MIT), loaded on demand. Default: the pinned
+   * jsDelivr copy. Pass your own base URL to self-host the `assets/` folder, or `false` to turn it off.
+   */
+  stickerLibrary?: string | false;
   /** Shows a Cancel button in the TopBar when provided. */
   onCancel?: () => void;
   /**
@@ -121,6 +144,10 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     onLooksChange,
     persistLooks = true,
     fonts = DEFAULT_FONTS as FontOption[],
+    watermark: watermarkInput,
+    lockWatermark = false,
+    stickers = NO_STICKERS,
+    stickerLibrary = DEFAULT_STICKER_LIBRARY_URL,
     onCancel,
     onError,
     className,
@@ -137,21 +164,62 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   const [looks, setLooks] = useLooksState(controlledLooks, onLooksChange, persistLooks);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const [rootElement, setRootElement] = useState<HTMLElement | null>(null);
+  const watermarkLocked = lockWatermark && watermarkInput !== undefined;
   const context = useMemo<EditorContextValue>(
-    () => ({ store, labels, looks, setLooks, portalContainer, fonts }),
+    () => ({
+      store,
+      labels,
+      looks,
+      setLooks,
+      portalContainer,
+      fonts,
+      watermarkLocked,
+      stickers,
+      stickerLibraryUrl: stickerLibrary || null,
+    }),
     // setLooks is recreated each render but only reads refs/state setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [store, labels, looks, portalContainer, fonts],
+    [store, labels, looks, portalContainer, fonts, watermarkLocked, stickers, stickerLibrary],
   );
   const [saving, setSaving] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const compareHold = useCompareHold(store);
 
   // Latest callbacks/options without re-running effects when parents pass new closures.
-  const latest = useRef({ initialState, exportOptions, onSave, onChange, onError });
-  useEffect(() => {
-    latest.current = { initialState, exportOptions, onSave, onChange, onError };
+  const latest = useRef({
+    initialState,
+    exportOptions,
+    onSave,
+    onChange,
+    onError,
+    watermarkInput,
+    watermarkLocked,
   });
+  useEffect(() => {
+    latest.current = {
+      initialState,
+      exportOptions,
+      onSave,
+      onChange,
+      onError,
+      watermarkInput,
+      watermarkLocked,
+    };
+  });
+
+  /** The edit with the app's watermark: added when missing, forced when locked. */
+  const withAppWatermark = (state: EditState): EditState => {
+    const { watermarkInput: input, watermarkLocked: locked } = latest.current;
+    if (!input || (state.watermark && !locked)) return state;
+    return applyWatermarkInput(state, input);
+  };
+  /** Exports the current edit; a locked watermark is always applied, whatever the state says. */
+  const exportCurrent = (options?: ExportOptions): Promise<ExportResult> => {
+    const { image, edit } = store.getState();
+    if (!image) return Promise.reject(new Error('image-ultra: no image loaded.'));
+    const state = latest.current.watermarkLocked ? withAppWatermark(edit) : edit;
+    return exportImage(image, state, options);
+  };
 
   const reportError = (error: unknown) => {
     const err = error instanceof Error ? error : new Error(String(error));
@@ -174,7 +242,10 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
 
   useEffect(() => {
     if (src === undefined) return;
-    const state = parseInitial();
+    const parsed = parseInitial();
+    const state = latest.current.watermarkInput
+      ? withAppWatermark(parsed ?? createEditState())
+      : parsed;
     void store.getState().load(src, state ? { state } : {});
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initialState is read on src change only
   }, [src, store]);
@@ -214,7 +285,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     if (saving || store.getState().status !== 'ready') return null;
     setSaving(true);
     try {
-      const result = await store.getState().exportImage(latest.current.exportOptions);
+      const result = await exportCurrent(latest.current.exportOptions);
       await latest.current.onSave?.(result);
       return result;
     } catch (error) {
@@ -233,7 +304,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     undo: () => store.getState().undo(),
     redo: () => store.getState().redo(),
     reset: () => store.getState().reset(),
-    exportImage: (options) => store.getState().exportImage(options),
+    exportImage: (options) => exportCurrent(options),
     save,
   }));
 

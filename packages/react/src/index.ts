@@ -25,6 +25,7 @@ export { Popover, type PopoverProps } from './controls/Popover';
 export {
   ColorButton,
   DEFAULT_SWATCHES,
+  HsvPicker,
   SwatchPicker,
   type SwatchPickerProps,
 } from './controls/SwatchPicker';
@@ -34,9 +35,14 @@ export {
   useFonts,
   useLabels,
   useLooks,
+  useStickers,
   useToolState,
+  useWatermarkLocked,
   type FontOption,
+  type StickerOption,
 } from './context';
+export type { WatermarkInput } from './tools/watermark/input';
+export { ColorStrip, type ColorStripProps } from './controls/ColorStrip';
 export { DEFAULT_FONTS } from './fonts';
 export { defaultLabels, type LabelOverrides, type Labels } from './i18n';
 export type { ThemeMode, ThemeOverrides } from './theme';
@@ -82,4 +88,9 @@ export type {
   Redaction,
   ResizeState,
   ToolId,
+  WatermarkPosition,
+  WatermarkState,
+  FrameState,
+  FrameStyle,
+  BackgroundState,
 } from '@image-ultra/core';

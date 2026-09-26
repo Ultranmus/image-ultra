@@ -13,6 +13,20 @@ export interface EditorContextValue {
   portalContainer: HTMLElement | null;
   /** Fonts offered for text annotations. */
   fonts: readonly FontOption[];
+  /** The app locked its watermark: the Watermark tool shows no controls. */
+  watermarkLocked: boolean;
+  /** App-provided stickers (see `ImageEditorProps.stickers`). */
+  stickers: readonly StickerOption[];
+  /** Base URL of the 3D sticker library, or `null` when turned off. */
+  stickerLibraryUrl: string | null;
+}
+
+export interface StickerOption {
+  id: string;
+  /** Accessible name / tooltip. */
+  label: string;
+  /** Image URL (same-origin or CORS-enabled so exports can read it) or data URL. */
+  src: string;
 }
 
 export interface FontOption {
@@ -78,4 +92,16 @@ export function useToolState<T>(initial: T): [T, (next: T | ((prev: T) => T)) =>
     [store, toolId],
   );
   return [value, setValue];
+}
+
+export function useWatermarkLocked(): boolean {
+  return useEditorContext().watermarkLocked;
+}
+
+export function useStickers(): readonly StickerOption[] {
+  return useEditorContext().stickers;
+}
+
+export function useStickerLibraryUrl(): string | null {
+  return useEditorContext().stickerLibraryUrl;
 }

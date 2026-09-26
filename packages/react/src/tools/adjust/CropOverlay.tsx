@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
+  getImageQuad,
   getCropRect,
   getCropView,
   lerpCropView,
@@ -39,6 +40,7 @@ export function CropOverlay() {
   const store = useEditorStore();
   const labels = useLabels();
   const hintId = useId();
+  const photoClipId = `${useId().replace(/:/g, '')}-photo`;
   const image = useEditorState((s) => s.image);
   const geometry = useEditorState((s) => s.edit.geometry);
   const view = useEditorState((s) => s.cropView);
@@ -59,6 +61,11 @@ export function CropOverlay() {
     height: crop.height * view.scale,
   };
   const round = geometry.cropShape === 'ellipse';
+  // The photo's own outline on the stage (turned by straighten/perspective): only the photo
+  // outside the crop is shaded, the empty stage around it keeps the normal stage colour.
+  const photo = getImageQuad(image, geometry)
+    .map((p) => `${p.x * view.scale + view.x} ${p.y * view.scale + view.y}`)
+    .join('L');
   const showGrid = drag !== null || pendingLabel !== null;
 
   const applyCrop = (rect: Rect) => {
@@ -169,9 +176,16 @@ export function CropOverlay() {
       onPointerCancel={onPointerEnd}
     >
       <svg className="iu-crop__svg" width={stage.width} height={stage.height} aria-hidden="true">
+        <defs>
+          <clipPath id={photoClipId}>
+            <path d={`M${photo}z`} />
+          </clipPath>
+        </defs>
+        {/* Outside the crop, but only where the photo is (never the empty stage). */}
         <path
           className="iu-crop__shade"
           fillRule="evenodd"
+          clipPath={`url(#${photoClipId})`}
           d={`M0 0H${stage.width}V${stage.height}H0z ${cutout}`}
         />
         {showGrid && (

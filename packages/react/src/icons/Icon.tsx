@@ -378,3 +378,14 @@ export const IconBrush = createIcon(
     <path d="M11.2 12.8c-2.2-.6-4.2.9-4.5 3.1-.2 1.3-.9 2.3-2.2 2.9 2.6 1.3 6.3 1 7.8-1.4.9-1.4.7-3.1-1.1-4.6z" />
   </>,
 );
+export const IconPosition = createIcon(
+  'Position',
+  <>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+    <circle cx="8" cy="8" r="0.9" fill="currentColor" />
+    <circle cx="16" cy="8" r="0.9" fill="currentColor" />
+    <circle cx="12" cy="12" r="0.9" fill="currentColor" />
+    <circle cx="8" cy="16" r="0.9" fill="currentColor" />
+    <circle cx="16" cy="16" r="1.8" fill="currentColor" />
+  </>,
+);

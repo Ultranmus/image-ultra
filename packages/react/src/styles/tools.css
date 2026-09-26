@@ -463,6 +463,8 @@
     justify-content: space-between;
     gap: var(--iu-space-2);
     min-height: 40px;
+    /* Scrolling rows clip overflow: leave room for focus rings. */
+    padding: var(--iu-space-1);
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -471,25 +473,238 @@
     padding-left: var(--iu-space-2);
   }
 
-  /* Redact: the strength ruler takes the row; the hint sits beside it. */
-  .iu-redact__strength {
+  /* Sticker: tabs + search + upload / categories / tiles — three rows that fit the ControlBar. */
+  .iu-sticker {
     display: flex;
-    flex: 1;
+    flex-direction: column;
+    gap: var(--iu-space-1);
+    width: 100%;
+    max-width: 860px;
+    min-width: 0;
+  }
+
+  .iu-sticker__row {
+    display: flex;
     align-items: center;
-    gap: var(--iu-space-3);
+    justify-content: center;
+    gap: var(--iu-space-2);
     min-width: 0;
-    max-width: 520px;
+    padding: var(--iu-space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .iu-redact__strength > :last-child {
-    flex: 1;
-    min-width: 0;
+  .iu-sticker__search .iu-field__input {
+    width: 16ch;
+    text-align: left;
   }
 
-  .iu-redact__caption {
-    color: var(--iu-text-muted);
-    font-size: var(--iu-text-sm);
-    white-space: nowrap;
+  .iu-sticker__actions {
+    margin-left: var(--iu-space-4);
+  }
+
+  .iu-sticker .iu-stickerstrip {
+    justify-content: safe center;
+  }
+
+  /* Sticker strip: tiles scroll sideways. */
+  .iu-stickerstrip {
+    display: flex;
+    align-items: center;
+    gap: var(--iu-space-1);
+    min-width: 0;
+    padding: var(--iu-space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .iu-stickerstrip__tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--iu-size-sticker-tile);
+    height: var(--iu-size-sticker-tile);
+    padding: var(--iu-space-1);
+    border: 0;
+    border-radius: var(--iu-radius-md);
+    background: var(--iu-surface-2);
+    cursor: pointer;
+  }
+
+  .iu-stickerstrip__tile:hover {
+    background: var(--iu-surface-3);
+  }
+
+  .iu-stickerstrip__tile:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-stickerstrip__tile img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .iu-stickerstrip__emoji {
+    font-size: var(--iu-size-emoji);
+    line-height: 1;
+  }
+
+  /* ControlBar rows of grouped controls, centred (Watermark, Frame). */
+  .iu-row-centered {
+    justify-content: center;
+    gap: var(--iu-space-4);
+  }
+
+  .iu-watermark__text .iu-field__input {
+    width: 18ch;
+    text-align: left;
+  }
+
+  /* 3×3 spots: where the watermark sits (the dot shows the spot). */
+  .iu-watermark__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 32px);
+    gap: var(--iu-space-1);
+    justify-content: center;
+  }
+
+  .iu-watermark__spot {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--iu-border);
+    border-radius: var(--iu-radius-sm);
+    background: var(--iu-surface-2);
+    cursor: pointer;
+  }
+
+  .iu-watermark__spot::after {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-text-subtle);
+  }
+
+  .iu-watermark__spot[aria-checked='true'] {
+    border-color: var(--iu-accent);
+    background: var(--iu-accent-soft);
+  }
+
+  .iu-watermark__spot[aria-checked='true']::after {
+    background: var(--iu-accent-text);
+  }
+
+  .iu-watermark__spot:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-watermark__tile {
+    align-self: center;
+    width: auto;
+    padding: 0 var(--iu-space-4);
+  }
+
+  /* The watermark on the photo: a dashed outline you can drag (not for Tile). */
+  .iu-watermark-layer {
+    position: absolute;
+    inset: 0;
+    z-index: var(--iu-z-overlay);
+    pointer-events: none;
+  }
+
+  .iu-watermark-box {
+    position: absolute;
+    border: 1px dashed var(--iu-accent-text);
+    border-radius: var(--iu-radius-sm);
+    cursor: move;
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  .iu-watermark-box[data-dragging] {
+    cursor: grabbing;
+  }
+
+  /* Handles, in the box's own (rotated) frame: 4 corners + a rotate knob above the top edge. */
+  .iu-watermark-box__handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin: -5px;
+    border: 1.5px solid var(--iu-accent-text);
+    border-radius: 2px;
+    background: var(--iu-handle-fill);
+  }
+
+  .iu-watermark-box__handle[data-corner='nw'] {
+    top: 0;
+    left: 0;
+  }
+
+  .iu-watermark-box__handle[data-corner='ne'] {
+    top: 0;
+    right: 0;
+  }
+
+  .iu-watermark-box__handle[data-corner='se'] {
+    right: 0;
+    bottom: 0;
+  }
+
+  .iu-watermark-box__handle[data-corner='sw'] {
+    bottom: 0;
+    left: 0;
+  }
+
+  .iu-watermark-box__handle[data-cursor='ns'] {
+    cursor: ns-resize;
+  }
+
+  .iu-watermark-box__handle[data-cursor='ew'] {
+    cursor: ew-resize;
+  }
+
+  .iu-watermark-box__handle[data-cursor='nesw'] {
+    cursor: nesw-resize;
+  }
+
+  .iu-watermark-box__handle[data-cursor='nwse'] {
+    cursor: nwse-resize;
+  }
+
+  .iu-watermark-box__stem {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: 1px;
+    height: 22px;
+    background: var(--iu-accent-text);
+  }
+
+  .iu-watermark-box__rotate {
+    position: absolute;
+    bottom: calc(100% + 22px);
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    margin: 0 0 -6px -6px;
+    border: 1.5px solid var(--iu-accent-text);
+    border-radius: var(--iu-radius-full);
+    background: var(--iu-handle-fill);
+    cursor: grab;
+  }
+
+  .iu-watermark-box:focus-visible {
+    outline: none;
+    box-shadow: var(--iu-focus-ring);
+  }
+
+  .iu-watermark__tile[data-active] {
+    background: var(--iu-accent-soft);
+    color: var(--iu-accent-text);
   }
 
   /* Fill: the kind switch on top, its options underneath (UI_VISION §5b). */
@@ -533,6 +748,27 @@
   .iu-fill__hint {
     align-self: center;
     text-align: center;
+  }
+
+  /* A ruler with its name underneath (Redact Strength, Frame Size, Watermark Size). */
+  .iu-rulerfield {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: min(360px, 100%);
+    min-width: 0;
+  }
+
+  .iu-rulerfield > :first-child {
+    width: 100%;
+  }
+
+  .iu-rulerfield__label {
+    color: var(--iu-text-muted);
+    font-size: var(--iu-text-xs);
+    font-weight: var(--iu-weight-medium);
+    white-space: nowrap;
   }
 
   .iu-redact__inspector {

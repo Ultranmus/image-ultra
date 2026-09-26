@@ -16,6 +16,8 @@ import {
   loadAssetBitmap,
 } from '../render/annotations';
 import { drawBackground, drawFrame } from '../render/frame';
+import { drawWatermark, watermarkFont } from '../render/watermark';
+import type { WatermarkState } from '../state/watermark';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
 import { drawRedactions } from '../render/redactions';
 import type { AnyCanvas, RendererKind } from '../render/renderer';
@@ -176,8 +178,15 @@ export async function renderToCanvas(
         ctx.restore();
       }
 
-      // 4. The frame on top of everything.
+      // 4. The frame, then 5. the watermark on top of everything.
       if (state.frame) drawFrame(ctx, state.frame, size);
+      if (state.watermark) {
+        const wm = state.watermark;
+        const asset = wm.kind === 'image' && wm.assetId ? state.assets[wm.assetId] : undefined;
+        const logo = asset ? await loadAssetBitmap(asset.src) : null;
+        if (wm.kind === 'text') await ensureWatermarkFont(wm);
+        drawWatermark(ctx, wm, size, logo ?? undefined);
+      }
 
       return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };
     } catch (error) {
@@ -272,4 +281,11 @@ function context2d(canvas: AnyCanvas): Context2D {
   const ctx = canvas.getContext('2d') as Context2D | null;
   if (!ctx) throw new Error('image-ultra: no 2D canvas context available.');
   return ctx;
+}
+
+/** Loads the watermark's font first, so the export never falls back to another font. */
+async function ensureWatermarkFont(wm: WatermarkState): Promise<void> {
+  if (typeof document === 'undefined' || !('fonts' in document)) return;
+  // Loading needs the family and weight; the size doesn't matter.
+  await document.fonts.load(watermarkFont(wm, 16)).catch(() => []);
 }

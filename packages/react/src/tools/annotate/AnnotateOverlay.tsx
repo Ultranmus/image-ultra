@@ -91,10 +91,20 @@ const INTERACTIVE =
 const textHeight = (s: Shape) => (s.type === 'text' ? measureTextHeight(s) : undefined);
 
 /** Drawing, selection and transform handles for the Annotate tool (UI_VISION §6). */
-export function AnnotateOverlay() {
+export interface AnnotateOverlayProps {
+  /**
+   * Only select / move / resize / rotate (the Sticker tool): no drawing, no tool shortcuts.
+   * The tool keeps its own selection (tool state is per tool).
+   */
+  selectOnly?: boolean;
+}
+
+export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {}) {
   const store = useEditorStore();
   const labels = useLabels();
-  const [ui, setUi] = useAnnotateState();
+  const [storedUi, setUi] = useAnnotateState();
+  const ui =
+    selectOnly && storedUi.mode !== 'select' ? { ...storedUi, mode: 'select' as const } : storedUi;
   const image = useEditorState((s) => s.image);
   const edit = useEditorState((s) => s.edit);
   const viewport = useEditorState((s) => s.viewport);
@@ -726,7 +736,7 @@ export function AnnotateOverlay() {
         state.update(labels.annotateModes.select, (draft) => {
           draft.annotations = draft.annotations.map((s) => (s.id === sel.id ? moved : s));
         });
-      } else if (!mod && !e.altKey) {
+      } else if (!mod && !e.altKey && !selectOnly) {
         const mode = (Object.entries(MODE_SHORTCUTS) as [AnnotateMode, string][]).find(
           ([, key]) => key.toLowerCase() === e.key.toLowerCase(),
         )?.[0];

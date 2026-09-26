@@ -79,6 +79,10 @@
     --iu-size-topbar-compact: 34px;
     /* Zoom % button on phones (fits "100%"). */
     --iu-size-zoom-compact: 44px;
+    /* Emoji in the Sticker strip. */
+    --iu-size-emoji: 26px;
+    /* Sticker / emoji tiles in the Sticker strip. */
+    --iu-size-sticker-tile: 44px;
 
     /* Layers */
     --iu-z-overlay: 10;

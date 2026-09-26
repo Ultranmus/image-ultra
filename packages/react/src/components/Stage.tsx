@@ -18,6 +18,8 @@ import {
   drawBackground,
   drawFrame,
   drawRedactions,
+  drawWatermark,
+  watermarkFont,
   loadAssetBitmap,
   getBeforeState,
   getOrientedSize,
@@ -204,6 +206,8 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     let assets = new Map<string, ImageBitmap>();
     let assetsFor: unknown = null;
     let fontsFor: unknown = null;
+    const logos = new Map<string, ImageBitmap | null>();
+    let fontsLoaded: string | null = null;
     const draw = () => {
       frame = 0;
       const state = store.getState();
@@ -218,11 +222,36 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       ctx.clearRect(0, 0, w, h);
       const { image, edit, viewport: vp, cropView } = state;
       if (!image) return;
-      // The frame goes on top of everything (annotations too), in the result view.
+      // The frame, then the watermark, go on top of everything, in the result view.
       const paintFrame = () => {
-        if (!edit.frame || cropView) return;
+        if ((!edit.frame && !edit.watermark) || cropView) return;
+        const out = getOutputSize(image, edit);
         ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
-        drawFrame(ctx, edit.frame, getOutputSize(image, edit));
+        if (edit.frame) drawFrame(ctx, edit.frame, out);
+        const wm = edit.watermark;
+        if (wm) {
+          const asset = wm.kind === 'image' && wm.assetId ? edit.assets[wm.assetId] : undefined;
+          let logo: ImageBitmap | undefined;
+          if (asset) {
+            // Decoded once; redraw when it arrives.
+            if (!logos.has(asset.src)) {
+              logos.set(asset.src, null);
+              void loadAssetBitmap(asset.src).then((bitmap) => {
+                logos.set(asset.src, bitmap);
+                schedule();
+              });
+            }
+            logo = logos.get(asset.src) ?? undefined;
+          }
+          if (wm.kind === 'text') {
+            const font = watermarkFont(wm, wm.size * Math.min(out.width, out.height));
+            if (fontsLoaded !== font) {
+              fontsLoaded = font;
+              void document.fonts?.load(font).then(schedule, () => undefined);
+            }
+          }
+          drawWatermark(ctx, wm, out, logo);
+        }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
       };
       if (edit.annotations.length === 0) {

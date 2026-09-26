@@ -187,6 +187,15 @@ export {
 } from './state/redactions';
 export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
 export {
+  copyRedaction,
+  copyShape,
+  fitRedaction,
+  fitShape,
+  pasteClipboard,
+  type ClipboardEntry,
+  type ClipboardItem,
+} from './state/clipboard';
+export {
   DEFAULT_FRAME_COLOR,
   DEFAULT_FRAME_SIZE,
   FRAME_SIZE_RANGE,

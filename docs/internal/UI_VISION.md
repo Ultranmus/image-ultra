@@ -119,12 +119,14 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   its own — an emptied box goes back to "Text"; only Delete removes it.
 - **Shape menu** (right-click / long-press on a shape, including locked ones; Shift+F10 or the Menu
   key for the selected shape; "⋯" in Layers): Lock/Unlock, Hide/Show · Bring to front, Bring forward,
-  Send backward, Send to back · Duplicate, Delete · Show in Layers. Compact 32px rows, separators,
+  Send backward, Send to back · Copy, Paste, Duplicate, Delete · Show in Layers. Compact 32px rows, separators,
   Delete in the danger colour, disabled rows muted. Same surface as popovers.
 - **TopBar extras:** 🕘 History popover (list: "Original" + each step label, current step in
   accent, later steps muted = redo-able; click jumps). ◧ Compare: press-and-hold shows the whole
   "before" image, a click toggles split view (aria-pressed). ⌨ Keyboard shortcuts popover (also `?`):
-  two groups, General and Annotate, key caps in mono on `--iu-surface-2`. Below 768px only ⌨ and
+  two groups, General and Annotate (incl. ⌘C / ⌘X / ⌘V: copy, cut, paste — a paste lands at the mouse
+  pointer when it is over the photo, else next to the original; from another tool it switches to
+  Annotate or Redact and selects the copy), key caps in mono on `--iu-surface-2`. Below 768px only ⌨ and
   the dividers hide; below 480px zoom is just the % button (tap = fit ↔ 100%, pinch to zoom) and
   Done shows only its icon; below 360px TopBar buttons are 34px
   (2px gaps) so it fits at 320px. Buttons always keep a gap: hover/active backgrounds never touch.

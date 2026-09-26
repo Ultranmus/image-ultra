@@ -28,6 +28,11 @@ export interface LoadedImage {
   mimeType: string | null;
   /** Original file name without extension, when known. */
   name: string | null;
+  /**
+   * The source JPEG's EXIF block (TIFF bytes), read only for `ExportOptions.keepMetadata`.
+   * Missing for other formats and DOM sources.
+   */
+  exif?: Uint8Array;
 }
 
 /** Built-in tool ids, in their default ToolRail order. */

@@ -1,4 +1,5 @@
 import { loadImage } from '../loader/loadImage';
+import { cleanExif, insertJpegExif } from './exif';
 import { createEditState, parseEditState, type EditState } from '../state/editState';
 import {
   compose,
@@ -39,6 +40,13 @@ export interface ExportOptions {
   background?: string;
   /** Force a renderer; default tries WebGL2 then Canvas2D. */
   renderer?: RendererKind | 'auto';
+  /**
+   * Keep the photo's EXIF (camera, lens, date, copyright…) — JPEG to JPEG only. Default `false`:
+   * exports carry no metadata. GPS location is removed even when `true`; pass
+   * `{ location: true }` to keep it too. The embedded thumbnail and maker notes are never kept,
+   * orientation is reset (the pixels are already turned) and the size fields are updated.
+   */
+  keepMetadata?: boolean | { location?: boolean };
 }
 
 export interface ExportResult {
@@ -212,8 +220,19 @@ export async function exportImage(
     ...options,
     ...(mimeType === 'image/jpeg' && { background: options.background ?? '#ffffff' }),
   });
-  const blob = await canvasToBlob(rendered.canvas, mimeType, quality);
+  let blob = await canvasToBlob(rendered.canvas, mimeType, quality);
   const actualType = blob.type || mimeType;
+  if (options.keepMetadata && image.exif && actualType === 'image/jpeg') {
+    const exif = cleanExif(image.exif, {
+      width: rendered.width,
+      height: rendered.height,
+      location: typeof options.keepMetadata === 'object' && options.keepMetadata.location === true,
+    });
+    if (exif) {
+      const bytes = insertJpegExif(new Uint8Array(await blob.arrayBuffer()), exif);
+      blob = new Blob([bytes], { type: actualType });
+    }
+  }
   const baseName = options.fileName ?? image.name ?? 'image';
   return {
     blob,

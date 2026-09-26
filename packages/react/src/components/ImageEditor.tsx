@@ -37,6 +37,7 @@ import {
 import { applyWatermarkInput, type WatermarkInput } from '../tools/watermark/input';
 import { DEFAULT_STICKER_LIBRARY_URL } from '../tools/sticker/emojiData';
 import { DEFAULT_FONTS } from '../fonts';
+import { copySelection, pasteSelection, setPastePoint } from '../clipboard';
 import { mergeLabels, type LabelOverrides } from '../i18n';
 import { themeOverridesToStyle, type ThemeMode, type ThemeOverrides } from '../theme';
 import { ControlBar } from './ControlBar';
@@ -315,10 +316,15 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     const key = event.key.toLowerCase();
     const mod = event.metaKey || event.ctrlKey;
     if (mod) {
-      // Only claim undo/redo; leave every other browser shortcut alone.
+      // Only claim undo/redo and copy/paste of shapes; leave every other browser shortcut alone.
       if (key === 'z' && !event.shiftKey) state.undo();
       else if ((key === 'z' && event.shiftKey) || key === 'y') state.redo();
-      else return;
+      else if (key === 'c' || key === 'x') {
+        if (!copySelection(store, labels, key === 'x')) return;
+      } else if (key === 'v') {
+        const ids = resolvedTools.map((t) => t.id);
+        if (pasteSelection(store, labels, ids) === null) return;
+      } else return;
       event.preventDefault();
       return;
     }
@@ -356,6 +362,18 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
         data-iu-theme={theme === 'auto' ? undefined : theme}
         style={{ ...themeOverridesToStyle(themeOverrides), ...style }}
         onKeyDown={onKeyDown}
+        onPointerMove={(event) => {
+          // Menus and popovers sit over the stage: keep the last point (a right-click → Paste
+          // lands where the menu was opened).
+          const target = event.target as Element;
+          if (target.closest('.iu-popover')) return;
+          const rect = target.closest('.iu-stage')?.getBoundingClientRect();
+          setPastePoint(
+            store,
+            rect ? { x: event.clientX - rect.left, y: event.clientY - rect.top } : null,
+          );
+        }}
+        onPointerLeave={() => setPastePoint(store, null)}
         onKeyUp={(event) => {
           if (event.key === '\\') compareHold.end();
         }}

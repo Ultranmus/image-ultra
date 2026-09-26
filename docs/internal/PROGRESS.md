@@ -386,3 +386,24 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Adjust (owner): the crop shade now covers only the photo outside the crop (SVG clip to the photo's
   outline from `getImageQuad`), so the empty stage keeps the normal stage colour in both themes.
 - Compare (owner): the round divider handle is solid (surface colour) with ‹ › arrows — the line no longer shows through.
+
+## 2026-09-26 · Phase 6.5 — Metadata + copy / paste
+
+- Copy / paste (DECISIONS #78): ⌘C / ⌘X / ⌘V for the selected shape, sticker or redaction area;
+  one in-memory clipboard for the page, so it works across photos (same relative spot and size).
+  Paste from another tool switches to Annotate / Redact and selects the copy; one undo step each.
+  Copy / Paste in the shape menu; three rows in the `?` panel. Core `copyShape` /
+  `copyRedaction` / `pasteClipboard` (+ `fitShape` / `fitRedaction`); react `clipboard.ts`.
+- Metadata (DECISIONS #79): exports stay metadata-free by default; `keepMetadata: true` rebuilds
+  the source JPEG's EXIF (orientation reset, new size, no thumbnail / maker notes / GPS);
+  `{ location: true }` keeps GPS. `LoadedImage.exif`; `export/exif.ts`, no dependency. Checked
+  with Pillow: the rebuilt block reads back correctly.
+- Playground: "Metadata: strip / keep / keep + GPS" switch; the save log says "with EXIF" / "no EXIF".
+- Tests: 119 unit (+ `clipboard.test.ts`, `exif.test.ts`) · 82 e2e (+ `copy-metadata.spec.ts`).
+
+## 2026-09-26 · Phase 6.5 — owner review round 1
+
+- Paste lands at the mouse pointer when it's over the photo (owner); otherwise next to the original
+  / same relative spot as before. The editor remembers the last pointer position over the stage
+  (menus keep it, so right-click → Paste lands where the menu opened). Core `pasteClipboard` takes
+  an optional `at` point. Tests: 120 unit · 83 e2e.

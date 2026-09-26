@@ -32,6 +32,7 @@ export default function PlaygroundPage() {
   const [saved, setSaved] = useState<{ result: ExportResult; url: string } | null>(null);
   const [log, setLog] = useState('Ready');
   const [appWatermark, setAppWatermark] = useState<'off' | 'on' | 'locked'>('off');
+  const [metadata, setMetadata] = useState<'strip' | 'keep' | 'keep + GPS'>('strip');
 
   // Test hook for Playwright (e2e) — not part of the package API.
   useEffect(() => {
@@ -91,6 +92,13 @@ export default function PlaygroundPage() {
           }}
         />
 
+        <Segmented
+          label="Metadata"
+          options={['strip', 'keep', 'keep + GPS'] as const}
+          value={metadata}
+          onChange={setMetadata}
+        />
+
         <span className="pg-log" data-testid="log">
           {log}
         </span>
@@ -107,16 +115,22 @@ export default function PlaygroundPage() {
               initialState={initialState}
               theme={theme}
               themeOverrides={accent ? { accent } : {}}
-              exportOptions={{ mimeType: format, fileName: 'edited' }}
+              exportOptions={{
+                mimeType: format,
+                fileName: 'edited',
+                keepMetadata:
+                  metadata === 'strip' ? false : { location: metadata === 'keep + GPS' },
+              }}
               onChange={(state) =>
                 setLog(`Changed · ${JSON.stringify(state).length} bytes of JSON`)
               }
-              onSave={(result) => {
+              onSave={async (result) => {
                 setSaved((previous) => {
                   if (previous) URL.revokeObjectURL(previous.url);
                   return { result, url: URL.createObjectURL(result.blob) };
                 });
-                setLog(`Saved ${result.fileName} · ${result.width}×${result.height}`);
+                const exif = (await hasExif(result.blob)) ? 'with EXIF' : 'no EXIF';
+                setLog(`Saved ${result.fileName} · ${result.width}×${result.height} · ${exif}`);
               }}
               onCancel={() => setLog('Cancel pressed')}
               onError={(error) => setLog(`Error: ${error.message}`)}
@@ -140,6 +154,12 @@ export default function PlaygroundPage() {
       </main>
     </div>
   );
+}
+
+/** Whether a saved file carries EXIF (looks for the `Exif\0\0` header near the start). */
+async function hasExif(blob: Blob): Promise<boolean> {
+  const head = new TextDecoder('latin1').decode(await blob.slice(0, 0x20000).arrayBuffer());
+  return head.includes('Exif\0\0');
 }
 
 export function Segmented<T extends string>({

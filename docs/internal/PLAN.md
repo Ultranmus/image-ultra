@@ -132,7 +132,8 @@ Approved 2026-09-25 (order below). Multi-select moved to Phase 7; Sticker added 
 - [x] **6.3** Frames & borders; Fill = background colour/image behind transparent areas
 - [x] **6.4** Watermark (text/image, position presets, tile, opacity); Sticker (built-in set + own
       images, placed like shapes)
-- [ ] **6.5** EXIF strip option on export; copy / paste shapes (⌘C / ⌘V, also between photos)
+- [x] **6.5** EXIF: stripped by default, `keepMetadata` export option; copy / paste shapes
+      (⌘C / ⌘X / ⌘V, also between photos)
 
 ### Phase 7 — Polish
 

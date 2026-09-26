@@ -121,6 +121,9 @@ export interface Labels {
   arrowStart: string;
   arrowEnd: string;
   duplicate: string;
+  copy: string;
+  cut: string;
+  paste: string;
   deleteShape: string;
   layers: string;
   noLayers: string;
@@ -349,6 +352,9 @@ export const defaultLabels: Labels = {
   arrowStart: 'Arrow at start',
   arrowEnd: 'Arrow at end',
   duplicate: 'Duplicate',
+  copy: 'Copy',
+  cut: 'Cut',
+  paste: 'Paste',
   deleteShape: 'Delete',
   layers: 'Layers',
   noLayers: 'Nothing drawn yet',

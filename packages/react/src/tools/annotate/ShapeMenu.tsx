@@ -1,6 +1,7 @@
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import type { ReactNode } from 'react';
 import type { Shape } from '@image-ultra/core';
+import { copyShapeById, pasteSelection, useClipboardKind } from '../../clipboard';
 import { useEditorState, useEditorStore, useLabels, usePortalContainer } from '../../context';
 import { canMove, shapeActions, type StackMove } from './actions';
 import { referenceSize } from './state';
@@ -22,7 +23,7 @@ export interface ShapeMenuProps {
 }
 
 /**
- * Actions for one shape: lock, show/hide, stacking order, duplicate, delete. Used by the canvas
+ * Actions for one shape: lock, show/hide, stacking order, copy/paste, duplicate, delete. Used by the canvas
  * (right-click, long-press, Shift+F10) and the "⋯" button on each Layers row. Works on locked
  * shapes too — it's how they get unlocked from the photo.
  */
@@ -43,6 +44,7 @@ export function ShapeMenu({
   const shapes = useEditorState((s) => s.edit.annotations);
   const actions = shapeActions(store, labels);
   const index = shapes.findIndex((s) => s.id === shape.id);
+  const canPaste = useClipboardKind() === 'shape';
 
   const order: [StackMove, string][] = [
     ['front', labels.bringToFront],
@@ -96,6 +98,20 @@ export function ShapeMenu({
             </Menu.Item>
           ))}
           <Menu.Separator className="iu-menu__separator" />
+          <Menu.Item className="iu-menu__item" onSelect={() => copyShapeById(store, shape.id)}>
+            {labels.copy}
+          </Menu.Item>
+          <Menu.Item
+            className="iu-menu__item"
+            disabled={!canPaste}
+            onSelect={() => {
+              const { activeTool } = store.getState();
+              const id = pasteSelection(store, labels, [activeTool]);
+              if (id) onSelect(id);
+            }}
+          >
+            {labels.paste}
+          </Menu.Item>
           <Menu.Item className="iu-menu__item" onSelect={duplicate}>
             {labels.duplicate}
           </Menu.Item>

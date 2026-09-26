@@ -162,7 +162,19 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Compare: the divider line shows through the round handle** (owner) — the handle was
       semi-transparent. Now solid (surface colour) with ‹ › arrows _(fixed 2026-09-26)_.
 
+### Found during Phase 6.5 review
+
+- [x] **Paste should land at the mouse pointer** (owner) — now it pastes next to the original.
+  _(fixed 2026-09-26)_
+  - Fix: remember the last pointer position over the stage; when it's over the photo, centre the
+    paste there, otherwise fall back to "next to the original / same relative spot".
+
 ### Planned later
+
+- [ ] **`keepMetadata` for WebP / PNG output** (EXIF chunk / `eXIf`) and HEIC/WebP sources — now
+      JPEG → JPEG only — _Phase 8_
+- [ ] **Copy / cut from the Layers panel** (its keys stay inside the panel; the "⋯" menu has Copy)
+      — _Phase 7_
 
 - [ ] **Extend the canvas** (e.g. "make it square" with the Fill showing on the sides, for social
       posts) — belongs with Resize — _Phase 7_ (owner, 2026-09-25)
@@ -179,7 +191,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 ### From Phase 5 — Annotate
 
 - [ ] **Multi-select** (Shift-click, marquee) and group move/align — _Phase 7_ (owner, 2026-09-25)
-- [ ] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _Phase 6_
+- [x] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _done in 6.5 (2026-09-26)_
+- [ ] **Paste images from the system clipboard** (e.g. a screenshot → new image shape) — _Phase 7_
 - [ ] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _Phase 7_
 - [ ] **Phone layout: Annotate rows scroll sideways** — _Phase 7 (mobile pass)_
 - [ ] **Line endpoint handles cover the arrow head** while selected — _Phase 7 polish_

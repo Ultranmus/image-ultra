@@ -19,6 +19,9 @@ export function ShortcutsPanel() {
     ...(Object.entries(MODE_SHORTCUTS) as [AnnotateMode, string][]).map(
       ([mode, key]): [string, string[]] => [labels.annotateModes[mode], [key]],
     ),
+    [labels.copy, [mod, 'C']],
+    [labels.cut, [mod, 'X']],
+    [labels.paste, [mod, 'V']],
     [labels.duplicate, [mod, 'D']],
     [labels.deleteShape, ['⌫']],
     [labels.nudge, ['←', '→', '↑', '↓']],

@@ -1,4 +1,5 @@
 import type { ImageSource, LoadedImage } from '../types';
+import { readJpegExif } from '../export/exif';
 import { detectImageFormat, type ImageFormat } from './detectFormat';
 
 export interface LoadImageOptions {
@@ -115,7 +116,13 @@ async function fromBlob(
   let firstError: unknown;
   try {
     const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
-    return fromBitmap(bitmap, mimeType, name);
+    const loaded = fromBitmap(bitmap, mimeType, name);
+    if (format === 'jpeg') {
+      // EXIF lives in the first 64 KB (one APP1 segment); kept for `keepMetadata` exports.
+      const exif = readJpegExif(new Uint8Array(await blob.slice(0, 0x20000).arrayBuffer()));
+      if (exif) loaded.exif = exif;
+    }
+    return loaded;
   } catch (error) {
     firstError = error;
   }

@@ -1,20 +1,22 @@
 import type { Point } from '../types';
 import { boxCenter, createShapeId, getShapeBox, type Box, type Shape } from './annotations';
+import { groupBounds, transformShape } from './arrange';
 import type { EditAsset, EditState } from './editState';
 import { redactionBounds, type Redaction } from './redactions';
 
 /*
  * Copy / paste of shapes and redaction areas, also between photos (DECISIONS #78). A copied item
  * remembers the visible area (crop) of its photo, so a paste lands at the same relative spot and
- * the same size relative to the new photo. Everything here is plain data — the clipboard itself
- * lives in the UI.
+ * the same size relative to the new photo. Several shapes are copied and pasted as one group,
+ * keeping their layout. Everything here is plain data — the clipboard itself lives in the UI.
  */
 
 export type ClipboardItem =
   | {
       kind: 'shape';
-      shape: Shape;
-      /** Images the shape needs (stickers, logos), so it pastes into any photo. */
+      /** Bottom to top, as in `annotations`. */
+      shapes: Shape[];
+      /** Images the shapes need (stickers, logos), so they paste into any photo. */
       assets: Record<string, EditAsset>;
     }
   | { kind: 'redaction'; redaction: Redaction };
@@ -25,16 +27,24 @@ export interface ClipboardEntry {
   area: Box;
 }
 
-/** Copies the shape with id `id` (and the images it uses); `null` if it doesn't exist. */
-export function copyShape(state: EditState, id: string, area: Box): ClipboardEntry | null {
-  const shape = state.annotations.find((s) => s.id === id);
-  if (!shape) return null;
+/**
+ * Copies the shapes with these ids (in stacking order) and the images they use; `null` when none
+ * of them exists.
+ */
+export function copyShapes(
+  state: EditState,
+  ids: readonly string[],
+  area: Box,
+): ClipboardEntry | null {
+  const shapes = state.annotations.filter((s) => ids.includes(s.id));
+  if (shapes.length === 0) return null;
   const assets: Record<string, EditAsset> = {};
-  if (shape.type === 'image') {
+  for (const shape of shapes) {
+    if (shape.type !== 'image') continue;
     const asset = state.assets[shape.assetId];
     if (asset) assets[shape.assetId] = clone(asset);
   }
-  return { item: { kind: 'shape', shape: clone(shape), assets }, area: { ...area } };
+  return { item: { kind: 'shape', shapes: clone(shapes), assets }, area: { ...area } };
 }
 
 /** Copies the redaction area with id `id`; `null` if it doesn't exist. */
@@ -45,58 +55,63 @@ export function copyRedaction(state: EditState, id: string, area: Box): Clipboar
 }
 
 /**
- * Adds the clipboard item to `draft` (call inside a store `update`) and returns the new id.
- * `area` = the visible area of the photo being pasted into. The copy is centred on `at` (e.g. the
- * mouse pointer) when given, else it lands at the same relative spot. When an identical item already sits there (pasting into the same photo, or pasting twice)
- * it moves down-right by 3% of the photo until the spot is free.
+ * Adds the clipboard item to `draft` (call inside a store `update`) and returns the new ids (on
+ * top, in the copied order). `area` = the visible area of the photo being pasted into. The copy
+ * is centred on `at` (e.g. the mouse pointer) when given, else it lands at the same relative spot.
+ * When an identical item already sits there (pasting into the same photo, or pasting twice) it
+ * moves down-right by 3% of the photo until the spot is free.
  */
 export function pasteClipboard(
   draft: EditState,
   entry: ClipboardEntry,
   area: Box,
   at?: Point,
-): string {
+): string[] {
   const { item } = entry;
   const step = Math.min(area.width, area.height) * 0.03;
+  const nudge = (p: Point) => ({ x: p.x + step, y: p.y + step });
   if (item.kind === 'redaction') {
     let r = fitRedaction(item.redaction, entry.area, area, at);
     for (let i = 0; i < 50 && draft.redactions.some((o) => sameBox(o, r)); i++) {
-      r = transformRedaction(r, (p) => ({ x: p.x + step, y: p.y + step }), 1);
+      r = transformRedaction(r, nudge, 1);
     }
     const id = `redact-${Math.random().toString(36).slice(2, 10)}`;
     draft.redactions.push({ ...r, id });
-    return id;
+    return [id];
   }
 
-  let shape = fitShape(item.shape, entry.area, area, at);
-  for (let i = 0; i < 50 && draft.annotations.some((o) => sameShapeBox(o, shape)); i++) {
-    shape = transformShape(shape, (p) => ({ x: p.x + step, y: p.y + step }), 1);
+  let shapes = fitShapes(item.shapes, entry.area, area, at);
+  const taken = () => shapes.some((shape) => draft.annotations.some((o) => sameShapeBox(o, shape)));
+  for (let i = 0; i < 50 && taken(); i++) {
+    shapes = shapes.map((s) => transformShape(s, nudge, 1));
   }
-  if (shape.type === 'image') {
-    const asset = item.assets[shape.assetId];
-    const existing = draft.assets[shape.assetId];
-    if (asset && existing && existing.src !== asset.src) {
-      // Same id, different image (another photo's asset): store it under a new id.
-      const assetId = `asset-${createShapeId()}`;
-      draft.assets[assetId] = clone(asset);
-      shape = { ...shape, assetId };
-    } else if (asset && !existing) {
-      draft.assets[shape.assetId] = clone(asset);
+  // Same asset id, different image (another photo's asset): store it under a new id.
+  const renamed = new Map<string, string>();
+  for (const [id, asset] of Object.entries(item.assets)) {
+    const existing = draft.assets[id];
+    if (!existing) draft.assets[id] = clone(asset);
+    else if (existing.src !== asset.src) {
+      const next = `asset-${createShapeId()}`;
+      draft.assets[next] = clone(asset);
+      renamed.set(id, next);
     }
   }
-  // A copy is always visible and editable, whatever the original was.
-  const copy: Shape = { ...shape, id: createShapeId() };
-  delete copy.locked;
-  delete copy.hidden;
-  draft.annotations.push(copy);
-  return copy.id;
+  return shapes.map((shape) => {
+    // A copy is always visible and editable, whatever the original was.
+    const copy: Shape = { ...shape, id: createShapeId() };
+    delete copy.locked;
+    delete copy.hidden;
+    if (copy.type === 'image') copy.assetId = renamed.get(copy.assetId) ?? copy.assetId;
+    draft.annotations.push(copy);
+    return copy.id;
+  });
 }
 
 /* ── Placement ─────────────────────────────────────────────────────────── */
 
 /**
  * The map from one photo's visible area to another's: the item's centre keeps its relative
- * position, and its size keeps its ratio to the short side.
+ * position (or moves to `at`), and its size keeps its ratio to the short side.
  */
 function fit(
   center: Point,
@@ -115,57 +130,17 @@ function fit(
   };
 }
 
-export function fitShape(shape: Shape, from: Box, to: Box, at?: Point): Shape {
-  const { map, k } = fit(boxCenter(getShapeBox(shape)), from, to, at);
-  return transformShape(shape, map, k);
+/** Places shapes as one group (their layout is kept) from one visible area into another. */
+export function fitShapes(shapes: readonly Shape[], from: Box, to: Box, at?: Point): Shape[] {
+  const bounds = groupBounds(shapes);
+  if (!bounds) return [];
+  const { map, k } = fit(boxCenter(bounds), from, to, at);
+  return shapes.map((s) => transformShape(s, map, k));
 }
 
 export function fitRedaction(r: Redaction, from: Box, to: Box, at?: Point): Redaction {
   const { map, k } = fit(boxCenter(redactionBounds(r)), from, to, at);
   return transformRedaction(r, map, k);
-}
-
-/** Moves points with `map` and scales sizes (stroke, font, box) by `k`. Rotation is kept. */
-function transformShape(shape: Shape, map: (p: Point) => Point, k: number): Shape {
-  switch (shape.type) {
-    case 'line':
-      return {
-        ...shape,
-        points: [map(shape.points[0]), map(shape.points[1])],
-        strokeWidth: shape.strokeWidth * k,
-      };
-    case 'path':
-      return { ...shape, points: shape.points.map(map), strokeWidth: shape.strokeWidth * k };
-    case 'text': {
-      const p = map({ x: shape.x, y: shape.y });
-      return { ...shape, ...p, width: shape.width * k, fontSize: shape.fontSize * k };
-    }
-    case 'rect': {
-      const p = map({ x: shape.x, y: shape.y });
-      return {
-        ...shape,
-        ...p,
-        width: shape.width * k,
-        height: shape.height * k,
-        strokeWidth: shape.strokeWidth * k,
-        cornerRadius: shape.cornerRadius * k,
-      };
-    }
-    case 'ellipse': {
-      const p = map({ x: shape.x, y: shape.y });
-      return {
-        ...shape,
-        ...p,
-        width: shape.width * k,
-        height: shape.height * k,
-        strokeWidth: shape.strokeWidth * k,
-      };
-    }
-    case 'image': {
-      const p = map({ x: shape.x, y: shape.y });
-      return { ...shape, ...p, width: shape.width * k, height: shape.height * k };
-    }
-  }
 }
 
 function transformRedaction(r: Redaction, map: (p: Point) => Point, k: number): Redaction {

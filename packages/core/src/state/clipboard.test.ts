@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { copyRedaction, copyShape, pasteClipboard } from './clipboard';
+import { copyRedaction, copyShapes, pasteClipboard } from './clipboard';
 import { createEditState, type EditState } from './editState';
 import type { ImageShape, RectShape } from './annotations';
 import type { RedactBox } from './redactions';
@@ -43,15 +43,15 @@ function withShapes(): EditState {
 
 describe('clipboard', () => {
   it('returns null for an unknown id', () => {
-    expect(copyShape(createEditState(), 'nope', area)).toBeNull();
+    expect(copyShapes(createEditState(), ['nope'], area)).toBeNull();
     expect(copyRedaction(createEditState(), 'nope', area)).toBeNull();
   });
 
   it('pasting into the same photo offsets the copy, and again for a second paste', () => {
     const state = withShapes();
-    const entry = copyShape(state, 'r', area)!;
-    const first = pasteClipboard(state, entry, area);
-    const second = pasteClipboard(state, entry, area);
+    const entry = copyShapes(state, ['r'], area)!;
+    const [first] = pasteClipboard(state, entry, area);
+    const [second] = pasteClipboard(state, entry, area);
     const a = state.annotations.find((s) => s.id === first) as RectShape;
     const b = state.annotations.find((s) => s.id === second) as RectShape;
     expect(a.x).toBeCloseTo(115); // 3% of the short side (500)
@@ -63,10 +63,10 @@ describe('clipboard', () => {
   });
 
   it('pastes at the same relative spot and size into a photo of another size', () => {
-    const entry = copyShape(withShapes(), 'r', area)!;
+    const entry = copyShapes(withShapes(), ['r'], area)!;
     const target = createEditState();
     const other = { x: 100, y: 0, width: 2000, height: 1000 };
-    const id = pasteClipboard(target, entry, other);
+    const [id] = pasteClipboard(target, entry, other);
     const pasted = target.annotations.find((s) => s.id === id) as RectShape;
     // Centre (200, 150) = (20%, 30%) of the area → (100 + 400, 300); size ×2.
     expect(pasted.width).toBe(400);
@@ -79,8 +79,8 @@ describe('clipboard', () => {
 
   it('centres the copy on a given point (the mouse pointer)', () => {
     const state = withShapes();
-    const entry = copyShape(state, 'r', area)!;
-    const id = pasteClipboard(state, entry, area, { x: 700, y: 400 });
+    const entry = copyShapes(state, ['r'], area)!;
+    const [id] = pasteClipboard(state, entry, area, { x: 700, y: 400 });
     const pasted = state.annotations.find((s) => s.id === id) as RectShape;
     expect(pasted.x + pasted.width / 2).toBeCloseTo(700);
     expect(pasted.y + pasted.height / 2).toBeCloseTo(400);
@@ -88,19 +88,34 @@ describe('clipboard', () => {
   });
 
   it('brings a sticker image along, and renames it if the id is taken by another image', () => {
-    const entry = copyShape(withShapes(), 'i', area)!;
+    const entry = copyShapes(withShapes(), ['i'], area)!;
     const empty = createEditState();
-    const id = pasteClipboard(empty, entry, area);
+    const [id] = pasteClipboard(empty, entry, area);
     expect(empty.assets['asset-1']?.src).toBe('data:a');
     expect((empty.annotations.find((s) => s.id === id) as ImageShape).assetId).toBe('asset-1');
 
     const clash = createEditState();
     clash.assets['asset-1'] = { kind: 'raster', src: 'data:b', width: 1, height: 1, mimeType: 'x' };
-    const id2 = pasteClipboard(clash, entry, area);
+    const [id2] = pasteClipboard(clash, entry, area);
     const assetId = (clash.annotations.find((s) => s.id === id2) as ImageShape).assetId;
     expect(assetId).not.toBe('asset-1');
     expect(clash.assets[assetId]?.src).toBe('data:a');
     expect(clash.assets['asset-1']?.src).toBe('data:b');
+  });
+
+  it('copies several shapes as a group: layout kept, all on top, in stacking order', () => {
+    const state = withShapes();
+    const entry = copyShapes(state, ['i', 'r'], area)!;
+    const ids = pasteClipboard(state, entry, area, { x: 500, y: 250 });
+    expect(ids).toHaveLength(2);
+    const [rectCopy, imageCopy] = ids.map((id) => state.annotations.find((s) => s.id === id)!);
+    expect(rectCopy!.type).toBe('rect'); // `r` is below `i` in the list, so it's pasted first
+    expect(imageCopy!.type).toBe('image');
+    const r = rectCopy as RectShape;
+    const i = imageCopy as ImageShape;
+    // Same distance between them as the originals (100, 100).
+    expect(r.x - i.x).toBeCloseTo(rect.x - sticker.x);
+    expect(r.y - i.y).toBeCloseTo(rect.y - sticker.y);
   });
 
   it('copies redaction areas', () => {
@@ -119,7 +134,7 @@ describe('clipboard', () => {
     const state = createEditState();
     state.redactions.push(box);
     const entry = copyRedaction(state, 'x', area)!;
-    const id = pasteClipboard(state, entry, area);
+    const [id] = pasteClipboard(state, entry, area);
     const pasted = state.redactions.find((r) => r.id === id) as RedactBox;
     expect(state.redactions).toHaveLength(2);
     expect(pasted.x).toBeCloseTo(25);
@@ -129,8 +144,10 @@ describe('clipboard', () => {
 
   it("the clipboard is a snapshot: later edits to the original don't change it", () => {
     const state = withShapes();
-    const entry = copyShape(state, 'r', area)!;
+    const entry = copyShapes(state, ['r'], area)!;
     (state.annotations[0] as RectShape).width = 1;
-    expect((entry.item.kind === 'shape' && (entry.item.shape as RectShape).width) || 0).toBe(200);
+    expect((entry.item.kind === 'shape' && (entry.item.shapes[0] as RectShape).width) || 0).toBe(
+      200,
+    );
   });
 });

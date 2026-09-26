@@ -169,11 +169,20 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
   - Fix: remember the last pointer position over the stage; when it's over the photo, centre the
     paste there, otherwise fall back to "next to the original / same relative spot".
 
+### Found during 7.1
+
+- [ ] **Group menu** (owner, 2026-09-26) — right-click on a group member selects just it; group
+      actions live only in the inspector and on the keyboard — _Phase 7 (with 7.2)_
+  - Fix: right-click / long-press / Shift+F10 on a member of the selection keeps the group and opens
+    a group menu: Copy, Paste, Duplicate, Delete · Align ▸ · Bring to front / Send to back (keeping
+    the group's order) · Lock / Hide all.
+- [ ] **Group resize is proportional only** (corners); no edge handles or free stretch — _nice to have_
+
 ### Planned later
 
 - [ ] **`keepMetadata` for WebP / PNG output** (EXIF chunk / `eXIf`) and HEIC/WebP sources — now
       JPEG → JPEG only — _Phase 8_
-- [ ] **Copy / cut from the Layers panel** (its keys stay inside the panel; the "⋯" menu has Copy)
+- [x] **Copy / cut from the Layers panel** _(done in 7.1)_ (its keys stay inside the panel; the "⋯" menu has Copy)
       — _Phase 7_
 
 - [ ] **Extend the canvas** (e.g. "make it square" with the Fill showing on the sides, for social
@@ -183,21 +192,21 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 - [ ] **Owner's `.ico` crash not reproduced** — ask which browser/file. Chrome decodes ICO; Safari
       may not (would now show "This file type (ICO) isn't supported.") — _check with owner_
-- [ ] **Hidden shapes can't be reached from the photo** (they're invisible, so right-click can't hit
+- [x] **Hidden shapes can't be reached from the photo** _(7.1: "Show all" in Layers)_ (they're invisible, so right-click can't hit
       them) — Layers "⋯" / eye covers it; a "Show all" could come with multi-select — _Phase 6/7_
 - [ ] **Touch long-press on a drawing tool** cancels the stroke it started; fine for now, verify on a
       real phone in Phase 7 (mobile pass)
 
 ### From Phase 5 — Annotate
 
-- [ ] **Multi-select** (Shift-click, marquee) and group move/align — _Phase 7_ (owner, 2026-09-25)
+- [x] **Multi-select** (Shift-click, marquee) and group move/align — _done in 7.1 (2026-09-26)_
 - [x] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _done in 6.5 (2026-09-26)_
 - [ ] **Paste images from the system clipboard** (e.g. a screenshot → new image shape) — _Phase 7_
-- [ ] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _Phase 7_
+- [x] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _done in 7.1_
 - [ ] **Phone layout: Annotate rows scroll sideways** — _Phase 7 (mobile pass)_
-- [ ] **Line endpoint handles cover the arrow head** while selected — _Phase 7 polish_
+- [x] **Line endpoint handles cover the arrow head** while selected — _done in 7.1 (hollow handle)_
   - Fix: smaller hollow endpoint handles, or place them just behind the tip.
-- [ ] **In-place text editor may wrap slightly differently from the canvas** (CSS vs our measure) —
+- [x] **In-place text editor may wrap slightly differently from the canvas** (CSS vs our measure) — _done in 7.1 (DECISIONS #82)_ —
       _Phase 7_
   - Fix: render the editing text through the same layout and draw a caret, or match CSS exactly.
 - [ ] **Fonts are system stacks**: text can look different on another OS; exports use the

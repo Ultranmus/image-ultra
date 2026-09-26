@@ -9,19 +9,25 @@ import {
 import {
   applyToPoint,
   boxCenter,
+  boxesIntersect,
   getCropRect,
   getShapeBounds,
   getShapeBox,
   getShapeCorners,
+  groupBounds,
   invert,
   measureTextHeight,
   moveShape,
   normalizeDegrees,
+  pointsBox,
   resizeRotatedBox,
   rotatePoint,
+  rotateShapes,
+  scaleShapes,
   setShapeBox,
   shapeAt,
   simplifyPoints,
+  TEXT_WRAP_SLACK,
   textIndexAt,
   type Affine,
   type Box,
@@ -44,6 +50,8 @@ import {
   getOrientedToStage,
   MODE_SHORTCUTS,
   referenceSize,
+  selectionIds,
+  selectPatch,
   useAnnotateState,
   type AnnotateMode,
 } from './state';
@@ -82,7 +90,39 @@ type Interaction =
       /** Shape under the pointer: a click (no drag) selects it instead of drawing. */
       hitId: string | null;
     }
-  | { kind: 'pen'; pointerId: number; points: Point[]; id: string; hitId: string | null };
+  | { kind: 'pen'; pointerId: number; points: Point[]; id: string; hitId: string | null }
+  /* A multi-selection moves, resizes (corners, proportional) and rotates as one. */
+  | {
+      kind: 'groupMove';
+      pointerId: number;
+      start: Point;
+      startScreen: Point;
+      shapes: Shape[];
+      dragged: boolean;
+      /** The member pressed: a click without dragging selects only it. */
+      clickId: string | null;
+    }
+  | {
+      kind: 'groupScale';
+      pointerId: number;
+      /** Opposite corner of the group box (stays put). */
+      anchor: Point;
+      box: Box;
+      handle: BoxHandle;
+      shapes: Shape[];
+    }
+  | {
+      kind: 'groupRotate';
+      pointerId: number;
+      /** Centre in stage px (for the angle) and oriented px (to turn around). */
+      center: Point;
+      centerO: Point;
+      startAngle: number;
+      box: Box;
+      shapes: Shape[];
+    }
+  /* Mouse drag on empty space with Select: a selection box (Shift adds to the selection). */
+  | { kind: 'marquee'; pointerId: number; start: Point; base: string[] };
 
 /** Editor elements a press on which keeps the current selection. */
 const INTERACTIVE =
@@ -126,6 +166,13 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     if (polygon.length > 0) setPolygon([]);
   }
   const [cursor, setCursor] = useState<Point | null>(null);
+  /** Selection box being dragged (stage px). */
+  const [marquee, setMarquee] = useState<{ a: Point; b: Point } | null>(null);
+  /** A group being rotated: its box turns with it until the drag ends. */
+  const [groupFrame, setGroupFrame] = useState<{ box: Box; angle: number } | null>(null);
+  /** Space held: presses pass through to the stage, which pans (like Figma / Canva). */
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const spaceRef = useRef(false);
   /** How the text editor opens: everything selected (new box) or the caret at an index. */
   const [editCaret, setEditCaret] = useState<number | 'all'>('all');
   /** Open shape menu: which shape, and where on the stage it opens. */
@@ -139,17 +186,23 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
   const k = toStage ? Math.sqrt(Math.abs(toStage[0] * toStage[3] - toStage[1] * toStage[2])) : 1;
   const shapes = edit.annotations;
   const selected = shapes.find((s) => s.id === ui.selectedId && !s.hidden) ?? null;
+  const selectedIds = selectionIds(ui);
+  /** A multi-selection (visible members; locked ones can't be in it). */
+  const group =
+    selectedIds.length > 1 ? shapes.filter((s) => selectedIds.includes(s.id) && !s.hidden) : [];
+  const isGroup = group.length > 1;
+  const groupBox = isGroup ? groupBounds(group, measureTextHeight) : null;
   const editing =
     shapes.find((s): s is TextShape => s.id === ui.editingId && s.type === 'text') ?? null;
   const ref = image ? referenceSize(image, edit) : 1000;
 
   // Latest values for the window-level keyboard handler.
-  const latest = useRef({ ui, selected, polygon, k, ref, menu, toStage });
+  const latest = useRef({ ui, selected, polygon, k, ref, menu, toStage, group, isGroup });
   const commitRef = useRef(() => {});
   /** The current drag started on a handle of the text being edited (editing continues after). */
   const handleWhileEditing = useRef(false);
   useEffect(() => {
-    latest.current = { ui, selected, polygon, k, ref, menu, toStage };
+    latest.current = { ui, selected, polygon, k, ref, menu, toStage, group, isGroup };
   });
 
   const local = (event: { clientX: number; clientY: number }): Point => {
@@ -173,12 +226,15 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       p.x >= crop.x && p.x <= crop.x + crop.width && p.y >= crop.y && p.y <= crop.y + crop.height
     );
   };
-  const select = (id: string | null) => setUi((u) => ({ ...u, selectedId: id }));
+  const select = (id: string | null) => setUi((u) => ({ ...u, ...selectPatch(id ? [id] : []) }));
+  const selectMany = (ids: readonly string[]) => setUi((u) => ({ ...u, ...selectPatch(ids) }));
   /** A click on a shape with a drawing tool: switch to Select and select it. */
   const selectWithSelectTool = (id: string) => {
     setPolygon([]);
-    setUi((u) => ({ ...u, mode: 'select', selectedId: id }));
+    setUi((u) => ({ ...u, mode: 'select', ...selectPatch([id]) }));
   };
+  /** Shapes that can join a multi-selection. */
+  const selectable = (s: Shape) => !s.hidden && !s.locked;
   const actions = shapeActions(store, labels);
 
   /* ── Shape menu ─────────────────────────────────────────────────── */
@@ -210,7 +266,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     creatingText.current = isNew;
     if (!isNew) store.getState().beginChange(labels.editText);
     setEditCaret(isNew ? 'all' : (caret ?? shape.text.length));
-    setUi((u) => ({ ...u, selectedId: shape.id, editingId: shape.id }));
+    setUi((u) => ({ ...u, ...selectPatch([shape.id]), editingId: shape.id }));
   };
 
   /** Leaves the editor. Text never vanishes: an emptied box gets its default text back. */
@@ -259,6 +315,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       event.stopPropagation();
       return;
     }
+    // Space + drag pans the photo: leave the press to the stage.
+    if (spaceRef.current) return;
     const handle = (event.target as Element).closest('[data-handle]')?.getAttribute('data-handle');
     // A handle of the text box being edited: resize/rotate it and keep typing (like Canva). Keep the
     // focus in the text box — no blur, so editing doesn't end.
@@ -290,8 +348,42 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       rootRef.current?.setPointerCapture(event.pointerId);
     };
 
+    // 1a. Handles of a multi-selection: corners resize it (proportionally), the round one turns it.
+    if (handle && isGroup && groupBox) {
+      capture();
+      if (handle === 'rotate') {
+        const centerO = boxCenter(groupBox);
+        const c = toS(centerO);
+        interaction.current = {
+          kind: 'groupRotate',
+          pointerId: event.pointerId,
+          center: c,
+          centerO,
+          startAngle: Math.atan2(screen.y - c.y, screen.x - c.x),
+          box: groupBox,
+          shapes: group,
+        };
+        store.getState().beginChange(labels.rotate);
+      } else {
+        const h = handle as BoxHandle;
+        interaction.current = {
+          kind: 'groupScale',
+          pointerId: event.pointerId,
+          anchor: {
+            x: h.includes('w') ? groupBox.x + groupBox.width : groupBox.x,
+            y: h.includes('n') ? groupBox.y + groupBox.height : groupBox.y,
+          },
+          box: groupBox,
+          handle: h,
+          shapes: group,
+        };
+        store.getState().beginChange(labels.resizeSelection);
+      }
+      return;
+    }
+
     // 1. Handles of the selected shape.
-    if (handle && selected && !selected.locked) {
+    if (handle && !isGroup && selected && !selected.locked) {
       capture();
       if (handle === 'rotate') {
         const c = toS(boxCenter(getShapeBox(selected, textHeight(selected))));
@@ -339,9 +431,41 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       store.getState().beginChange(labels.annotateModes.select);
     };
 
+    // Shift-click with Select: add the shape to the selection, or take it out.
+    if (event.shiftKey && ui.mode === 'select' && hit && selectable(hit)) {
+      event.stopPropagation();
+      const current = selectedIds.filter((id) => shapes.some((s) => s.id === id && selectable(s)));
+      selectMany(
+        current.includes(hit.id) ? current.filter((id) => id !== hit.id) : [...current, hit.id],
+      );
+      return;
+    }
+
+    // A multi-selection: a press inside its box (on a member, or between them) moves all of it.
+    if (
+      isGroup &&
+      groupBox &&
+      (!hit || selectedIds.includes(hit.id)) &&
+      insideRect(groupBox, p, tol)
+    ) {
+      capture();
+      interaction.current = {
+        kind: 'groupMove',
+        pointerId: event.pointerId,
+        start: p,
+        startScreen: screen,
+        shapes: group,
+        dragged: false,
+        clickId: hit?.id ?? null,
+      };
+      store.getState().beginChange(labels.annotateModes.select);
+      return;
+    }
+
     // 2. Anywhere inside the selected shape's box (e.g. the empty middle of a line or polygon),
     //    unless another shape on top is under the pointer: move it.
     if (
+      !isGroup &&
       selected &&
       !selected.locked &&
       (!hit || hit.id === selected.id) &&
@@ -442,7 +566,19 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       return;
     }
 
-    // 9. Empty space with Select: deselect and let the stage pan.
+    // 9. Empty space with Select: a mouse drag draws a selection box (Shift adds to the
+    //    selection); a click deselects. Touch pans the stage instead (Space + drag pans with a mouse).
+    if (event.pointerType !== 'touch') {
+      capture();
+      interaction.current = {
+        kind: 'marquee',
+        pointerId: event.pointerId,
+        start: screen,
+        base: event.shiftKey ? selectedIds : [],
+      };
+      if (!event.shiftKey) select(null);
+      return;
+    }
     select(null);
   };
 
@@ -460,10 +596,12 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       if (ui.mode === 'select') setHoverId(over?.id ?? null);
       // Over the selected shape a drag moves it; over another one a click selects it.
       const onSelected =
-        selected &&
-        !selected.locked &&
-        (!over || over.id === selected.id) &&
-        insideBox(selected, p, HIT_TOLERANCE / k);
+        isGroup && groupBox
+          ? (!over || selectedIds.includes(over.id)) && insideRect(groupBox, p, HIT_TOLERANCE / k)
+          : selected &&
+            !selected.locked &&
+            (!over || over.id === selected.id) &&
+            insideBox(selected, p, HIT_TOLERANCE / k);
       setHoverCursor(onSelected ? 'move' : over ? 'pointer' : undefined);
       return;
     }
@@ -538,6 +676,75 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         replace(labels.annotateModes.line, { ...it.shape, points });
         break;
       }
+      case 'groupMove': {
+        if (
+          !it.dragged &&
+          Math.hypot(screen.x - it.startScreen.x, screen.y - it.startScreen.y) < DRAG_START
+        )
+          break;
+        it.dragged = true;
+        let dx = p.x - it.start.x;
+        let dy = p.y - it.start.y;
+        const start = groupBounds(it.shapes, measureTextHeight);
+        if (!event.altKey && start) {
+          const members = new Set(it.shapes.map((s) => s.id));
+          const targets = [
+            getCropRect(image, edit.geometry),
+            ...shapes
+              .filter((s) => !members.has(s.id) && !s.hidden)
+              .map((s) => getShapeBounds(s, textHeight(s))),
+          ];
+          const snap = snapBox({ ...start, x: start.x + dx, y: start.y + dy }, targets, SNAP / k);
+          setGuides(snap.guides);
+          dx += snap.dx;
+          dy += snap.dy;
+        } else setGuides([]);
+        actions.replaceMany(
+          labels.annotateModes.select,
+          it.shapes.map((s) => moveShape(s, dx, dy)),
+        );
+        break;
+      }
+      case 'groupScale': {
+        const sx = it.handle.includes('w') ? -1 : 1;
+        const sy = it.handle.includes('n') ? -1 : 1;
+        const min = 8 / k / Math.max(1e-6, Math.min(it.box.width, it.box.height));
+        const factor = Math.max(
+          min,
+          (sx * (p.x - it.anchor.x)) / Math.max(1e-6, it.box.width),
+          (sy * (p.y - it.anchor.y)) / Math.max(1e-6, it.box.height),
+        );
+        actions.replaceMany(labels.resizeSelection, scaleShapes(it.shapes, it.anchor, factor));
+        break;
+      }
+      case 'groupRotate': {
+        const angle = Math.atan2(screen.y - it.center.y, screen.x - it.center.x);
+        const degrees = snapAngle(
+          normalizeDegrees(((angle - it.startAngle) * 180) / Math.PI),
+          event.shiftKey,
+        );
+        actions.replaceMany(
+          labels.rotate,
+          rotateShapes(it.shapes, it.centerO, degrees, measureTextHeight),
+        );
+        setGroupFrame({ box: it.box, angle: degrees });
+        break;
+      }
+      case 'marquee': {
+        if (!marquee && Math.hypot(screen.x - it.start.x, screen.y - it.start.y) < DRAG_START)
+          break;
+        setMarquee({ a: it.start, b: screen });
+        const area = pointsBox([it.start, screen]);
+        const hits = shapes
+          .filter(
+            (s) =>
+              selectable(s) &&
+              boxesIntersect(area, pointsBox(getShapeCorners(s, textHeight(s)).map(toS))),
+          )
+          .map((s) => s.id);
+        selectMany([...new Set([...it.base, ...hits])]);
+        break;
+      }
       case 'pen': {
         const last = it.points[it.points.length - 1]!;
         if (Math.hypot(p.x - last.x, p.y - last.y) * k < 2) break;
@@ -579,6 +786,17 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     if (!it || it.pointerId !== event.pointerId) return;
     interaction.current = null;
     setGuides([]);
+    if (it.kind === 'marquee') {
+      setMarquee(null);
+      return;
+    }
+    if (it.kind === 'groupRotate') setGroupFrame(null);
+    if (it.kind === 'groupMove' && !it.dragged) {
+      // A click on a member of the selection (no drag): select only that one.
+      store.getState().endChange();
+      if (it.clickId) select(it.clickId);
+      return;
+    }
     if (it.kind === 'move' && it.editOnClick && !it.dragged) {
       store.getState().endChange();
       const current = store.getState().edit.annotations.find((s) => s.id === it.shape.id);
@@ -691,6 +909,17 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     const hit = shapeAt(shapes, toO(local(event)), HIT_TOLERANCE / k, measureTextHeight);
     // On a shape, a double-click never zooms the photo (the Stage zooms on empty photo only).
     if (hit) event.stopPropagation();
+    else if (ui.mode === 'select' && !spaceRef.current) {
+      // Presses on empty space start a selection box, so the Stage never saw this press: zoom
+      // here, the way the Stage does (fitted → in at the pointer; zoomed → back to fit).
+      event.stopPropagation();
+      const state = store.getState();
+      if (state.isFitted) {
+        const target = state.viewport.scale < 1 ? 1 : state.viewport.scale * 2;
+        state.zoomTo(target, { anchor: local(event), animate: true });
+      } else state.fit({ animate: true });
+      return;
+    }
     // The second click of the double-click may already have opened the editor.
     if (getAnnotateState(store).editingId) return;
     if (hit?.type === 'text' && !hit.locked) startEditing(hit, false);
@@ -706,17 +935,58 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       const target = e.target as HTMLElement;
       if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
         return;
-      // Keys inside popovers / the layers panel belong to them (e.g. Escape closes the popover).
-      if (target.closest('.iu-popover, .iu-layers, .iu-compare')) return;
-      const { ui: u, selected: sel, polygon: poly, k: scale, ref: r } = latest.current;
+      // Keys inside popovers / the layers panel belong to them (e.g. Escape closes the popover);
+      // ⌘/Ctrl shortcuts from the Layers panel (select all, duplicate) still apply to the selection.
+      if (target.closest('.iu-popover, .iu-compare')) return;
+      if (target.closest('.iu-layers') && !(e.metaKey || e.ctrlKey)) return;
+      const {
+        ui: u,
+        selected: sel,
+        polygon: poly,
+        k: scale,
+        ref: r,
+        group: grp,
+        isGroup: multi,
+      } = latest.current;
       const mod = e.metaKey || e.ctrlKey;
       const state = store.getState();
+      const movable = grp.filter((s) => !s.locked);
 
-      if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+      if (e.key === ' ' && target.closest('.iu-stage')) {
+        // Space + drag pans (the stage takes the press while it's held). Only with the photo
+        // focused — elsewhere Space presses the focused button.
+        if (!e.repeat) {
+          spaceRef.current = true;
+          setSpaceHeld(true);
+        }
+      } else if (mod && e.key.toLowerCase() === 'a') {
+        const all = state.edit.annotations.filter(selectable).map((s) => s.id);
+        setPolygon([]);
+        setUi((v) => ({ ...v, mode: 'select', ...selectPatch(all) }));
+      } else if (multi && (e.key === 'Delete' || e.key === 'Backspace')) {
+        actions.removeMany(grp.map((s) => s.id));
+        setUi((v) => ({ ...v, ...selectPatch([]) }));
+      } else if (multi && mod && e.key.toLowerCase() === 'd') {
+        const ids = actions.duplicateMany(
+          grp.map((s) => s.id),
+          r * 0.03,
+        );
+        setUi((v) => ({ ...v, ...selectPatch(ids) }));
+      } else if (multi && e.key.startsWith('Arrow') && !mod) {
+        const step = (e.shiftKey ? 10 : 1) / scale;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        actions.replaceMany(
+          labels.annotateModes.select,
+          movable.map((s) => moveShape(s, dx, dy)),
+        );
+      } else if (multi && (e.key === 'Enter' || e.key === 'ContextMenu' || e.key === 'F10')) {
+        return;
+      } else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
         if (!openMenuForSelection()) return;
       } else if (e.key === 'Escape') {
         if (poly.length) setPolygon([]);
-        else if (u.selectedId) setUi((v) => ({ ...v, selectedId: null }));
+        else if (u.selectedId) setUi((v) => ({ ...v, ...selectPatch([]) }));
         else return;
       } else if (e.key === 'Enter') {
         if (poly.length) finishPolygon(poly);
@@ -724,10 +994,10 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         else return;
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !sel.locked) {
         actions.remove(sel.id);
-        setUi((v) => ({ ...v, selectedId: null }));
+        setUi((v) => ({ ...v, ...selectPatch([]) }));
       } else if (mod && e.key.toLowerCase() === 'd' && sel) {
         const copyId = actions.duplicate(sel, r * 0.03);
-        setUi((v) => ({ ...v, selectedId: copyId }));
+        setUi((v) => ({ ...v, ...selectPatch([copyId]) }));
       } else if (e.key.startsWith('Arrow') && sel && !sel.locked && !mod) {
         const step = (e.shiftKey ? 10 : 1) / scale;
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
@@ -747,8 +1017,19 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       e.preventDefault();
       e.stopPropagation();
     };
+    const releaseSpace = (event: Event) => {
+      if (event.type === 'keyup' && (event as KeyboardEvent).key !== ' ') return;
+      spaceRef.current = false;
+      setSpaceHeld(false);
+    };
     root.addEventListener('keydown', onKeyDown);
-    return () => root.removeEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', releaseSpace);
+    window.addEventListener('blur', releaseSpace);
+    return () => {
+      root.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keyup', releaseSpace);
+      window.removeEventListener('blur', releaseSpace);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reads latest values from a ref
   }, [store]);
 
@@ -770,7 +1051,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         (layer.contains(target) || target.closest('.iu-portal') || target.closest(INTERACTIVE))
       )
         return;
-      setUi((u) => ({ ...u, selectedId: null }));
+      setUi((u) => ({ ...u, ...selectPatch([]) }));
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
@@ -794,7 +1075,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       .map((p) => toS(p))
       .map((p) => `${p.x},${p.y}`)
       .join(' ');
-  const hover = hoverId && hoverId !== ui.selectedId ? shapes.find((s) => s.id === hoverId) : null;
+  const hover =
+    hoverId && !selectedIds.includes(hoverId) ? shapes.find((s) => s.id === hoverId) : null;
   const menuShape = menu ? (shapes.find((s) => s.id === menu.shapeId) ?? null) : null;
 
   return (
@@ -802,7 +1084,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       ref={rootRef}
       className="iu-annotate-layer"
       data-mode={ui.mode}
-      data-cursor={dragCursor ?? hoverCursor}
+      data-cursor={spaceHeld ? 'grab' : (dragCursor ?? hoverCursor)}
       tabIndex={-1}
       aria-label={labels.tools.annotate}
       onPointerDown={onPointerDown}
@@ -834,7 +1116,24 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
             <line key={i} className="iu-annotate__guide" x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
           );
         })}
-        {selected && !editing && <Selection shape={selected} toS={toS} />}
+        {!isGroup && selected && !editing && <Selection shape={selected} toS={toS} />}
+        {isGroup && groupBox && (
+          <GroupSelection
+            shapes={group}
+            box={groupFrame?.box ?? groupBox}
+            angle={groupFrame?.angle ?? 0}
+            toS={toS}
+          />
+        )}
+        {marquee && (
+          <rect
+            className="iu-annotate__marquee"
+            x={Math.min(marquee.a.x, marquee.b.x)}
+            y={Math.min(marquee.a.y, marquee.b.y)}
+            width={Math.abs(marquee.b.x - marquee.a.x)}
+            height={Math.abs(marquee.b.y - marquee.a.y)}
+          />
+        )}
         {polygon.length > 0 && (
           <g className="iu-annotate__draft">
             <polyline points={poly(cursor ? [...polygon, cursor] : polygon)} />
@@ -877,9 +1176,10 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       {ui.layersOpen && (
         <LayersPanel
           shapes={shapes}
-          selectedId={ui.selectedId}
+          selectedIds={selectedIds}
           revealId={revealLayer}
           onSelect={(id) => select(id)}
+          onSelectMany={selectMany}
           onClose={() => setUi((u) => ({ ...u, layersOpen: false }))}
         />
       )}
@@ -898,7 +1198,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           onSelect={select}
           onShowInLayers={() => {
             keepMenuFocus.current = true;
-            setUi((u) => ({ ...u, layersOpen: true, selectedId: menuShape.id }));
+            setUi((u) => ({ ...u, layersOpen: true, ...selectPatch([menuShape.id]) }));
             setRevealLayer({ id: menuShape.id });
           }}
           onCloseAutoFocus={(event) => event.preventDefault()}
@@ -941,6 +1241,8 @@ function Selection({
               key={i}
               className="iu-annotate__handle"
               data-handle={`p${i}`}
+              // An end with an arrow / dot: a hollow ring, so the head stays visible under it.
+              data-hollow={(i === 0 ? shape.startCap : shape.endCap) !== 'none' ? '' : undefined}
               cx={s.x}
               cy={s.y}
               r={6}
@@ -994,6 +1296,78 @@ function Selection({
           className="iu-annotate__handle"
           data-handle={h}
           data-cursor={cursorFor(h, shape.rotation)}
+          x={at[h].x - 5}
+          y={at[h].y - 5}
+          width={10}
+          height={10}
+          rx={2}
+        />
+      ))}
+    </g>
+  );
+}
+
+/**
+ * A multi-selection: a thin outline on each member, and one box around all of them with corner
+ * handles (proportional resize) and a rotation handle. While rotating, the box turns with them.
+ */
+function GroupSelection({
+  shapes,
+  box,
+  angle,
+  toS,
+}: {
+  shapes: Shape[];
+  box: Box;
+  angle: number;
+  toS: (p: Point) => Point;
+}) {
+  const labels = useLabels();
+  const c = boxCenter(box);
+  const corner = (x: number, y: number) => toS(rotatePoint({ x, y }, c, angle));
+  const at = {
+    nw: corner(box.x, box.y),
+    ne: corner(box.x + box.width, box.y),
+    se: corner(box.x + box.width, box.y + box.height),
+    sw: corner(box.x, box.y + box.height),
+  };
+  const outline = [at.nw, at.ne, at.se, at.sw].map((p) => `${p.x},${p.y}`).join(' ');
+  const top = { x: (at.nw.x + at.ne.x) / 2, y: (at.nw.y + at.ne.y) / 2 };
+  const center = toS(c);
+  const len = Math.hypot(top.x - center.x, top.y - center.y) || 1;
+  const rot = {
+    x: top.x + ((top.x - center.x) / len) * ROTATE_HANDLE,
+    y: top.y + ((top.y - center.y) / len) * ROTATE_HANDLE,
+  };
+  return (
+    <g>
+      {shapes.map((s) => (
+        <polygon
+          key={s.id}
+          className="iu-annotate__member"
+          points={getShapeCorners(s, textHeight(s))
+            .map(toS)
+            .map((p) => `${p.x},${p.y}`)
+            .join(' ')}
+        />
+      ))}
+      <polygon className="iu-annotate__selection" data-group="" points={outline} />
+      <line className="iu-annotate__stem" x1={top.x} y1={top.y} x2={rot.x} y2={rot.y} />
+      <circle
+        className="iu-annotate__handle iu-annotate__handle--rotate"
+        data-handle="rotate"
+        cx={rot.x}
+        cy={rot.y}
+        r={6}
+      >
+        <title>{labels.rotate}</title>
+      </circle>
+      {(['nw', 'ne', 'se', 'sw'] as const).map((h) => (
+        <rect
+          key={h}
+          className="iu-annotate__handle"
+          data-handle={h}
+          data-cursor={cursorFor(h, angle)}
           x={at[h].x - 5}
           y={at[h].y - 5}
           width={10}
@@ -1060,7 +1434,8 @@ function TextEditor({
       style={{
         left: c.x,
         top: c.y,
-        width: box.width * scale,
+        // Same wrap slack as the canvas layout, so both break lines at the same words.
+        width: (box.width + TEXT_WRAP_SLACK) * scale,
         height: box.height * scale,
         transform: `translate(-50%, -50%) rotate(${shape.rotation}deg)`,
         // Separate longhand properties: mixing the `font` shorthand with `lineHeight` makes React warn
@@ -1115,8 +1490,25 @@ export function cursorFor(handle: BoxHandle, rotation: number): string {
 function dragCursorFor(it: Interaction | null): string | undefined {
   if (!it) return undefined;
   if (it.kind === 'resize') return cursorFor(it.handle, it.shape.rotation);
-  if (it.kind === 'move' || it.kind === 'rotate' || it.kind === 'endpoint') return 'grabbing';
+  if (it.kind === 'groupScale') return cursorFor(it.handle, 0);
+  if (
+    it.kind === 'move' ||
+    it.kind === 'rotate' ||
+    it.kind === 'endpoint' ||
+    it.kind === 'groupMove' ||
+    it.kind === 'groupRotate'
+  )
+    return 'grabbing';
   return undefined; // drawing: keep the tool's crosshair
+}
+
+function insideRect(box: Box, p: Point, pad: number): boolean {
+  return (
+    p.x >= box.x - pad &&
+    p.x <= box.x + box.width + pad &&
+    p.y >= box.y - pad &&
+    p.y <= box.y + box.height + pad
+  );
 }
 
 /** Is `p` inside the shape's (rotated) selection box? Thin shapes get their stroke as margin. */

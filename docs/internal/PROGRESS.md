@@ -407,3 +407,20 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   / same relative spot as before. The editor remembers the last pointer position over the stage
   (menus keep it, so right-click → Paste lands where the menu opened). Core `pasteClipboard` takes
   an optional `at` point. Tests: 120 unit · 83 e2e.
+
+## 2026-09-26 · Phase 7.1 — Selection & layers
+
+- Phase 7 plan approved and written into PLAN (7.1–7.7, DECISIONS #80).
+- Multi-select (DECISIONS #81): Shift-click, selection box (mouse drag on empty space), ⌘A; group
+  outline + corner handles (proportional resize incl. strokes/fonts) + rotate handle; move with
+  snapping; Delete / ⌘D / arrows / copy-cut-paste for the whole group; Space + drag pans; the overlay
+  now handles double-click zoom on empty space. Group inspector (colour, fill, line width, opacity)
+  and an Align popover (6 aligns; distribute for 3+; single shape aligns to the photo).
+- Core `state/arrange.ts`: `groupBounds`, `scaleShapes`, `rotateShapes`, `alignShapes`,
+  `distributeShapes`, `boxesIntersect`, `transformShape`; clipboard now carries several shapes
+  (`copyShapes`, `ClipboardItem.shapes`, `pasteClipboard` → ids).
+- Layers: drag to reorder (drop line), double-click / F2 rename, "Show all", Shift/⌘-click rows,
+  ⌘ shortcuts work inside the panel.
+- Fixes: hollow handles on arrow/dot line ends; canvas text wraps like the CSS editor (DECISIONS #82).
+- Tests: 130 unit (+ `arrange.test.ts`, text wrapping, group clipboard) · 91 e2e
+  (+ `selection-layers.spec.ts`).

@@ -48,7 +48,13 @@ export interface AnnotateStyle {
 
 export interface AnnotateState {
   mode: AnnotateMode;
+  /** The selected shape; with a group, the one clicked last (it drives the inspector). */
   selectedId: string | null;
+  /**
+   * A multi-selection (2+ ids, including `selectedId`). Anything that sets only `selectedId` to a
+   * shape outside it drops back to one shape — see `selectionIds`.
+   */
+  selectedIds?: string[];
   /** Text shape being edited in place (hidden from the canvas while editing). */
   editingId: string | null;
   layersOpen: boolean;
@@ -75,6 +81,20 @@ export const INITIAL_ANNOTATE_STATE: AnnotateState = {
     textBackground: null,
   },
 };
+
+/** Ids of everything selected: the group, or just `selectedId`. */
+export function selectionIds(ui: Pick<AnnotateState, 'selectedId' | 'selectedIds'>): string[] {
+  const group = ui.selectedIds ?? [];
+  if (ui.selectedId && group.length > 1 && group.includes(ui.selectedId)) return group;
+  return ui.selectedId ? [ui.selectedId] : [];
+}
+
+/** UI state patch that selects exactly these ids (none, one, or a group). */
+export function selectPatch(
+  ids: readonly string[],
+): Pick<AnnotateState, 'selectedId' | 'selectedIds'> {
+  return { selectedId: ids[ids.length - 1] ?? null, selectedIds: ids.length > 1 ? [...ids] : [] };
+}
 
 export function useAnnotateState() {
   return useToolState<AnnotateState>(INITIAL_ANNOTATE_STATE);

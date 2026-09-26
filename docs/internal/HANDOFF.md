@@ -25,7 +25,16 @@ Update this file at the end of every session.
   (DECISIONS #78). Playground header: "Metadata" switch; save log says "with EXIF" / "no EXIF".
   Review round 1: paste lands at the mouse pointer when over the photo. All checks green
   (120 unit, 83 e2e).
-- Next: **Phase 7 — Polish** (start with BACKLOG items tagged _Phase 7_ and multi-select).
+
+## Phase 7 — Polish (in progress; plan in PLAN.md, DECISIONS #80)
+
+- **7.1 Selection & layers — committed** (2026-09-26, `feat: phase 7.1`): multi-select (Shift-click,
+  selection box, ⌘A), group move / proportional resize / rotate, group inspector + Align menu,
+  Layers drag-reorder / rename / Show all, hollow arrow handles, text wraps like the editor.
+  Mouse pans with **Space + drag** now (a drag on empty space draws a selection box).
+  All checks green (130 unit, 91 e2e).
+- Next: **7.2 Canvas & crop** (extend canvas in Resize, zoom in crop view, vignette preview uses
+  the crop, paste images from the system clipboard, group menu).
 
 ## How to work with this owner
 

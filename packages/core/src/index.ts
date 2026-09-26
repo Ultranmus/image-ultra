@@ -156,10 +156,12 @@ export {
   drawAnnotations,
   ensureAnnotationFonts,
   getOrientedToOutput,
+  breakTokens,
   layoutText,
   loadAnnotationAssets,
   loadAssetBitmap,
   measureTextHeight,
+  TEXT_WRAP_SLACK,
   textFont,
   textIndexAt,
   type DrawAnnotationsOptions,
@@ -188,13 +190,24 @@ export {
 export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
 export {
   copyRedaction,
-  copyShape,
+  copyShapes,
   fitRedaction,
-  fitShape,
+  fitShapes,
   pasteClipboard,
   type ClipboardEntry,
   type ClipboardItem,
 } from './state/clipboard';
+export {
+  alignShapes,
+  boxesIntersect,
+  distributeShapes,
+  groupBounds,
+  rotateShapes,
+  scaleShapes,
+  transformShape,
+  type AlignEdge,
+  type TextHeight,
+} from './state/arrange';
 export {
   DEFAULT_FRAME_COLOR,
   DEFAULT_FRAME_SIZE,

@@ -13,12 +13,15 @@ export function ShortcutsPanel() {
     [labels.zoomFit, ['0']],
     [labels.zoomActual, ['1']],
     [labels.showOriginal, ['\\']],
+    [labels.panPhoto, ['Space', 'Drag']],
     [labels.shortcutsShow, ['?']],
   ];
   const annotate: [string, string[]][] = [
     ...(Object.entries(MODE_SHORTCUTS) as [AnnotateMode, string][]).map(
       ([mode, key]): [string, string[]] => [labels.annotateModes[mode], [key]],
     ),
+    [labels.selectAll, [mod, 'A']],
+    [labels.addToSelection, ['⇧', 'Click']],
     [labels.copy, [mod, 'C']],
     [labels.cut, [mod, 'X']],
     [labels.paste, [mod, 'V']],

@@ -122,6 +122,20 @@ export interface Labels {
   arrowEnd: string;
   duplicate: string;
   copy: string;
+  selectAll: string;
+  /** Shift-click hint in the shortcuts panel. */
+  addToSelection: string;
+  panPhoto: string;
+  /** `{count}` = number of selected shapes. */
+  selectedCount: string;
+  resizeSelection: string;
+  arrange: string;
+  alignEdges: Record<'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom', string>;
+  distributeX: string;
+  distributeY: string;
+  renameLayer: string;
+  reorderLayer: string;
+  showAllLayers: string;
   cut: string;
   paste: string;
   deleteShape: string;
@@ -353,6 +367,25 @@ export const defaultLabels: Labels = {
   arrowEnd: 'Arrow at end',
   duplicate: 'Duplicate',
   copy: 'Copy',
+  selectAll: 'Select all',
+  addToSelection: 'Add to or remove from the selection',
+  panPhoto: 'Pan the photo',
+  selectedCount: '{count} selected',
+  resizeSelection: 'Resize',
+  arrange: 'Align',
+  alignEdges: {
+    left: 'Align left',
+    centerX: 'Align centre',
+    right: 'Align right',
+    top: 'Align top',
+    centerY: 'Align middle',
+    bottom: 'Align bottom',
+  },
+  distributeX: 'Distribute horizontally',
+  distributeY: 'Distribute vertically',
+  renameLayer: 'Rename',
+  reorderLayer: 'Reorder layers',
+  showAllLayers: 'Show all',
   cut: 'Cut',
   paste: 'Paste',
   deleteShape: 'Delete',
@@ -483,7 +516,8 @@ type NestedKey =
   | 'stickerTabs'
   | 'emojiGroups'
   | 'watermarkPositions'
-  | 'fillKinds';
+  | 'fillKinds'
+  | 'alignEdges';
 
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
   [K in NestedKey]?: Partial<Labels[K]>;
@@ -505,5 +539,6 @@ export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
     emojiGroups: { ...defaultLabels.emojiGroups, ...overrides.emojiGroups },
     watermarkPositions: { ...defaultLabels.watermarkPositions, ...overrides.watermarkPositions },
     fillKinds: { ...defaultLabels.fillKinds, ...overrides.fillKinds },
+    alignEdges: { ...defaultLabels.alignEdges, ...overrides.alignEdges },
   };
 }

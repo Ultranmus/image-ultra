@@ -1,4 +1,15 @@
-import { createShapeId, moveShape, type EditorStore, type Shape } from '@image-ultra/core';
+import {
+  alignShapes,
+  createShapeId,
+  distributeShapes,
+  groupBounds,
+  measureTextHeight,
+  moveShape,
+  type AlignEdge,
+  type Box,
+  type EditorStore,
+  type Shape,
+} from '@image-ultra/core';
 import type { Labels } from '../../i18n';
 
 /** Where to move a shape in the stack. `forward`/`backward` = one step; `front`/`back` = all the way. */
@@ -21,6 +32,9 @@ export function shapeActions(store: EditorStore, labels: Labels) {
     front: labels.bringToFront,
     back: labels.sendToBack,
   };
+
+  const movable = (ids: readonly string[]) =>
+    store.getState().edit.annotations.filter((s) => ids.includes(s.id) && !s.locked && !s.hidden);
 
   return {
     toggleLocked(shape: Shape) {
@@ -57,6 +71,32 @@ export function shapeActions(store: EditorStore, labels: Labels) {
       });
     },
 
+    /** Moves a shape to `index` in the list (0 = bottom), e.g. after dragging it in Layers. */
+    moveTo(id: string, index: number) {
+      store.getState().update(labels.reorderLayer, (draft) => {
+        const from = draft.annotations.findIndex((s) => s.id === id);
+        if (from < 0 || from === index) return;
+        const [item] = draft.annotations.splice(from, 1);
+        draft.annotations.splice(Math.max(0, Math.min(index, draft.annotations.length)), 0, item!);
+      });
+    },
+
+    /** Renames a layer; an empty name brings back the default one. */
+    rename(id: string, name: string) {
+      patch(labels.renameLayer, id, (s) => {
+        const trimmed = name.trim().slice(0, 80);
+        if (trimmed) s.name = trimmed;
+        else delete s.name;
+      });
+    },
+
+    /** Makes every hidden shape visible again (one step). */
+    showAll() {
+      store.getState().update(labels.showAllLayers, (draft) => {
+        for (const s of draft.annotations) delete s.hidden;
+      });
+    },
+
     /** Copies the shape just above the original, slightly offset. Returns the copy's id. */
     duplicate(shape: Shape, offset: number): string {
       const copy = { ...moveShape(shape, offset, offset), id: createShapeId() };
@@ -71,6 +111,60 @@ export function shapeActions(store: EditorStore, labels: Labels) {
       store.getState().update(labels.deleteShape, (draft) => {
         draft.annotations = draft.annotations.filter((s) => s.id !== id);
       });
+    },
+
+    /* ── Several shapes (a multi-selection) ───────────────────────────── */
+
+    /** Deletes these shapes, except locked ones (one step). */
+    removeMany(ids: readonly string[]) {
+      store.getState().update(labels.deleteShape, (draft) => {
+        draft.annotations = draft.annotations.filter((s) => !ids.includes(s.id) || s.locked);
+      });
+    },
+
+    /** Copies the shapes on top of everything, slightly offset, keeping their order. Returns the new ids. */
+    duplicateMany(ids: readonly string[], offset: number): string[] {
+      const originals = store.getState().edit.annotations.filter((s) => ids.includes(s.id));
+      const copies = originals.map((s) => ({
+        ...moveShape(s, offset, offset),
+        id: createShapeId(),
+      }));
+      store.getState().update(labels.duplicate, (draft) => {
+        draft.annotations.push(...copies);
+      });
+      return copies.map((c) => c.id);
+    },
+
+    /** Replaces shapes by id (a group move / resize / rotate step). */
+    replaceMany(label: string, shapes: readonly Shape[]) {
+      const byId = new Map(shapes.map((s) => [s.id, s]));
+      store.getState().update(label, (draft) => {
+        draft.annotations = draft.annotations.map((s) => byId.get(s.id) ?? s);
+      });
+    },
+
+    /**
+     * Aligns the shapes: a group to its own bounds, a single shape to `photo` (the visible area).
+     * Locked shapes don't move.
+     */
+    align(ids: readonly string[], edge: AlignEdge, photo: Box) {
+      const shapes = movable(ids);
+      const target = shapes.length > 1 ? groupBounds(shapes, measureTextHeight) : photo;
+      if (!target || shapes.length === 0) return;
+      this.replaceMany(
+        labels.alignEdges[edge],
+        alignShapes(shapes, edge, target, measureTextHeight),
+      );
+    },
+
+    /** Equal gaps between 3+ shapes along `axis`. */
+    distribute(ids: readonly string[], axis: 'x' | 'y') {
+      const shapes = movable(ids);
+      if (shapes.length < 3) return;
+      this.replaceMany(
+        axis === 'x' ? labels.distributeX : labels.distributeY,
+        distributeShapes(shapes, axis, measureTextHeight),
+      );
     },
   };
 }

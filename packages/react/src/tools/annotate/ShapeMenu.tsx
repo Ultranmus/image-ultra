@@ -106,8 +106,8 @@ export function ShapeMenu({
             disabled={!canPaste}
             onSelect={() => {
               const { activeTool } = store.getState();
-              const id = pasteSelection(store, labels, [activeTool]);
-              if (id) onSelect(id);
+              const ids = pasteSelection(store, labels, [activeTool]);
+              if (ids?.length === 1) onSelect(ids[0]!);
             }}
           >
             {labels.paste}

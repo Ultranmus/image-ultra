@@ -73,35 +73,71 @@ export function layoutText(shape: TextShape, measure: Measurer | null = measurer
     return { lines: paragraphs, lineHeight, height: Math.max(1, paragraphs.length) * lineHeight };
   }
   measure.font = textFont(shape);
-  const fits = (s: string) => measure.measureText(s).width <= shape.width + 0.5;
+  const fits = (s: string) => measure.measureText(s).width <= shape.width + TEXT_WRAP_SLACK;
+  // Same rules as the in-place editor (CSS `white-space: pre-wrap; overflow-wrap: break-word`),
+  // so a text box wraps the same while typing and on the photo: spaces hang at the end of a
+  // line, lines can break after spaces, hyphens and CJK characters, and a word wider than the
+  // box breaks between characters.
   for (const paragraph of shape.text.split('\n')) {
-    const words = paragraph.split(/(\s+)/).filter((w) => w.length > 0);
     let line = '';
-    for (const word of words) {
-      const candidate = line + word;
-      if (fits(candidate) || line.trim() === '') {
-        if (!fits(candidate) && line.trim() === '') {
-          // A single word wider than the box: break it by characters.
-          let chunk = line;
-          for (const char of word) {
-            if (fits(chunk + char) || chunk === '') chunk += char;
-            else {
-              lines.push(chunk);
-              chunk = char;
-            }
-          }
-          line = chunk;
-        } else {
-          line = candidate;
-        }
-      } else {
+    for (const token of breakTokens(paragraph)) {
+      if (fits(line + token) || /^\s+$/.test(token)) {
+        line += token;
+        continue;
+      }
+      if (line.trim() !== '') {
         lines.push(line.trimEnd());
-        line = word.trimStart();
+        line = '';
+      }
+      if (fits(line + token)) {
+        line += token;
+        continue;
+      }
+      for (const char of token) {
+        if (line === '' || fits(line + char)) line += char;
+        else {
+          lines.push(line);
+          line = char;
+        }
       }
     }
     lines.push(line.trimEnd());
   }
   return { lines, lineHeight, height: Math.max(1, lines.length) * lineHeight };
+}
+
+/**
+ * Extra width (image px) a line may take before it wraps. The in-place editor gets the same slack
+ * so rounding never makes one wrap and the other not.
+ */
+export const TEXT_WRAP_SLACK = 0.5;
+
+const CJK = /[\u2E80-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF\u3040-\u30FF\uFF00-\uFFEF]/;
+
+/**
+ * Splits a paragraph into pieces a line may break after: runs of spaces, words (a hyphen inside a
+ * word ends a piece: "well-" "known"), and single CJK characters.
+ */
+export function breakTokens(paragraph: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  const flush = () => {
+    if (current) tokens.push(current);
+    current = '';
+  };
+  for (const char of paragraph) {
+    const space = /\s/.test(char);
+    if (space !== /\s$/.test(current) && current) flush();
+    if (!space && CJK.test(char)) {
+      flush();
+      tokens.push(char);
+      continue;
+    }
+    current += char;
+    if (char === '-' && current.length > 1) flush();
+  }
+  flush();
+  return tokens;
 }
 
 /** Height of a text shape's box (wrapped). */

@@ -137,14 +137,27 @@ Approved 2026-09-25 (order below). Multi-select moved to Phase 7; Sticker added 
 
 ### Phase 7 — Polish
 
-- [ ] Work through `BACKLOG.md` items tagged _Phase 7_
-- [ ] Multi-select (Shift-click, marquee) + group move/align
+Approved 2026-09-26 (order below, commit after each step, owner review at the end; DECISIONS #80).
 
-- [ ] Mobile layout & thumb-zone controls, gestures
-- [ ] Motion pass, reduced-motion
-- [ ] A11y audit (WCAG AA), focus management, screen-reader labels
-- [ ] i18n (typed translation object), RTL
-- [ ] Perf: large images (tiling/downscaled preview), memory cleanup
+- [x] **7.1** Selection & layers: multi-select (Shift-click, marquee, ⌘A); the group moves,
+      resizes, rotates, deletes, duplicates, copies/pastes as one; align & distribute; style
+      several shapes at once. Layers: drag to reorder, rename, "Show all hidden", ⌘C/⌘X in the
+      panel. Line endpoint handles clear of the arrow head; in-place text editor wraps like the canvas.
+- [ ] **7.2** Canvas & crop: Extend canvas in Resize (square / 4:5 / 16:9 / custom padding +
+      anchor, Fill shows on the sides); zoom in crop view (wheel + pinch); vignette preview uses
+      the crop; paste images from the system clipboard as image shapes. Group menu: right-click a
+      multi-selection → group actions (owner, BACKLOG).
+- [ ] **7.3** Colour tools: histogram Before/After; filter thumbnails "on my edits"; arrow-key
+      presses on one control coalesce into one undo step.
+- [ ] **7.4** Mobile: 320–430px layouts, thumb-zone controls, no sideways-scrolling rows (Annotate,
+      Adjust header), pinch / two-finger pan / long-press; owner tests on a real phone.
+- [ ] **7.5** A11y & motion: axe in e2e (zero violations per tool), focus management audit,
+      screen-reader labels + live announcements, reduced-motion everywhere.
+- [ ] **7.6** i18n & RTL: every UI string in the typed labels (incl. preset names), RTL layout via
+      logical CSS properties (sliders/curves stay LTR), playground translation example. English
+      only ships.
+- [ ] **7.7** Perf: 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled
+      export above the GPU texture limit (preview stays downscaled).
 
 ### Phase 8 — Release
 

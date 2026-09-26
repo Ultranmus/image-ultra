@@ -43,6 +43,8 @@ import {
   MODE_SHORTCUTS,
   nearestStep,
   referenceSize,
+  selectionIds,
+  selectPatch,
   strokeWidthFor,
   useAnnotateState,
   type AnnotateMode,
@@ -50,6 +52,7 @@ import {
   type SizeStep,
 } from './state';
 import { shapeActions } from './actions';
+import { AlignMenu, GroupInspector } from './GroupControls';
 import { fileToAsset } from '../assets';
 
 const MODE_ICONS: Record<AnnotateMode, (p: IconProps) => React.JSX.Element> = {
@@ -94,7 +97,12 @@ export function AnnotateControls() {
   if (!image) return null;
 
   const ref = referenceSize(image, edit);
-  const selected = edit.annotations.find((s) => s.id === ui.selectedId && !s.hidden) ?? null;
+  const ids = selectionIds(ui);
+  const members = edit.annotations.filter((s) => ids.includes(s.id) && !s.hidden);
+  const multi = members.length > 1;
+  const selected = multi
+    ? null
+    : (edit.annotations.find((s) => s.id === ui.selectedId && !s.hidden) ?? null);
   const kind: Kind = selected?.type ?? kindForMode(ui.mode);
   const style = ui.style;
   const polygonOrClosed = selected?.type === 'path' ? selected.closed : ui.mode === 'polygon';
@@ -141,15 +149,24 @@ export function AnnotateControls() {
 
   const actions = shapeActions(store, labels);
   const duplicate = () => {
+    if (multi) {
+      const copies = actions.duplicateMany(
+        members.map((s) => s.id),
+        ref * 0.03,
+      );
+      setUi((u) => ({ ...u, ...selectPatch(copies) }));
+      return;
+    }
     if (!selected) return;
     const copyId = actions.duplicate(selected, ref * 0.03);
-    setUi((u) => ({ ...u, selectedId: copyId }));
+    setUi((u) => ({ ...u, ...selectPatch([copyId]) }));
   };
 
   const remove = () => {
-    if (!selected) return;
-    actions.remove(selected.id);
-    setUi((u) => ({ ...u, selectedId: null }));
+    if (multi) actions.removeMany(members.map((s) => s.id));
+    else if (selected) actions.remove(selected.id);
+    else return;
+    setUi((u) => ({ ...u, ...selectPatch([]) }));
   };
 
   const insertImage = async (file: File) => {
@@ -159,7 +176,7 @@ export function AnnotateControls() {
       draft.assets[shape.asset.id] = shape.asset.value;
       draft.annotations.push(shape.shape);
     });
-    setUi((u) => ({ ...u, mode: 'select', selectedId: shape.shape.id }));
+    setUi((u) => ({ ...u, mode: 'select', ...selectPatch([shape.shape.id]) }));
   };
 
   const inspector: ReactNode[] = [];
@@ -413,6 +430,7 @@ export function AnnotateControls() {
       </Popover>,
     );
   }
+  if (selected && !selected.locked) inspector.push(<AlignMenu key="align" ids={[selected.id]} />);
   if (kind) {
     inspector.push(
       <Popover
@@ -492,15 +510,22 @@ export function AnnotateControls() {
       </div>
 
       <div className="iu-inspector">
-        {inspector.length > 0 ? (
+        {multi ? (
+          <GroupInspector members={members} />
+        ) : inspector.length > 0 ? (
           <div className="iu-toolgroup">{inspector}</div>
         ) : (
           <p className="iu-controlbar__hint">
             {ui.mode === 'polygon' ? labels.polygonHint : labels.annotateHint}
           </p>
         )}
-        {selected && (
+        {(selected || multi) && (
           <div className="iu-toolgroup iu-toolgroup--end">
+            {multi && (
+              <span className="iu-controlbar__count" aria-live="polite">
+                {labels.selectedCount.replace('{count}', String(members.length))}
+              </span>
+            )}
             <IconButton
               label={`${labels.duplicate} (⌘D)`}
               icon={<IconDuplicate />}

@@ -104,13 +104,27 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   Rectangle R, Ellipse O, Polygon G, Text T) + Add image — [Layers]; row 2 = inspector for the selected
   shape (or the defaults of the current tool): colour/fill buttons (round swatch dots; fill shows a
   ring), width / text size / font / corner radius / opacity as popovers, Bold + alignment + arrow-head
-  toggles inline (`data-active`), then Duplicate / Delete on the right. Nothing to show → one muted hint.
+  toggles inline (`data-active`), Align (a popover: 6 align buttons — a single shape aligns to the
+  photo), then Duplicate / Delete on the right. Nothing to show → one muted hint. With several shapes
+  selected, row 2 = the **group inspector**: colour, fill, line width (S/M/L/XL), opacity, Align
+  (+ Distribute horizontally / vertically for 3+), and "N selected" muted before Duplicate / Delete.
 - **Annotate stage:** accent selection outline, white square handles (10px visual, rotated with the
   shape, direction-aware cursors), a round rotate handle 28px above the top edge, round endpoint
   handles for lines, pink dashed snap guides, hover outline in Select mode. Text is edited in place
   (transparent textarea over the canvas, dashed accent outline) and keeps its resize/rotate handles
-  while editing — resize or rotate without leaving the text (like Canva). Layers = floating panel top-right;
-  each row: name, show/hide, lock, up/down, and "⋯" (the shape menu).
+  while editing — resize or rotate without leaving the text (like Canva); the editor wraps lines exactly
+  like the drawn text. Line ends with an arrow / dot get a hollow round handle so the head stays
+  visible. Layers = floating panel top-right; each row: name (drag to reorder, with an accent drop
+  line; double-click or F2 to rename inline), show/hide, lock, up/down, and "⋯" (the shape menu);
+  "Show all" in the header while anything is hidden; Shift / ⌘-click rows to select several.
+- **Multi-select** (Annotate + Sticker): Shift-click adds/removes a shape, a mouse drag on empty space
+  draws a selection box (dashed accent outline on `--iu-accent-soft`; touching counts; Shift adds),
+  ⌘A selects all (not locked or hidden ones). The group shows a faint outline on each member and one
+  accent box around all of them with 4 corner handles (proportional resize — strokes and text scale
+  too) and the round rotate handle (the box turns with the group while dragging). Drag inside the box
+  moves all of it (snaps like one shape); a click on a member without dragging selects just it.
+  Delete / ⌘D / arrows / ⌘C ⌘X ⌘V act on the whole group. Space + drag pans the photo (touch: one
+  finger still pans, so no selection box on touch).
 - **Annotate clicks:** with any drawing tool, a click on an existing shape selects it and switches to
   Select (a drag still draws). Select tool: click the already selected text box → edit it. Double-
   clicking a shape never zooms the photo. Clicking outside the editor or on empty toolbar space

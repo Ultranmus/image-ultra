@@ -471,7 +471,7 @@ test.describe('Annotate tool', () => {
     await page.getByRole('button', { name: 'Hide' }).click();
     const [r, g, b] = await exportPixel(page, 0.5, 0.5);
     expect([r, g, b]).not.toEqual([0, 255, 0]);
-    await page.getByRole('button', { name: 'Show' }).click();
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
     await page.getByRole('button', { name: 'Lock', exact: true }).click();
 
     await page.getByRole('radio', { name: /Select/ }).click();

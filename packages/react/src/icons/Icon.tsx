@@ -293,6 +293,37 @@ export const IconBold = createIcon(
   'Bold',
   <path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" />,
 );
+/* Align / distribute shapes (not text alignment): a guide line and two bars. */
+export const IconAlignEdgeLeft = createIcon(
+  'AlignEdgeLeft',
+  <path d="M4 3v18M8 6h11v4H8zM8 14h7v4H8z" />,
+);
+export const IconAlignEdgeCenterX = createIcon(
+  'AlignEdgeCenterX',
+  <path d="M12 3v3M12 10v4M12 18v3M6 6h12v4H6zM8 14h8v4H8z" />,
+);
+export const IconAlignEdgeRight = createIcon(
+  'AlignEdgeRight',
+  <path d="M20 3v18M5 6h11v4H5zM9 14h7v4H9z" />,
+);
+export const IconAlignEdgeTop = createIcon(
+  'AlignEdgeTop',
+  <path d="M3 4h18M6 8h4v11H6zM14 8h4v7h-4z" />,
+);
+export const IconAlignEdgeCenterY = createIcon(
+  'AlignEdgeCenterY',
+  <path d="M3 12h3M10 12h4M18 12h3M6 6h4v12H6zM14 8h4v8h-4z" />,
+);
+export const IconAlignEdgeBottom = createIcon(
+  'AlignEdgeBottom',
+  <path d="M3 20h18M6 5h4v11H6zM14 9h4v7h-4z" />,
+);
+export const IconDistributeX = createIcon(
+  'DistributeX',
+  <path d="M4 3v18M20 3v18M10 7h4v10h-4z" />,
+);
+export const IconDistributeY = createIcon('DistributeY', <path d="M3 4h18M3 20h18M7 10h10v4H7z" />);
+
 export const IconAlignLeft = createIcon('AlignLeft', <path d="M4 6h16M4 10h10M4 14h16M4 18h10" />);
 export const IconAlignCenter = createIcon(
   'AlignCenter',

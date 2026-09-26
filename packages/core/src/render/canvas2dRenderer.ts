@@ -1,6 +1,7 @@
 import {
   applyToPoint,
   getOutputToSource,
+  getPhotoRect,
   invert,
   isAffine,
   mat3Apply,
@@ -70,9 +71,18 @@ export class Canvas2DRenderer implements Renderer {
     ].map((p) => mat3Apply(sourceToCanvas, p));
     const ellipse = state.geometry.cropShape === 'ellipse';
 
-    // 1. Geometry: draw the source clipped to the output rectangle.
+    // 1. Geometry: draw the source clipped to the output rectangle — and to the photo's crop, so
+    //    added canvas space stays empty.
     ctx.save();
     clipOutput(ctx, outputToCanvas, outputSize, false);
+    if (params.clipToPhoto !== false) {
+      const photo = params.photoRect ?? getPhotoRect(image, state, params.outputScale);
+      ctx.setTransform(...outputToCanvas);
+      ctx.beginPath();
+      ctx.rect(photo.x, photo.y, photo.width, photo.height);
+      ctx.clip();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
     ctx.imageSmoothingEnabled = params.smooth;
     ctx.imageSmoothingQuality = 'high';
     if (isAffine(sourceToCanvas)) {
@@ -99,7 +109,7 @@ export class Canvas2DRenderer implements Renderer {
       ctx.save();
       ctx.globalCompositeOperation = 'destination-over';
       clipOutput(ctx, outputToCanvas, outputSize, false);
-      clipPolygon(ctx, quad);
+      if (!params.checker.coverOutput) clipPolygon(ctx, quad);
       ctx.fillStyle = this.checkerPattern(params.checker);
       ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
       ctx.restore();
@@ -163,11 +173,13 @@ function processPixels(
     }
   }
 
+  const photo = params.photoRect ?? getPhotoRect(params.image, params.state, params.outputScale);
   const finish = {
     finetune: f,
     output: outputSize,
+    photo,
     ellipse,
-    ellipseAA: (2 * outputPerCanvasPx) / Math.max(1, Math.min(outputSize.width, outputSize.height)),
+    ellipseAA: (2 * outputPerCanvasPx) / Math.max(1, Math.min(photo.width, photo.height)),
   };
   for (let y = 0; y < box.height; y++) {
     for (let x = 0; x < box.width; x++) {

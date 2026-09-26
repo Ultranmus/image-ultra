@@ -1,4 +1,4 @@
-import type { EditState } from '../state/editState';
+import type { EditState, Rect } from '../state/editState';
 import type { Affine } from '../state/geometry';
 import type { LoadedImage, Size } from '../types';
 
@@ -11,6 +11,11 @@ export interface CheckerStyle {
   b: string;
   /** Square size in canvas (device) pixels. */
   size: number;
+  /**
+   * Also behind the parts of the output with no image (space added around the photo). Default:
+   * only where the image is — e.g. the crop view, where the stage shows around the photo.
+   */
+  coverOutput?: boolean;
 }
 
 export interface RenderParams {
@@ -28,6 +33,16 @@ export interface RenderParams {
   checker: CheckerStyle | null;
   /** `false` shows crisp pixels (nearest neighbour) — used when zoomed far in. */
   smooth: boolean;
+  /**
+   * The photo's area in output px — vignette and the round crop are measured on it. Default: the
+   * crop inside any added canvas space (`getPhotoRect`). The crop view passes the crop here.
+   */
+  photoRect?: Rect;
+  /**
+   * Nothing is drawn outside the photo rectangle, so added canvas space stays empty (and never
+   * shows the cropped-away image). Default `true`; the crop view turns it off to show everything.
+   */
+  clipToPhoto?: boolean;
 }
 
 export interface Renderer {

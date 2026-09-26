@@ -10,7 +10,7 @@ import {
 import type { EditState } from '../state/editState';
 import {
   compose,
-  getCropRect,
+  getCanvasRect,
   getOutputSize,
   scale,
   translate,
@@ -21,16 +21,16 @@ import type { LoadedImage, Point } from '../types';
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-/** Oriented px → output px (crop offset, then the resize scale). */
+/** Oriented px → output px (canvas offset — the crop plus any added space — then the resize scale). */
 export function getOrientedToOutput(
   image: LoadedImage | { width: number; height: number },
   state: EditState,
 ): Affine {
-  const crop = getCropRect(image, state.geometry);
+  const area = getCanvasRect(image, state);
   const output = getOutputSize(image, state);
   return compose(
-    scale(output.width / crop.width, output.height / crop.height),
-    translate(-crop.x, -crop.y),
+    scale(output.width / area.width, output.height / area.height),
+    translate(-area.x, -area.y),
   );
 }
 

@@ -1,6 +1,12 @@
 /* Built-in tool panels and overlays. */
 @layer image-ultra {
   .iu-adjust,
+  /* Canvas panel: padding ruler, then the photo-position button. */
+  .iu-resize__ruler {
+    flex: 1;
+    min-width: 0;
+  }
+
   .iu-resize {
     display: flex;
     flex-direction: column;
@@ -861,11 +867,19 @@
     opacity: 0.8;
   }
 
-  /* Align menu: align row, then distribute row. */
+  /* Align menu: a compact 3-column grid — left / centre / right, top / middle / bottom, then
+     distribute. The popover shrinks to fit it. */
   .iu-alignmenu {
-    display: flex;
-    flex-direction: column;
-    gap: var(--iu-space-1);
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    gap: 2px;
+  }
+
+  /* Popovers holding only a compact grid (Align, Resize › Photo position) shrink to fit it. */
+  .iu-popover:has(> .iu-watermark__grid:only-child),
+  .iu-popover:has(> .iu-alignmenu) {
+    min-width: 0;
+    padding: var(--iu-space-2);
   }
 
   /* "3 selected" next to Duplicate / Delete. */

@@ -246,6 +246,14 @@ test.describe('Sticker tool', () => {
     // Layout guard: tiles keep their 48px size (styles present).
     expect((await tiles.nth(1).boundingBox())!.width).toBe(44);
     await expect(page.locator('.iu-presets__divider')).toHaveCount(0); // one list, no divider
+    // Wait until every tile image has finished loading (or failed), then look for broken ones.
+    await expect
+      .poll(() =>
+        page
+          .locator('.iu-stickerstrip__tile img')
+          .evaluateAll((imgs) => imgs.filter((img) => !(img as HTMLImageElement).complete).length),
+      )
+      .toBe(0);
     const broken = await page
       .locator('.iu-stickerstrip__tile img')
       .evaluateAll((imgs) =>

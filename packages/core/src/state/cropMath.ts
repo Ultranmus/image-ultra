@@ -117,6 +117,41 @@ export function fitCrop(image: Size, geometry: GeometryState, base: Rect): Rect 
   return largestFit(image, geometry, rectCenter(base), base.width / base.height, base);
 }
 
+/**
+ * Zooms the crop around `anchor` (oriented px) — the crop view's wheel / pinch zoom, Pintura-style:
+ * `factor` > 1 zooms in (a smaller crop), < 1 zooms out. The point under the pointer stays put;
+ * never smaller than `minSize` on its short side, never past the image edges (zooming out near an
+ * edge slides the crop inwards as it grows). Keeps the aspect ratio.
+ */
+export function zoomCrop(
+  image: Size,
+  geometry: GeometryState,
+  start: Rect,
+  anchor: Point,
+  factor: number,
+  minSize = 16,
+): Rect {
+  const short = Math.min(start.width, start.height);
+  // Zooming in stops once the short side reaches `minSize`.
+  const k = factor > 1 ? Math.min(factor, Math.max(1, short / minSize)) : factor;
+  const target = {
+    x: anchor.x - (anchor.x - start.x) / k,
+    y: anchor.y - (anchor.y - start.y) / k,
+    width: start.width / k,
+    height: start.height / k,
+  };
+  if (cropFits(image, geometry, target)) return target;
+  if (k >= 1 || !cropFits(image, geometry, start)) return fitCrop(image, geometry, target);
+  // Zooming out past an edge: grow as far as possible in place, or around a centre pulled inwards.
+  const grown = lerpRect(
+    start,
+    target,
+    searchFit(image, geometry, (t) => lerpRect(start, target, t)),
+  );
+  const slid = largestFit(image, geometry, rectCenter(target), start.width / start.height, target);
+  return slid.width > grown.width ? slid : grown;
+}
+
 /** Moves the crop by `dx`/`dy`, stopping (and sliding along) at the image edges. */
 export function moveCrop(
   image: Size,

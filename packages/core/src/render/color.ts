@@ -260,6 +260,8 @@ export function hash2(x: number, y: number): number {
 export interface FinishParams {
   finetune: FinetuneState;
   output: { width: number; height: number };
+  /** The photo (crop) in output px: vignette and the round mask are measured on it. */
+  photo: { x: number; y: number; width: number; height: number };
   ellipse: boolean;
   /** Width of one canvas pixel in ellipse-distance units (anti-aliasing). */
   ellipseAA: number;
@@ -282,8 +284,8 @@ export function finishPixel(
 ): [number, number, number, number] {
   let [r, g, b] = c;
   const f = p.finetune;
-  const u = ox / p.output.width;
-  const v = oy / p.output.height;
+  const u = (ox - p.photo.x) / p.photo.width;
+  const v = (oy - p.photo.y) / p.photo.height;
   if (f.vignette !== 0) {
     const d = Math.hypot(u - 0.5, v - 0.5) * Math.SQRT2;
     const k = 1 - f.vignette * smoothstep(0.3, 1, d);

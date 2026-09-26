@@ -8,6 +8,7 @@ import {
   moveCrop,
   resizeCrop,
   rotateGeometry,
+  zoomCrop,
 } from './cropMath';
 import { getCropRect, getSourceToOriented, mat3Apply } from './geometry';
 
@@ -129,5 +130,33 @@ describe('crop fitting', () => {
     const r = cropForAspect(image, geo(), 1);
     expect(r.width).toBeCloseTo(300, 1);
     expect(r.height).toBeCloseTo(300, 1);
+  });
+});
+
+describe('zoomCrop', () => {
+  const full: Rect = { x: 0, y: 0, width: 400, height: 300 };
+
+  it('zooming in shrinks the crop and keeps the point under the pointer', () => {
+    const anchor = { x: 100, y: 75 };
+    const r = zoomCrop(image, geo(), full, anchor, 2);
+    expect(r).toEqual({ x: 50, y: 37.5, width: 200, height: 150 });
+    // The anchor sits at the same relative spot (25%, 25%) in the new crop.
+    expect((anchor.x - r.x) / r.width).toBeCloseTo(0.25);
+  });
+
+  it('stops at the minimum size', () => {
+    const r = zoomCrop(image, geo(), full, { x: 200, y: 150 }, 1000, 30);
+    expect(Math.min(r.width, r.height)).toBeCloseTo(30);
+  });
+
+  it('zooming out never goes past the image, and slides in from an edge', () => {
+    const small: Rect = { x: 0, y: 0, width: 100, height: 75 };
+    const r = zoomCrop(image, geo(), small, { x: 0, y: 0 }, 0.5);
+    expect(cropFits(image, geo(), r)).toBe(true);
+    expect(r.width).toBeCloseTo(200);
+    expect(r.width / r.height).toBeCloseTo(4 / 3);
+    const out = zoomCrop(image, geo(), full, { x: 200, y: 150 }, 0.5);
+    expect(cropFits(image, geo(), out)).toBe(true);
+    expect(out.width).toBeCloseTo(400, 0);
   });
 });

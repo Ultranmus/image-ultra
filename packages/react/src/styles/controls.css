@@ -532,6 +532,21 @@
     user-select: none;
   }
 
+  /* Group menu: "3 selected" heading, and the Align ▸ row with its arrow on the right. */
+  .iu-contextmenu__label {
+    padding: var(--iu-space-1) var(--iu-space-3);
+    color: var(--iu-text-muted);
+    font-size: var(--iu-text-sm);
+  }
+
+  .iu-contextmenu .iu-contextmenu__sub {
+    justify-content: space-between;
+  }
+
+  .iu-contextmenu .iu-menu__item[data-state='open'] {
+    background: var(--iu-surface-2);
+  }
+
   .iu-contextmenu .iu-menu__item[data-highlighted] {
     background: var(--iu-surface-2);
   }

@@ -1,6 +1,7 @@
 import {
   compose,
   getOutputToSource,
+  getPhotoRect,
   mat3Compose,
   mat3FromAffine,
   mat3ToGL,
@@ -136,20 +137,24 @@ export class WebGLRenderer implements Renderer {
     const fragToOutput = compose(params.canvasToOutput, fragToCanvas);
     const c2o = params.canvasToOutput;
     const outputPerCanvasPx = Math.sqrt(Math.abs(c2o[0] * c2o[3] - c2o[1] * c2o[2]));
+    const photo = params.photoRect ?? getPhotoRect(image, state, params.outputScale);
 
     const setShared = (p: Program) => {
       this.setMat3(p, 'u_fragToOutput', mat3ToGL(mat3FromAffine(fragToOutput)));
       gl.uniform2f(this.loc(p, 'u_outputSize'), outputSize.width, outputSize.height);
+      gl.uniform4f(this.loc(p, 'u_photoRect'), photo.x, photo.y, photo.width, photo.height);
+      gl.uniform1i(this.loc(p, 'u_clipPhoto'), params.clipToPhoto === false ? 0 : 1);
       gl.uniform1f(this.loc(p, 'u_vignette'), state.finetune.vignette);
       gl.uniform1f(this.loc(p, 'u_grain'), state.finetune.grain);
       gl.uniform1f(this.loc(p, 'u_grainCell'), grainCell(outputSize));
       gl.uniform1i(this.loc(p, 'u_ellipse'), state.geometry.cropShape === 'ellipse' ? 1 : 0);
       gl.uniform1f(
         this.loc(p, 'u_ellipseAA'),
-        (2 * outputPerCanvasPx) / Math.max(1, Math.min(outputSize.width, outputSize.height)),
+        (2 * outputPerCanvasPx) / Math.max(1, Math.min(photo.width, photo.height)),
       );
       const checker = params.checker;
       gl.uniform1i(this.loc(p, 'u_checker'), checker ? 1 : 0);
+      gl.uniform1i(this.loc(p, 'u_checkerOutput'), checker?.coverOutput ? 1 : 0);
       gl.uniform1i(this.loc(p, 'u_premultiply'), this.premultiplied ? 1 : 0);
       if (checker) {
         gl.uniform3fv(this.loc(p, 'u_checkerA'), cssColorToRgb(checker.a));

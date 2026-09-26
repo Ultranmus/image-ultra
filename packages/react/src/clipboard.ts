@@ -3,7 +3,7 @@ import {
   applyToPoint,
   copyRedaction,
   copyShapes,
-  getCropRect,
+  getCanvasRect,
   invert,
   pasteClipboard,
   type ClipboardEntry,
@@ -18,14 +18,20 @@ import {
   selectPatch,
   type AnnotateState,
 } from './tools/annotate/state';
+import { insertImageFile } from './tools/annotate/insertImage';
 import { INITIAL_REDACT_STATE } from './tools/redact/state';
 
 /*
  * One clipboard for every editor on the page, kept in memory (DECISIONS #78): copy on one photo,
- * load the next, paste. Not the system clipboard — pasting images from other apps is Phase 7.
+ * load the next, paste. Shapes never go to the system clipboard — only a marker does, so a later
+ * paste can tell whether our copy is still the newest thing copied. Images copied in other apps
+ * (screenshots…) paste in as image shapes (DECISIONS #84).
  */
 
 let entry: ClipboardEntry | null = null;
+/** Bumped on every copy; the marker on the system clipboard names it. */
+let copyCount = 0;
+const MARKER = 'image-ultra/clipboard:';
 const listeners = new Set<() => void>();
 /** Where the pointer last was over each editor's stage (stage CSS px), `null` when elsewhere. */
 const pointers = new WeakMap<EditorStore, Point | null>();
@@ -37,7 +43,25 @@ export function setPastePoint(store: EditorStore, point: Point | null): void {
 
 function setEntry(next: ClipboardEntry | null) {
   entry = next;
+  copyCount += 1;
   for (const listener of listeners) listener();
+}
+
+/** The marker text for the current copy (written to the system clipboard on `copy` / `cut`). */
+export function clipboardMarker(): string | null {
+  return entry ? `${MARKER}${copyCount}` : null;
+}
+
+/** Oriented point under the pointer when it's over the result, else `undefined`. */
+function pointerOnResult(store: EditorStore): Point | undefined {
+  const { image, edit, viewport } = store.getState();
+  const pointer = pointers.get(store);
+  if (!image || !pointer) return undefined;
+  const area = getCanvasRect(image, edit);
+  const at = applyToPoint(invert(getOrientedToStage(image, edit, viewport)), pointer);
+  const inside =
+    at.x >= area.x && at.y >= area.y && at.x <= area.x + area.width && at.y <= area.y + area.height;
+  return inside ? at : undefined;
 }
 
 /** What the clipboard holds, `null` when empty (re-renders when that changes). */
@@ -56,7 +80,7 @@ export function useClipboardKind(): ClipboardEntry['item']['kind'] | null {
 export function copyShapeById(store: EditorStore, id: string): void {
   const { image, edit } = store.getState();
   if (!image) return;
-  const copied = copyShapes(edit, [id], getCropRect(image, edit.geometry));
+  const copied = copyShapes(edit, [id], getCanvasRect(image, edit));
   if (copied) setEntry(copied);
 }
 
@@ -74,7 +98,7 @@ export function copySelection(store: EditorStore, labels: Labels, cut = false): 
   const ui = state.toolState[activeTool] as Partial<AnnotateState> | undefined;
   const isShape = SHAPE_TOOLS.includes(activeTool);
   if (!image || !ui?.selectedId || (!isShape && activeTool !== REDACT_TOOL)) return false;
-  const area = getCropRect(image, edit.geometry);
+  const area = getCanvasRect(image, edit);
   const ids = isShape
     ? selectionIds({ selectedId: ui.selectedId, selectedIds: ui.selectedIds ?? [] })
     : [ui.selectedId];
@@ -120,21 +144,12 @@ export function pasteSelection(
   if (!target) return null;
 
   const pasted = entry;
-  const area = getCropRect(image, state.edit.geometry);
+  const area = getCanvasRect(image, state.edit);
   // Over the photo: centre the copy on the pointer. Elsewhere: next to the original.
-  const pointer = pointers.get(store);
-  const at = pointer
-    ? applyToPoint(invert(getOrientedToStage(image, state.edit, state.viewport)), pointer)
-    : undefined;
-  const inside =
-    at &&
-    at.x >= area.x &&
-    at.y >= area.y &&
-    at.x <= area.x + area.width &&
-    at.y <= area.y + area.height;
+  const at = pointerOnResult(store);
   let ids: string[] = [];
   state.update(labels.paste, (draft) => {
-    ids = pasteClipboard(draft, pasted, area, inside ? at : undefined);
+    ids = pasteClipboard(draft, pasted, area, at);
   });
   const initial = target === REDACT_TOOL ? INITIAL_REDACT_STATE : INITIAL_ANNOTATE_STATE;
   const current = (store.getState().toolState[target] as object | undefined) ?? initial;
@@ -142,4 +157,40 @@ export function pasteSelection(
   store.getState().setToolState(target, { ...current, ...selection });
   if (target !== activeTool) store.getState().setActiveTool(target);
   return ids;
+}
+
+/**
+ * A `paste` event on the editor: our own copy when the system clipboard still holds our marker,
+ * else an image copied elsewhere (added as an image shape in Annotate or Sticker), else our copy
+ * if the clipboard is empty. Returns `true` when it pasted something.
+ */
+export async function pasteFromSystem(
+  store: EditorStore,
+  labels: Labels,
+  tools: readonly string[],
+  data: DataTransfer,
+): Promise<boolean> {
+  const text = data.getData('text/plain');
+  if (text && text === clipboardMarker()) return pasteSelection(store, labels, tools) !== null;
+  const file = [...data.files].find((f) => f.type.startsWith('image/'));
+  if (file) {
+    const { activeTool } = store.getState();
+    const target = SHAPE_TOOLS.includes(activeTool)
+      ? activeTool
+      : SHAPE_TOOLS.find((t) => tools.includes(t));
+    if (!target) return false;
+    const id = await insertImageFile(store, labels.paste, file, {
+      at: pointerOnResult(store),
+      createdBy: 'paste',
+    });
+    if (!id) return false;
+    const current =
+      (store.getState().toolState[target] as object | undefined) ?? INITIAL_ANNOTATE_STATE;
+    store.getState().setToolState(target, { ...current, ...selectPatch([id]) });
+    if (target !== store.getState().activeTool) store.getState().setActiveTool(target);
+    return true;
+  }
+  // Text copied elsewhere isn't ours to paste; with nothing at all, our copy is the newest.
+  if (text || data.types.length > 0) return false;
+  return pasteSelection(store, labels, tools) !== null;
 }

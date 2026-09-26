@@ -143,10 +143,15 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
       resizes, rotates, deletes, duplicates, copies/pastes as one; align & distribute; style
       several shapes at once. Layers: drag to reorder, rename, "Show all hidden", ⌘C/⌘X in the
       panel. Line endpoint handles clear of the arrow head; in-place text editor wraps like the canvas.
-- [ ] **7.2** Canvas & crop: Extend canvas in Resize (square / 4:5 / 16:9 / custom padding +
+- [x] **7.2** Canvas & crop: Extend canvas in Resize (square / 4:5 / 16:9 / custom padding +
       anchor, Fill shows on the sides); zoom in crop view (wheel + pinch); vignette preview uses
       the crop; paste images from the system clipboard as image shapes. Group menu: right-click a
       multi-selection → group actions (owner, BACKLOG).
+- [ ] **7.2b** Unified elements (owner, 2026-09-26; DECISIONS #88): redaction areas and the watermark
+      become elements in one ordered list with shapes — select, group, move, align, copy/paste,
+      Layers, bring forward / send backward across types. A redact area blurs everything drawn
+      below it (Canva-style). An app-locked watermark stays on top and isn't selectable. Old saved
+      edits migrate (redactions at the bottom, watermark on top).
 - [ ] **7.3** Colour tools: histogram Before/After; filter thumbnails "on my edits"; arrow-key
       presses on one control coalesce into one undo step.
 - [ ] **7.4** Mobile: 320–430px layouts, thumb-zone controls, no sideways-scrolling rows (Annotate,

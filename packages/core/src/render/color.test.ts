@@ -114,6 +114,7 @@ describe('detail and finish', () => {
     const params = {
       finetune: withFinetune({ vignette: 1 }).finetune,
       output: { width: 100, height: 100 },
+      photo: { x: 0, y: 0, width: 100, height: 100 },
       ellipse: true,
       ellipseAA: 0.02,
     };
@@ -121,6 +122,19 @@ describe('detail and finish', () => {
     const corner = finishPixel([0.5, 0.5, 0.5], 1, 1, params);
     expect(corner[0]).toBeLessThan(0.05);
     expect(corner[3]).toBe(0);
+  });
+
+  it('vignette and round mask follow the photo inside added canvas space', () => {
+    const params = {
+      finetune: withFinetune({ vignette: 1 }).finetune,
+      output: { width: 200, height: 100 },
+      photo: { x: 100, y: 0, width: 100, height: 100 },
+      ellipse: true,
+      ellipseAA: 0.02,
+    };
+    // The photo's centre is untouched and fully visible; the output's centre is its left edge.
+    expect(finishPixel([0.5, 0.5, 0.5], 150, 50, params)).toEqual([0.5, 0.5, 0.5, 1]);
+    expect(finishPixel([0.5, 0.5, 0.5], 101, 50, params)[0]).toBeLessThan(0.5);
   });
 
   it('grain hash is deterministic and roughly uniform', () => {

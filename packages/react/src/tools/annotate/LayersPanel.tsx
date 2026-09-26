@@ -83,10 +83,8 @@ export function LayersPanel({
 
   /** Shift / ⌘ / Ctrl-click adds a layer to the selection or takes it out. */
   const toggle = (shape: Shape) => {
-    if (shape.locked || shape.hidden) return;
-    const current = selectedIds.filter((id) =>
-      shapes.some((s) => s.id === id && !s.locked && !s.hidden),
-    );
+    if (shape.hidden) return;
+    const current = selectedIds.filter((id) => shapes.some((s) => s.id === id && !s.hidden));
     onSelectMany(
       current.includes(shape.id) ? current.filter((id) => id !== shape.id) : [...current, shape.id],
     );

@@ -37,7 +37,13 @@ import {
 import { applyWatermarkInput, type WatermarkInput } from '../tools/watermark/input';
 import { DEFAULT_STICKER_LIBRARY_URL } from '../tools/sticker/emojiData';
 import { DEFAULT_FONTS } from '../fonts';
-import { copySelection, pasteSelection, setPastePoint } from '../clipboard';
+import {
+  clipboardMarker,
+  copySelection,
+  pasteFromSystem,
+  pasteSelection,
+  setPastePoint,
+} from '../clipboard';
 import { mergeLabels, type LabelOverrides } from '../i18n';
 import { themeOverridesToStyle, type ThemeMode, type ThemeOverrides } from '../theme';
 import { ControlBar } from './ControlBar';
@@ -309,6 +315,49 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     save,
   }));
 
+  /**
+   * ⌘C / ⌘X let the browser's copy event through, which puts our marker on the system clipboard;
+   * ⌘V waits briefly for the browser's paste event (it may carry an image from another app) and
+   * pastes our own copy if none comes (DECISIONS #84).
+   */
+  const clip = useRef({ copied: false, pasteTimer: 0 });
+  const clipDeps = useRef({ labels, tools: resolvedTools.map((t) => t.id) });
+  useEffect(() => {
+    clipDeps.current = { labels, tools: resolvedTools.map((t) => t.id) };
+  });
+  useEffect(() => {
+    const root = rootElement;
+    if (!root) return;
+    const c = clip.current;
+    const inEditor = (event: Event) =>
+      event.target instanceof Node && root.contains(event.target) && !isTypingTarget(event.target);
+    const onCopy = (event: ClipboardEvent) => {
+      if (!c.copied || !inEditor(event)) return;
+      c.copied = false;
+      const marker = clipboardMarker();
+      if (!marker || !event.clipboardData) return;
+      event.clipboardData.setData('text/plain', marker);
+      event.preventDefault();
+    };
+    const onPaste = (event: ClipboardEvent) => {
+      if (!inEditor(event) || !event.clipboardData) return;
+      if (store.getState().status !== 'ready') return;
+      window.clearTimeout(c.pasteTimer);
+      event.preventDefault();
+      const { labels: l, tools: t } = clipDeps.current;
+      void pasteFromSystem(store, l, t, event.clipboardData).catch(reportError);
+    };
+    document.addEventListener('copy', onCopy);
+    document.addEventListener('cut', onCopy);
+    document.addEventListener('paste', onPaste);
+    return () => {
+      document.removeEventListener('copy', onCopy);
+      document.removeEventListener('cut', onCopy);
+      document.removeEventListener('paste', onPaste);
+      window.clearTimeout(c.pasteTimer);
+    };
+  }, [rootElement, store]);
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (isTypingTarget(event.target) || event.altKey) return;
     const state = store.getState();
@@ -321,9 +370,15 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
       else if ((key === 'z' && event.shiftKey) || key === 'y') state.redo();
       else if (key === 'c' || key === 'x') {
         if (!copySelection(store, labels, key === 'x')) return;
+        // No preventDefault: the copy / cut event that follows writes our marker.
+        clip.current.copied = true;
+        window.setTimeout(() => (clip.current.copied = false), 0);
+        return;
       } else if (key === 'v') {
         const ids = resolvedTools.map((t) => t.id);
-        if (pasteSelection(store, labels, ids) === null) return;
+        window.clearTimeout(clip.current.pasteTimer);
+        clip.current.pasteTimer = window.setTimeout(() => pasteSelection(store, labels, ids), 50);
+        return;
       } else return;
       event.preventDefault();
       return;

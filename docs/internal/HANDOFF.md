@@ -33,8 +33,11 @@ Update this file at the end of every session.
   Layers drag-reorder / rename / Show all, hollow arrow handles, text wraps like the editor.
   Mouse pans with **Space + drag** now (a drag on empty space draws a selection box).
   All checks green (130 unit, 91 e2e).
-- Next: **7.2 Canvas & crop** (extend canvas in Resize, zoom in crop view, vignette preview uses
-  the crop, paste images from the system clipboard, group menu).
+- **7.2 Canvas & crop — committed** (2026-09-26, `feat: phase 7.2`): Resize › Canvas (extend canvas),
+  crop-view wheel/pinch zoom, vignette on the photo, paste images from other apps, group menu.
+  Review round 1 fixed (cropped canvas, locked groups, Align popover). All checks green
+  (137 unit, 98 e2e).
+- Next: **7.2b Unified elements** (plan in PLAN.md, DECISIONS #88), then **7.3 Colour tools**.
 
 ## How to work with this owner
 

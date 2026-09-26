@@ -5,6 +5,7 @@ import {
   compose,
   getOrientedSize,
   getOutputSize,
+  getPhotoRect,
   IDENTITY,
   scale as scaleBy,
 } from '../state/geometry';
@@ -126,14 +127,16 @@ export async function renderToCanvas(
       ctx.drawImage(canvas, 0, 0);
 
       const transform = compose(scaleBy(scale), getOrientedToOutput(image, state));
+      // The round crop is the photo's ellipse (inside any added canvas space).
+      const photo = getPhotoRect(image, state, scale);
       const roundClip = (c: Context2D) => {
         if (state.geometry.cropShape !== 'ellipse') return;
         c.beginPath();
         c.ellipse(
-          size.width / 2,
-          size.height / 2,
-          size.width / 2,
-          size.height / 2,
+          photo.x + photo.width / 2,
+          photo.y + photo.height / 2,
+          photo.width / 2,
+          photo.height / 2,
           0,
           0,
           Math.PI * 2,
@@ -181,7 +184,8 @@ export async function renderToCanvas(
           ensureAnnotationFonts(state.annotations),
         ]);
         ctx.save();
-        roundClip(ctx);
+        // With added canvas space, shapes may sit on that space: no round clip then.
+        if (!state.canvas) roundClip(ctx);
         drawAnnotations(ctx, state.annotations, { transform, assets });
         ctx.restore();
       }

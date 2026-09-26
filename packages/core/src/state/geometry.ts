@@ -236,24 +236,82 @@ export function getCropSize(image: Size, geometry: GeometryState): Size {
   };
 }
 
-/** Pixel size of the edited result: the resize target, else the crop size. */
-export function getOutputSize(image: Size, state: Pick<EditState, 'geometry' | 'resize'>): Size {
-  return state.resize ? { ...state.resize } : getCropSize(image, state.geometry);
+type FramingState = Pick<EditState, 'geometry' | 'resize'> & Partial<Pick<EditState, 'canvas'>>;
+
+/**
+ * The whole result area in oriented space: the crop plus any space added around it
+ * (`EditState.canvas`). Equal to the crop when nothing is added.
+ */
+export function getCanvasRect(
+  image: Size,
+  state: Pick<EditState, 'geometry'> & Partial<Pick<EditState, 'canvas'>>,
+): Rect {
+  const crop = getCropRect(image, state.geometry);
+  const canvas = state.canvas;
+  if (!canvas) return crop;
+  const pad = canvas.padding * Math.min(crop.width, crop.height);
+  let rect = {
+    x: crop.x - pad,
+    y: crop.y - pad,
+    width: crop.width + pad * 2,
+    height: crop.height + pad * 2,
+  };
+  if (canvas.aspect) {
+    if (rect.width / rect.height < canvas.aspect) {
+      const width = rect.height * canvas.aspect;
+      rect = { ...rect, x: rect.x - (width - rect.width) * canvas.anchor.x, width };
+    } else {
+      const height = rect.width / canvas.aspect;
+      rect = { ...rect, y: rect.y - (height - rect.height) * canvas.anchor.y, height };
+    }
+  }
+  return rect;
+}
+
+/** Canvas (crop + added space) size in whole pixels. */
+export function getCanvasSize(
+  image: Size,
+  state: Pick<EditState, 'geometry'> & Partial<Pick<EditState, 'canvas'>>,
+): Size {
+  const rect = getCanvasRect(image, state);
+  return {
+    width: Math.max(1, Math.round(rect.width)),
+    height: Math.max(1, Math.round(rect.height)),
+  };
+}
+
+/** Pixel size of the edited result: the resize target, else the canvas (crop + space) size. */
+export function getOutputSize(image: Size, state: FramingState): Size {
+  return state.resize ? { ...state.resize } : getCanvasSize(image, state);
+}
+
+/**
+ * Where the photo (the crop) sits in the output, in output px. Vignette and the round crop are
+ * measured on it, so added canvas space never moves them.
+ */
+export function getPhotoRect(image: Size, state: FramingState, exportScale = 1): Rect {
+  const crop = getCropRect(image, state.geometry);
+  const canvas = getCanvasRect(image, state);
+  const output = getOutputSize(image, state);
+  const sx = (output.width * exportScale) / canvas.width;
+  const sy = (output.height * exportScale) / canvas.height;
+  return {
+    x: (crop.x - canvas.x) * sx,
+    y: (crop.y - canvas.y) * sy,
+    width: crop.width * sx,
+    height: crop.height * sy,
+  };
 }
 
 /**
  * Output pixels → source pixels. `exportScale` shrinks the output further (0.5 = half size).
  */
-export function getOutputToSource(
-  image: Size,
-  state: Pick<EditState, 'geometry' | 'resize'>,
-  exportScale = 1,
-): Mat3 {
-  const crop = getCropRect(image, state.geometry);
+export function getOutputToSource(image: Size, state: FramingState, exportScale = 1): Mat3 {
+  const area = getCanvasRect(image, state);
   const output = getOutputSize(image, state);
   return mat3Compose(
     getOrientedToSource(image, state.geometry),
-    translate(crop.x, crop.y),
-    scale(crop.width / (output.width * exportScale), crop.height / (output.height * exportScale)),
+    translate(area.x, area.y),
+    scale(area.width / (output.width * exportScale), area.height / (output.height * exportScale)),
   );
 }

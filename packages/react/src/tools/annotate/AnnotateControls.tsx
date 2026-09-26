@@ -1,11 +1,5 @@
 import { useRef, type ReactNode } from 'react';
-import {
-  createShapeId,
-  getCropRect,
-  type EditState,
-  type Shape,
-  type TextAlign,
-} from '@image-ultra/core';
+import { type Shape, type TextAlign } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useFonts, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { Popover } from '../../controls/Popover';
@@ -53,7 +47,7 @@ import {
 } from './state';
 import { shapeActions } from './actions';
 import { AlignMenu, GroupInspector } from './GroupControls';
-import { fileToAsset } from '../assets';
+import { insertImageFile } from './insertImage';
 
 const MODE_ICONS: Record<AnnotateMode, (p: IconProps) => React.JSX.Element> = {
   select: IconPointer,
@@ -170,13 +164,8 @@ export function AnnotateControls() {
   };
 
   const insertImage = async (file: File) => {
-    const shape = await createImageShape(file, image, edit);
-    if (!shape) return;
-    store.getState().update(labels.insertImage, (draft) => {
-      draft.assets[shape.asset.id] = shape.asset.value;
-      draft.annotations.push(shape.shape);
-    });
-    setUi((u) => ({ ...u, mode: 'select', ...selectPatch([shape.shape.id]) }));
+    const id = await insertImageFile(store, labels.insertImage, file);
+    if (id) setUi((u) => ({ ...u, mode: 'select', ...selectPatch([id]) }));
   };
 
   const inspector: ReactNode[] = [];
@@ -567,31 +556,4 @@ function SizeChooser({
       presets={STEPS.map((s) => ({ value: s, label: s }))}
     />
   );
-}
-
-/** Reads an image file into an asset + an image shape centred on the crop. */
-async function createImageShape(
-  file: File,
-  image: { width: number; height: number },
-  edit: EditState,
-) {
-  const asset = await fileToAsset(file, 'annotate');
-  if (!asset) return null;
-  const crop = getCropRect(image, edit.geometry);
-  const width = crop.width * 0.4;
-  const height = (width * asset.value.height) / asset.value.width;
-  return {
-    asset,
-    shape: {
-      id: createShapeId(),
-      type: 'image' as const,
-      rotation: 0,
-      opacity: 1,
-      x: crop.x + (crop.width - width) / 2,
-      y: crop.y + (crop.height - height) / 2,
-      width,
-      height,
-      assetId: asset.id,
-    },
-  };
 }

@@ -83,9 +83,18 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   (40px padding); the photo outside the crop is shaded (`--iu-crop-shade`, clipped to the photo's outline — the
   empty stage around it keeps the normal stage colour, like every other tool); thin white frame, L-shaped corner
   handles + edge bars, 32px hit areas; thirds grid only while interacting; drag anywhere = move the
-  image under the crop; arrow keys move the crop (focus the crop area). TopBar zoom is disabled here.
-- **Resize** ControlBar: [Width px] [lock] [Height px] + "Original size: W × H" (turns into a
-  `--iu-warning` note when upscaling); PresetStrip: Original size, 50%, social presets.
+  image under the crop; arrow keys move the crop (focus the crop area). TopBar zoom is disabled here;
+  instead the wheel / trackpad pinch / two-finger pinch zooms the photo under the crop around the
+  pointer (Pintura-style: the crop gets smaller, the box stays put; one undo step per gesture).
+  Vignette in this view is measured on the crop, as in the result.
+- **Resize** ControlBar: SegmentedControl [Size | Canvas] — [reset, Canvas only].
+  Size = [Width px] [lock] [Height px] + "Original size: W × H" (turns into a `--iu-warning` note
+  when upscaling); PresetStrip: Original size, 50%, social presets (a preset crops to its shape and
+  drops added canvas space). Canvas = space added around the photo: Padding RulerSlider (0–50 % of
+  the short side) + "Photo position" popover (3×3 spots, like Watermark; only with a shape), and a
+  PresetStrip of canvas shapes (Photo shape, 1:1, 4:5, 5:4, 3:4, 4:3, 2:3, 3:2, 9:16, 16:9) with
+  AspectGlyphs. The added space is transparent (checkerboard on the stage), so the Fill shows there;
+  shapes, stickers and text can sit on it. Vignette and the round crop stay on the photo.
 - **Finetune** ControlBar: SegmentedControl [Adjust | Curves | Levels] — [✨ Auto] [Save look]
   [reset]. Adjust = RulerSlider (−100…+100, "+25"/"−25") above a chip strip of the 16 adjustments
   (a dot marks changed ones). Curves = channel SegmentedControl + small reset on the left, 80px
@@ -104,8 +113,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   Rectangle R, Ellipse O, Polygon G, Text T) + Add image — [Layers]; row 2 = inspector for the selected
   shape (or the defaults of the current tool): colour/fill buttons (round swatch dots; fill shows a
   ring), width / text size / font / corner radius / opacity as popovers, Bold + alignment + arrow-head
-  toggles inline (`data-active`), Align (a popover: 6 align buttons — a single shape aligns to the
-  photo), then Duplicate / Delete on the right. Nothing to show → one muted hint. With several shapes
+  toggles inline (`data-active`), Align (a compact popover: 3-column grid — left / centre / right,
+  top / middle / bottom, then distribute; a single shape aligns to the photo), then Duplicate / Delete on the right. Nothing to show → one muted hint. With several shapes
   selected, row 2 = the **group inspector**: colour, fill, line width (S/M/L/XL), opacity, Align
   (+ Distribute horizontally / vertically for 3+), and "N selected" muted before Duplicate / Delete.
 - **Annotate stage:** accent selection outline, white square handles (10px visual, rotated with the
@@ -119,7 +128,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   "Show all" in the header while anything is hidden; Shift / ⌘-click rows to select several.
 - **Multi-select** (Annotate + Sticker): Shift-click adds/removes a shape, a mouse drag on empty space
   draws a selection box (dashed accent outline on `--iu-accent-soft`; touching counts; Shift adds),
-  ⌘A selects all (not locked or hidden ones). The group shows a faint outline on each member and one
+  ⌘A selects all (not hidden ones; locked ones join but never move — a fully locked group shows a
+  dashed box without handles). The group shows a faint outline on each member and one
   accent box around all of them with 4 corner handles (proportional resize — strokes and text scale
   too) and the round rotate handle (the box turns with the group while dragging). Drag inside the box
   moves all of it (snaps like one shape); a click on a member without dragging selects just it.
@@ -131,6 +141,14 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   deselects; clicking a control keeps the selection. "No colour" = transparency checkerboard. Text tool: click a text box → edit it, caret where you clicked; click
   empty photo → new box reading "Text", all selected so typing replaces it. Text never disappears on
   its own — an emptied box goes back to "Text"; only Delete removes it.
+- **Group menu** (right-click / long-press anywhere inside a multi-selection's box — on a member or
+  the space between them — or Shift+F10 with a group selected; the group stays selected): muted "N selected" heading · Copy, Paste, Duplicate,
+  Delete · Align ▸ (submenu: 6 aligns, then Distribute ×2) · Bring to front, Send to back · Lock all,
+  Lock all / Unlock all (whichever applies; locking keeps the group selected), Hide all. Same look as
+  the shape menu.
+- **Paste from other apps:** ⌘V with an image on the system clipboard (e.g. a screenshot) adds it as
+  an image shape (40 % of the result's width, at the pointer when it's over the photo) in Annotate
+  (or Sticker when open), selected. Our own copy wins while it's still the newest thing copied.
 - **Shape menu** (right-click / long-press on a shape, including locked ones; Shift+F10 or the Menu
   key for the selected shape; "⋯" in Layers): Lock/Unlock, Hide/Show · Bring to front, Bring forward,
   Send backward, Send to back · Copy, Paste, Duplicate, Delete · Show in Layers. Compact 32px rows, separators,

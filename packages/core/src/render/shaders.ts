@@ -19,6 +19,8 @@ const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
 uniform mat3 u_fragToOutput;   // gl_FragCoord → output px
 uniform vec2 u_outputSize;
+uniform vec4 u_photoRect;      // the photo (crop) in output px: x, y, width, height
+uniform bool u_clipPhoto;      // nothing outside the photo rect (added canvas space stays empty)
 
 // Finish
 uniform float u_vignette;
@@ -30,6 +32,8 @@ uniform bool u_checker;
 uniform vec3 u_checkerA;
 uniform vec3 u_checkerB;
 uniform float u_checkerSize;
+// Checkerboard also where the output has no image (space added around the photo).
+uniform bool u_checkerOutput;
 // The canvas expects premultiplied colour (on-screen previews): transparent pixels must be black.
 uniform bool u_premultiply;
 
@@ -49,7 +53,7 @@ float hash2(vec2 p) {
 
 // Vignette, grain and round mask. Returns the colour and writes the alpha multiplier to 'mask'.
 vec3 finishPixel(vec3 c, vec2 o, out float mask) {
-  vec2 uv = o / u_outputSize;
+  vec2 uv = (o - u_photoRect.xy) / u_photoRect.zw;
   if (u_vignette != 0.0) {
     float d = length(uv - 0.5) * 1.41421356;
     c *= 1.0 - u_vignette * smoothstep(0.3, 1.0, d);
@@ -172,9 +176,13 @@ void main() {
   }
   vec3 p = u_outputToUV * vec3(o, 1.0);
   vec2 uv = p.xy / p.z;
-  // Outside the image: fully transparent, no checkerboard (the stage shows through).
-  if (p.z <= 0.0 || any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) {
-    outColor = vec4(0.0);
+  bool outsidePhoto = u_clipPhoto &&
+    (any(lessThan(o, u_photoRect.xy)) || any(greaterThan(o, u_photoRect.xy + u_photoRect.zw)));
+  // Outside the image (or the photo's crop, in added canvas space): transparent — the stage shows through, or the checkerboard when the
+  // output extends past the photo (added canvas space).
+  if (outsidePhoto || p.z <= 0.0 || any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) {
+    if (u_checkerOutput && u_mode == 0) writeFinal(vec3(0.0), 0.0);
+    else outColor = vec4(0.0);
     return;
   }
   vec4 texel = texture(u_image, uv);
@@ -268,7 +276,8 @@ void main() {
     c = clamp(c, 0.0, 1.0);
   }
   if (alpha <= 0.0) {
-    outColor = vec4(0.0);
+    if (u_checkerOutput) writeFinal(vec3(0.0), 0.0);
+    else outColor = vec4(0.0);
     return;
   }
   float mask;

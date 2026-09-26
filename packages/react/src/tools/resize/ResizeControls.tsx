@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import {
   cropForAspect,
-  getCropSize,
+  getCanvasSize,
   getOutputSize,
   MAX_OUTPUT_SIDE,
+  type CanvasState,
   type EditState,
   type LoadedImage,
+  type WatermarkPosition,
 } from '@image-ultra/core';
-import { useEditorState, useEditorStore, useLabels } from '../../context';
+import { useEditorState, useEditorStore, useLabels, useToolState } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { NumberField } from '../../controls/NumberField';
+import { Popover } from '../../controls/Popover';
 import { AspectGlyph, PresetStrip, type Preset } from '../../controls/PresetStrip';
-import { IconLink, IconUnlink } from '../../icons/Icon';
+import { RulerSlider } from '../../controls/RulerSlider';
+import { SegmentedControl } from '../../controls/SegmentedControl';
+import { IconLink, IconPosition, IconReset, IconUnlink } from '../../icons/Icon';
 
 export interface SizePreset {
   id: string;
@@ -38,8 +43,51 @@ export const SIZE_PRESETS: readonly SizePreset[] = [
 
 type Choice = 'original' | 'half' | string;
 
-/** ControlBar for the Resize tool: exact width/height, aspect lock and size presets. */
+type ResizeMode = 'size' | 'canvas';
+
+/**
+ * ControlBar for the Resize tool (UI_VISION §5): [Size | Canvas]. Size = exact width/height,
+ * aspect lock and size presets. Canvas = space added around the photo (shape, padding, where the
+ * photo sits) — DECISIONS #83.
+ */
 export function ResizeControls() {
+  const labels = useLabels();
+  const store = useEditorStore();
+  const edit = useEditorState((s) => s.edit);
+  const [mode, setMode] = useToolState<ResizeMode>('size');
+
+  return (
+    <div className="iu-resize">
+      <div className="iu-adjust__row">
+        <SegmentedControl
+          label={labels.tools.resize}
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'size', label: labels.resizeModeSize },
+            { value: 'canvas', label: labels.resizeModeCanvas },
+          ]}
+        />
+        <span />
+        <div className="iu-toolgroup iu-toolgroup--end">
+          {mode === 'canvas' && (
+            <IconButton
+              label={labels.canvasReset}
+              icon={<IconReset />}
+              disabled={!edit.canvas}
+              onClick={() => setCanvas(store, labels.canvasReset, null)}
+            />
+          )}
+        </div>
+      </div>
+      {mode === 'size' ? <SizePanel /> : <CanvasPanel />}
+    </div>
+  );
+}
+
+/* ── Size ─────────────────────────────────────────────────────────────── */
+
+function SizePanel() {
   const labels = useLabels();
   const store = useEditorStore();
   const image = useEditorState((s) => s.image);
@@ -47,7 +95,8 @@ export function ResizeControls() {
   const [locked, setLocked] = useState(true);
   if (!image) return null;
 
-  const crop = getCropSize(image, edit.geometry);
+  // "Original" = the photo's crop plus any added canvas space, at 1:1.
+  const crop = getCanvasSize(image, edit);
   const output = getOutputSize(image, edit);
   const upscaled = output.width > crop.width + 1 || output.height > crop.height + 1;
 
@@ -105,7 +154,7 @@ export function ResizeControls() {
   };
 
   return (
-    <div className="iu-resize">
+    <>
       <div className="iu-resize__row">
         <NumberField
           label={labels.width}
@@ -141,7 +190,139 @@ export function ResizeControls() {
         value={selected}
         onSelect={onPreset}
       />
-    </div>
+    </>
+  );
+}
+
+/* ── Canvas (space around the photo) ──────────────────────────────────── */
+
+const NO_CANVAS: CanvasState = { aspect: null, padding: 0, anchor: { x: 0.5, y: 0.5 } };
+
+/** Canvas shapes, as width : height. `null` keeps the photo's own shape (padding only). */
+const CANVAS_SHAPES: [id: string, aspect: number | null][] = [
+  ['photo', null],
+  ['1:1', 1],
+  ['4:5', 4 / 5],
+  ['5:4', 5 / 4],
+  ['3:4', 3 / 4],
+  ['4:3', 4 / 3],
+  ['2:3', 2 / 3],
+  ['3:2', 3 / 2],
+  ['9:16', 9 / 16],
+  ['16:9', 16 / 9],
+];
+
+/** The 3×3 spots for the photo inside the added space. */
+const ANCHORS: [WatermarkPosition, number, number][] = [
+  ['top-left', 0, 0],
+  ['top', 0.5, 0],
+  ['top-right', 1, 0],
+  ['left', 0, 0.5],
+  ['center', 0.5, 0.5],
+  ['right', 1, 0.5],
+  ['bottom-left', 0, 1],
+  ['bottom', 0.5, 1],
+  ['bottom-right', 1, 1],
+];
+
+/**
+ * Sets the added space as one undo step (`null` removes it). A custom output size keeps its scale,
+ * so the result grows with the canvas instead of being stretched.
+ */
+function setCanvas(
+  store: ReturnType<typeof useEditorStore>,
+  label: string,
+  next: CanvasState | null,
+) {
+  const image = store.getState().image;
+  if (!image) return;
+  store.getState().update(label, (draft) => {
+    const before = getCanvasSize(image, draft);
+    draft.canvas = next && (next.aspect !== null || next.padding > 0) ? next : null;
+    if (draft.resize) {
+      const after = getCanvasSize(image, draft);
+      const k = draft.resize.width / before.width;
+      draft.resize = {
+        width: Math.min(MAX_OUTPUT_SIDE, Math.max(1, Math.round(after.width * k))),
+        height: Math.min(MAX_OUTPUT_SIDE, Math.max(1, Math.round(after.height * k))),
+      };
+    }
+  });
+}
+
+function CanvasPanel() {
+  const labels = useLabels();
+  const store = useEditorStore();
+  const edit = useEditorState((s) => s.edit);
+  const canvas = edit.canvas ?? NO_CANVAS;
+  const change = (label: string, patch: Partial<CanvasState>) =>
+    setCanvas(store, label, { ...canvas, ...patch });
+
+  const shape =
+    CANVAS_SHAPES.find(([, a]) =>
+      a === null
+        ? canvas.aspect === null
+        : canvas.aspect !== null && Math.abs(a - canvas.aspect) < 1e-3,
+    )?.[0] ?? null;
+
+  return (
+    <>
+      <div className="iu-resize__row iu-resize__canvas">
+        <div className="iu-resize__ruler">
+          <RulerSlider
+            label={labels.canvasPadding}
+            value={Math.round(canvas.padding * 100)}
+            min={0}
+            max={50}
+            unitWidth={5}
+            tickEvery={1}
+            majorEvery={10}
+            defaultValue={0}
+            format={(v) => `${v}%`}
+            onChangeStart={() => store.getState().beginChange(labels.canvasPadding)}
+            onChangeEnd={() => store.getState().endChange()}
+            onChange={(v) => change(labels.canvasPadding, { padding: v / 100 })}
+          />
+        </div>
+        <Popover
+          label={labels.canvasAnchor}
+          trigger={
+            <IconButton
+              label={labels.canvasAnchor}
+              icon={<IconPosition />}
+              disabled={canvas.aspect === null}
+            />
+          }
+        >
+          <div className="iu-watermark__grid" role="radiogroup" aria-label={labels.canvasAnchor}>
+            {ANCHORS.map(([position, x, y]) => (
+              <button
+                key={position}
+                type="button"
+                role="radio"
+                aria-checked={canvas.anchor.x === x && canvas.anchor.y === y}
+                aria-label={labels.watermarkPositions[position]}
+                className="iu-watermark__spot"
+                onClick={() => change(labels.canvasAnchor, { anchor: { x, y } })}
+              />
+            ))}
+          </div>
+        </Popover>
+      </div>
+      <PresetStrip
+        label={labels.canvasShape}
+        value={shape}
+        onSelect={(id) => {
+          const aspect = CANVAS_SHAPES.find(([key]) => key === id)?.[1] ?? null;
+          change(labels.canvasShape, { aspect });
+        }}
+        presets={CANVAS_SHAPES.map(([id, aspect]) => ({
+          value: id,
+          label: aspect === null ? labels.canvasOriginal : id,
+          ...(aspect !== null && { glyph: <AspectGlyph aspect={aspect} /> }),
+        }))}
+      />
+    </>
   );
 }
 
@@ -162,9 +343,11 @@ function applySizePreset(
 ) {
   const aspect = preset.width / preset.height;
   const crop = cropForAspect(image, edit.geometry, aspect);
+  // A size preset crops to its shape, so any added canvas space is dropped.
   update(preset.label, () => ({
     ...edit,
     geometry: { ...edit.geometry, crop, cropAspect: aspect, cropShape: 'rect' },
+    canvas: null,
     resize: { width: preset.width, height: preset.height },
   }));
 }

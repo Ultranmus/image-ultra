@@ -1,6 +1,6 @@
 import {
   createShapeId,
-  getCropRect,
+  getCanvasRect,
   loadImage,
   type EditorStore,
   type RasterAsset,
@@ -83,7 +83,7 @@ export async function urlAsset(src: string): Promise<Asset> {
 export function placeSticker(store: EditorStore, asset: Asset, label: string): string | null {
   const { image, edit } = store.getState();
   if (!image) return null;
-  const crop = getCropRect(image, edit.geometry);
+  const crop = getCanvasRect(image, edit);
   const side = Math.min(crop.width, crop.height) * 0.25;
   const aspect = asset.value.width / asset.value.height || 1;
   const width = aspect >= 1 ? side : side * aspect;

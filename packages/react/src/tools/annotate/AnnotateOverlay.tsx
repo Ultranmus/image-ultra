@@ -10,6 +10,7 @@ import {
   applyToPoint,
   boxCenter,
   boxesIntersect,
+  getCanvasRect,
   getCropRect,
   getShapeBounds,
   getShapeBox,
@@ -39,6 +40,7 @@ import {
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { shapeActions } from './actions';
 import { LayersPanel } from './LayersPanel';
+import { GroupMenu } from './GroupMenu';
 import { ShapeMenu } from './ShapeMenu';
 
 import { snapAngle, snapBox } from './snapping';
@@ -176,7 +178,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
   /** How the text editor opens: everything selected (new box) or the caret at an index. */
   const [editCaret, setEditCaret] = useState<number | 'all'>('all');
   /** Open shape menu: which shape, and where on the stage it opens. */
-  const [menu, setMenu] = useState<{ shapeId: string; at: Point } | null>(null);
+  /** `group`: the menu for the whole multi-selection (right-click on one of its members). */
+  const [menu, setMenu] = useState<{ shapeId: string; at: Point; group?: boolean } | null>(null);
   const [revealLayer, setRevealLayer] = useState<{ id: string } | null>(null);
   const longPress = useRef<{ timer: number; screen: Point } | null>(null);
   const keepMenuFocus = useRef(false);
@@ -187,22 +190,24 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
   const shapes = edit.annotations;
   const selected = shapes.find((s) => s.id === ui.selectedId && !s.hidden) ?? null;
   const selectedIds = selectionIds(ui);
-  /** A multi-selection (visible members; locked ones can't be in it). */
+  /** A multi-selection (visible members; locked ones may be in it but never move). */
   const group =
     selectedIds.length > 1 ? shapes.filter((s) => selectedIds.includes(s.id) && !s.hidden) : [];
   const isGroup = group.length > 1;
+  /** The members a group move / resize / rotate changes. */
+  const movableGroup = group.filter((s) => !s.locked);
   const groupBox = isGroup ? groupBounds(group, measureTextHeight) : null;
   const editing =
     shapes.find((s): s is TextShape => s.id === ui.editingId && s.type === 'text') ?? null;
   const ref = image ? referenceSize(image, edit) : 1000;
 
   // Latest values for the window-level keyboard handler.
-  const latest = useRef({ ui, selected, polygon, k, ref, menu, toStage, group, isGroup });
+  const latest = useRef({ ui, selected, polygon, k, ref, menu, toStage, group, isGroup, groupBox });
   const commitRef = useRef(() => {});
   /** The current drag started on a handle of the text being edited (editing continues after). */
   const handleWhileEditing = useRef(false);
   useEffect(() => {
-    latest.current = { ui, selected, polygon, k, ref, menu, toStage, group, isGroup };
+    latest.current = { ui, selected, polygon, k, ref, menu, toStage, group, isGroup, groupBox };
   });
 
   const local = (event: { clientX: number; clientY: number }): Point => {
@@ -218,10 +223,10 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     });
   const replace = (label: string, shape: Shape) =>
     update(label, (list) => list.map((s) => (s.id === shape.id ? shape : s)));
-  /** Is this point (oriented px) on the visible photo, i.e. inside the crop? */
+  /** Is this point (oriented px) on the result — the photo or space added around it? */
   const onPhoto = (p: Point): boolean => {
     if (!image) return false;
-    const crop = getCropRect(image, edit.geometry);
+    const crop = getCanvasRect(image, edit);
     return (
       p.x >= crop.x && p.x <= crop.x + crop.width && p.y >= crop.y && p.y <= crop.y + crop.height
     );
@@ -234,19 +239,48 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     setUi((u) => ({ ...u, mode: 'select', ...selectPatch([id]) }));
   };
   /** Shapes that can join a multi-selection. */
-  const selectable = (s: Shape) => !s.hidden && !s.locked;
+  /** Shapes that can join a multi-selection: locked ones too (so a locked group can be unlocked). */
+  const selectable = (s: Shape) => !s.hidden;
   const actions = shapeActions(store, labels);
 
   /* ── Shape menu ─────────────────────────────────────────────────── */
 
   const openMenu = (shapeId: string, at: Point) => {
     keepMenuFocus.current = false;
+    // On a member of a multi-selection: the group menu, and the group stays selected.
+    const { isGroup: multi, group: grp } = latest.current;
+    if (multi && grp.some((s) => s.id === shapeId)) {
+      setMenu({ shapeId, at, group: true });
+      return;
+    }
     select(shapeId);
     setMenu({ shapeId, at });
   };
-  /** Menu for the selected shape, opened from the keyboard: anchored below its centre. */
+  /**
+   * Is a right-click / long-press at `screen` for the group? Anywhere inside the group's box counts
+   * (also the empty space between members), unless another shape is on top there.
+   */
+  const groupMenuTarget = (screen: Point, hit: Shape | null): boolean => {
+    const { isGroup: multi, groupBox: gb, group: grp } = latest.current;
+    if (!multi || !gb || !fromStage) return false;
+    if (hit && !grp.some((s) => s.id === hit.id)) return false;
+    return insideRect(gb, toO(screen), HIT_TOLERANCE / k);
+  };
+  const openGroupMenu = (at: Point) => {
+    const first = latest.current.group[0];
+    if (!first) return;
+    keepMenuFocus.current = false;
+    setMenu({ shapeId: first.id, at, group: true });
+  };
+  /** Menu for the selection, opened from the keyboard: anchored below its centre. */
   const openMenuForSelection = () => {
-    const { selected: sel, toStage: m } = latest.current;
+    const { selected: sel, toStage: m, isGroup: multi, groupBox: gb, group: grp } = latest.current;
+    if (multi && gb && m && grp[0]) {
+      const bottom = applyToPoint(m, { x: gb.x + gb.width / 2, y: gb.y + gb.height });
+      keepMenuFocus.current = false;
+      setMenu({ shapeId: grp[0].id, at: bottom, group: true });
+      return true;
+    }
     if (!sel || !m) return false;
     const corners = getShapeCorners(sel, textHeight(sel)).map((c) => applyToPoint(m, c));
     const x = corners.reduce((sum, c) => sum + c.x, 0) / corners.length;
@@ -349,7 +383,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     };
 
     // 1a. Handles of a multi-selection: corners resize it (proportionally), the round one turns it.
-    if (handle && isGroup && groupBox) {
+    if (handle && isGroup && groupBox && movableGroup.length > 0) {
       capture();
       if (handle === 'rotate') {
         const centerO = boxCenter(groupBox);
@@ -361,7 +395,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           centerO,
           startAngle: Math.atan2(screen.y - c.y, screen.x - c.x),
           box: groupBox,
-          shapes: group,
+          shapes: movableGroup,
         };
         store.getState().beginChange(labels.rotate);
       } else {
@@ -375,7 +409,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           },
           box: groupBox,
           handle: h,
-          shapes: group,
+          shapes: movableGroup,
         };
         store.getState().beginChange(labels.resizeSelection);
       }
@@ -454,7 +488,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         pointerId: event.pointerId,
         start: p,
         startScreen: screen,
-        shapes: group,
+        shapes: movableGroup,
         dragged: false,
         clickId: hit?.id ?? null,
       };
@@ -621,9 +655,9 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           replace(labels.annotateModes.select, moved);
           break;
         }
-        const crop = getCropRect(image, edit.geometry);
         const targets = [
-          crop,
+          getCanvasRect(image, edit),
+          getCropRect(image, edit.geometry),
           ...shapes
             .filter((s) => s.id !== it.shape.id && !s.hidden)
             .map((s) => getShapeBounds(s, textHeight(s))),
@@ -689,6 +723,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         if (!event.altKey && start) {
           const members = new Set(it.shapes.map((s) => s.id));
           const targets = [
+            getCanvasRect(image, edit),
             getCropRect(image, edit.geometry),
             ...shapes
               .filter((s) => !members.has(s.id) && !s.hidden)
@@ -864,14 +899,16 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     const hit = shapeAt(shapes, toO(screen), HIT_TOLERANCE / k, measureTextHeight, {
       includeLocked: true,
     });
-    if (!hit) return;
+    const onGroup = groupMenuTarget(screen, hit);
+    if (!hit && !onGroup) return;
     const it = interaction.current;
     interaction.current = null;
     if (it && rootRef.current?.hasPointerCapture(it.pointerId))
       rootRef.current.releasePointerCapture(it.pointerId);
     if (store.getState().pendingChange) store.getState().cancelChange();
     setGuides([]);
-    openMenu(hit.id, screen);
+    if (onGroup) openGroupMenu(screen);
+    else if (hit) openMenu(hit.id, screen);
   }
 
   /** Right-click (and Android long-press) on a shape — locked ones too — opens its menu. */
@@ -891,7 +928,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     const hit = shapeAt(shapes, toO(screen), HIT_TOLERANCE / k, measureTextHeight, {
       includeLocked: true,
     });
-    if (hit) openMenu(hit.id, screen);
+    if (groupMenuTarget(screen, hit)) openGroupMenu(screen);
+    else if (hit) openMenu(hit.id, screen);
   };
 
   const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -980,7 +1018,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           labels.annotateModes.select,
           movable.map((s) => moveShape(s, dx, dy)),
         );
-      } else if (multi && (e.key === 'Enter' || e.key === 'ContextMenu' || e.key === 'F10')) {
+      } else if (multi && e.key === 'Enter') {
         return;
       } else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
         if (!openMenuForSelection()) return;
@@ -1106,7 +1144,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           />
         )}
         {guides.map((g, i) => {
-          const crop = getCropRect(image, edit.geometry);
+          // Guides run across the whole result (photo + added space).
+          const crop = getCanvasRect(image, edit);
           const a = g.x !== undefined ? toS({ x: g.x, y: crop.y }) : toS({ x: crop.x, y: g.y! });
           const b =
             g.x !== undefined
@@ -1120,6 +1159,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         {isGroup && groupBox && (
           <GroupSelection
             shapes={group}
+            locked={movableGroup.length === 0}
             box={groupFrame?.box ?? groupBox}
             angle={groupFrame?.angle ?? 0}
             toS={toS}
@@ -1183,7 +1223,26 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           onClose={() => setUi((u) => ({ ...u, layersOpen: false }))}
         />
       )}
-      {menuShape && menu && (
+      {menu?.group && isGroup && (
+        <GroupMenu
+          open
+          ids={group.map((s) => s.id)}
+          onOpenChange={(open) => {
+            if (open) return;
+            rootRef.current?.focus({ preventScroll: true });
+            setMenu(null);
+          }}
+          onSelect={selectMany}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          trigger={
+            <span
+              className="iu-annotate__menu-anchor"
+              style={{ left: menu.at.x, top: menu.at.y }}
+            />
+          }
+        />
+      )}
+      {menuShape && menu && !menu.group && (
         <ShapeMenu
           open
           onOpenChange={(open) => {
@@ -1313,11 +1372,14 @@ function Selection({
  */
 function GroupSelection({
   shapes,
+  locked,
   box,
   angle,
   toS,
 }: {
   shapes: Shape[];
+  /** Every member is locked: a dashed outline, no handles. */
+  locked: boolean;
   box: Box;
   angle: number;
   toS: (p: Point) => Point;
@@ -1332,6 +1394,25 @@ function GroupSelection({
     sw: corner(box.x, box.y + box.height),
   };
   const outline = [at.nw, at.ne, at.se, at.sw].map((p) => `${p.x},${p.y}`).join(' ');
+  const members = shapes.map((s) => (
+    <polygon
+      key={s.id}
+      className="iu-annotate__member"
+      data-locked={s.locked ? '' : undefined}
+      points={getShapeCorners(s, textHeight(s))
+        .map(toS)
+        .map((p) => `${p.x},${p.y}`)
+        .join(' ')}
+    />
+  ));
+  if (locked) {
+    return (
+      <g>
+        {members}
+        <polygon className="iu-annotate__selection" data-group="" data-locked="" points={outline} />
+      </g>
+    );
+  }
   const top = { x: (at.nw.x + at.ne.x) / 2, y: (at.nw.y + at.ne.y) / 2 };
   const center = toS(c);
   const len = Math.hypot(top.x - center.x, top.y - center.y) || 1;
@@ -1341,16 +1422,7 @@ function GroupSelection({
   };
   return (
     <g>
-      {shapes.map((s) => (
-        <polygon
-          key={s.id}
-          className="iu-annotate__member"
-          points={getShapeCorners(s, textHeight(s))
-            .map(toS)
-            .map((p) => `${p.x},${p.y}`)
-            .join(' ')}
-        />
-      ))}
+      {members}
       <polygon className="iu-annotate__selection" data-group="" points={outline} />
       <line className="iu-annotate__stem" x1={top.x} y1={top.y} x2={rot.x} y2={rot.y} />
       <circle

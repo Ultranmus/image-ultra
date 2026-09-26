@@ -13,6 +13,7 @@ import {
   createRenderer,
   drawAnnotations,
   ensureAnnotationFonts,
+  getCropRect,
   getImageBounds,
   getOrientedToOutput,
   drawBackground,
@@ -25,6 +26,7 @@ import {
   getOrientedSize,
   redactReference,
   getOutputSize,
+  getPhotoRect,
   ImageLoadError,
   loadAnnotationAssets,
   scale,
@@ -274,19 +276,13 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
 
       const transform = orientedToCanvas(state, dpr);
       ctx.save();
-      if (!cropView && edit.geometry.cropShape === 'ellipse') {
-        const out = getOutputSize(image, edit);
+      // Round crop: shapes are cut to the circle — unless space was added around the photo,
+      // where shapes may sit on that space.
+      if (!cropView && edit.geometry.cropShape === 'ellipse' && !edit.canvas) {
+        const photo = getPhotoRect(image, edit);
         ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
         ctx.beginPath();
-        ctx.ellipse(
-          out.width / 2,
-          out.height / 2,
-          out.width / 2,
-          out.height / 2,
-          0,
-          0,
-          Math.PI * 2,
-        );
+        ellipseIn(ctx, photo);
         ctx.clip();
       }
       const editingId = getAnnotateState(store).editingId;
@@ -609,10 +605,9 @@ function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, s
   const dpr = window.devicePixelRatio || 1;
   ctx.save();
   if (!cropView && edit.geometry.cropShape === 'ellipse') {
-    const out = getOutputSize(image, edit);
     ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
     ctx.beginPath();
-    ctx.ellipse(out.width / 2, out.height / 2, out.width / 2, out.height / 2, 0, 0, Math.PI * 2);
+    ellipseIn(ctx, getPhotoRect(image, edit));
     ctx.clip();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
@@ -646,15 +641,21 @@ function renderPreview(renderer: Renderer, container: HTMLElement, state: Editor
   if (cropView) {
     // Render the image's whole bounding box, positioned so the crop sits where the overlay draws it.
     const bounds = getImageBounds(image, edit.geometry);
+    const crop = getCropRect(image, edit.geometry);
     const k = 1 / (dpr * cropView.scale);
     renderer.render({
       ...common,
       state: {
         ...edit,
         geometry: { ...edit.geometry, crop: bounds, cropShape: 'rect' },
+        canvas: null,
         resize: { width: bounds.width, height: bounds.height },
       },
       outputSize: { width: bounds.width, height: bounds.height },
+      // Vignette follows the crop (as in the result), not the whole image shown around it.
+      photoRect: { ...crop, x: crop.x - bounds.x, y: crop.y - bounds.y },
+      // The crop view shows the whole photo, including what's outside the crop.
+      clipToPhoto: false,
       canvasToOutput: [
         k,
         0,
@@ -673,13 +674,22 @@ function renderPreview(renderer: Renderer, container: HTMLElement, state: Editor
   // With a Fill, transparent parts show the fill layer underneath instead of the checkerboard.
   renderer.render({
     ...common,
-    ...(edit.background && { checker: null }),
+    // Added canvas space is part of the result: show it (checkerboard) even where there's no photo.
+    checker: edit.background ? null : { ...common.checker, coverOutput: true },
     state: edit,
     outputSize: getOutputSize(image, edit),
     canvasToOutput: [k, 0, 0, k, -vp.x / vp.scale, -vp.y / vp.scale],
     // Show crisp pixels when zoomed in far enough to inspect them.
     smooth: vp.scale < 3,
   });
+}
+
+/** Adds the ellipse inscribed in `r` to the current path. */
+function ellipseIn(
+  ctx: CanvasRenderingContext2D,
+  r: { x: number; y: number; width: number; height: number },
+) {
+  ctx.ellipse(r.x + r.width / 2, r.y + r.height / 2, r.width / 2, r.height / 2, 0, 0, Math.PI * 2);
 }
 
 function localPoint(element: HTMLElement, event: { clientX: number; clientY: number }): Point {

@@ -48,6 +48,20 @@ export interface GeometryState {
 
 export type CropShape = 'rect' | 'ellipse';
 
+/**
+ * Extra space around the photo (DECISIONS #83), e.g. to make a landscape photo square for a post
+ * without cutting anything off. The added area is transparent, so the Fill shows there, and
+ * annotations can sit on it. Measured around the crop; the output covers crop + space.
+ */
+export interface CanvasState {
+  /** Width ÷ height of the whole canvas, or `null` to only add `padding`. Only ever adds space. */
+  aspect: number | null;
+  /** Space on every side, as a share of the photo's short side (0…1). */
+  padding: number;
+  /** Where the photo sits in the extra space: 0 = left / top, 0.5 = centre, 1 = right / bottom. */
+  anchor: { x: number; y: number };
+}
+
 /** Final pixel size. Aspect may differ from the crop, which stretches the result. */
 export interface ResizeState {
   width: number;
@@ -205,7 +219,9 @@ export interface EditState {
   background: BackgroundState | null;
   /** Text or logo on top of everything (see `watermark.ts`). */
   watermark: WatermarkState | null;
-  /** Output size in pixels, or `null` to keep the crop's size. */
+  /** Space added around the photo, or `null` for none (see `CanvasState`). */
+  canvas: CanvasState | null;
+  /** Output size in pixels, or `null` to keep the canvas's (crop + added space) size. */
   resize: ResizeState | null;
   assets: Record<string, EditAsset>;
 }
@@ -261,6 +277,7 @@ export function createEditState(): EditState {
     frame: null,
     background: null,
     watermark: null,
+    canvas: null,
     resize: null,
     assets: {},
   };
@@ -271,7 +288,12 @@ export function createEditState(): EditState {
  * removed, so it lines up exactly with the edited result.
  */
 export function getBeforeState(state: EditState): EditState {
-  return { ...createEditState(), geometry: state.geometry, resize: state.resize };
+  return {
+    ...createEditState(),
+    geometry: state.geometry,
+    canvas: state.canvas,
+    resize: state.resize,
+  };
 }
 
 /** Largest output side we accept (also the practical GPU limit on most devices). */
@@ -363,6 +385,8 @@ export function parseEditState(input: unknown): EditState {
   state.background = parseBackground(value['background']);
   state.watermark = parseWatermark(value['watermark']);
 
+  state.canvas = parseCanvas(value['canvas']);
+
   if (isRecord(value['resize'])) {
     const width = finite(value['resize']['width']);
     const height = finite(value['resize']['height']);
@@ -383,6 +407,22 @@ export function parseEditState(input: unknown): EditState {
 }
 
 const CURVE_CHANNELS: readonly CurveChannel[] = ['rgb', 'red', 'green', 'blue'];
+
+/** Validates a saved `canvas`; nothing to add → `null`. */
+export function parseCanvas(input: unknown): CanvasState | null {
+  if (!isRecord(input)) return null;
+  const aspect = finite(input['aspect']);
+  const anchor = isRecord(input['anchor']) ? input['anchor'] : {};
+  const canvas: CanvasState = {
+    aspect: aspect !== null && aspect >= 0.05 && aspect <= 20 ? aspect : null,
+    padding: clampNumber(input['padding'], 0, 1),
+    anchor: {
+      x: finite(anchor['x']) === null ? 0.5 : clampNumber(anchor['x'], 0, 1),
+      y: finite(anchor['y']) === null ? 0.5 : clampNumber(anchor['y'], 0, 1),
+    },
+  };
+  return canvas.aspect === null && canvas.padding === 0 ? null : canvas;
+}
 
 /** Sorted, clamped curve with guaranteed end points; `null` if unusable. */
 export function parseCurve(input: unknown): CurvePoint[] | null {

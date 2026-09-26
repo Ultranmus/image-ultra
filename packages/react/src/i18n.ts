@@ -122,6 +122,16 @@ export interface Labels {
   arrowEnd: string;
   duplicate: string;
   copy: string;
+  zoomCrop: string;
+  resizeModeSize: string;
+  resizeModeCanvas: string;
+  /** Aspect chips for the canvas; `canvasOriginal` = no shape change, padding only. */
+  canvasShape: string;
+  canvasOriginal: string;
+  canvasPadding: string;
+  canvasAnchor: string;
+  canvasReset: string;
+  canvasHint: string;
   selectAll: string;
   /** Shift-click hint in the shortcuts panel. */
   addToSelection: string;
@@ -134,6 +144,10 @@ export interface Labels {
   distributeX: string;
   distributeY: string;
   renameLayer: string;
+  groupMenu: string;
+  lockAll: string;
+  unlockAll: string;
+  hideAll: string;
   reorderLayer: string;
   showAllLayers: string;
   cut: string;
@@ -367,6 +381,15 @@ export const defaultLabels: Labels = {
   arrowEnd: 'Arrow at end',
   duplicate: 'Duplicate',
   copy: 'Copy',
+  zoomCrop: 'Zoom',
+  resizeModeSize: 'Size',
+  resizeModeCanvas: 'Canvas',
+  canvasShape: 'Canvas shape',
+  canvasOriginal: 'Photo shape',
+  canvasPadding: 'Padding',
+  canvasAnchor: 'Photo position',
+  canvasReset: 'Remove added space',
+  canvasHint: 'Adds space around the photo — the Fill shows there.',
   selectAll: 'Select all',
   addToSelection: 'Add to or remove from the selection',
   panPhoto: 'Pan the photo',
@@ -384,6 +407,10 @@ export const defaultLabels: Labels = {
   distributeX: 'Distribute horizontally',
   distributeY: 'Distribute vertically',
   renameLayer: 'Rename',
+  groupMenu: 'Selection',
+  lockAll: 'Lock all',
+  unlockAll: 'Unlock all',
+  hideAll: 'Hide all',
   reorderLayer: 'Reorder layers',
   showAllLayers: 'Show all',
   cut: 'Cut',
@@ -489,7 +516,8 @@ export const defaultLabels: Labels = {
   fillKinds: { none: 'None', color: 'Colour', image: 'Image', blur: 'Blurred photo' },
   backgroundColor: 'Fill colour',
   fillChooseImage: 'Choose image…',
-  fillHint: 'Fill shows where the photo is transparent — PNGs and round crops.',
+  fillHint:
+    'Fill shows where the photo is transparent — PNGs, round crops and space added in Resize › Canvas.',
 
   color: 'Colour',
   colorNone: 'None',

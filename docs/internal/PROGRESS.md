@@ -424,3 +424,33 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Fixes: hollow handles on arrow/dot line ends; canvas text wraps like the CSS editor (DECISIONS #82).
 - Tests: 130 unit (+ `arrange.test.ts`, text wrapping, group clipboard) · 91 e2e
   (+ `selection-layers.spec.ts`).
+
+## 2026-09-26 · Phase 7.2 — Canvas & crop
+
+- 7.1 committed (`feat: phase 7.1`).
+- Extend canvas (DECISIONS #83): Resize › [Size | Canvas]; Canvas = padding ruler, photo position
+  (3×3), shape chips (1:1, 4:5 … 16:9). `EditState.canvas`, core `getCanvasRect` / `getCanvasSize`
+  / `getPhotoRect`; output mapping, annotations, export round clip and the stage use the canvas;
+  checkerboard covers added space; Fill shows there; shapes can sit on it.
+- Vignette / round crop follow the photo (`RenderParams.photoRect`, shader `u_photoRect`, CPU
+  `FinishParams.photo`) — fixes the crop-view vignette preview.
+- Crop view zoom (DECISIONS #85): wheel / trackpad pinch / two-finger pinch + pan; core `zoomCrop`.
+- Paste images from other apps (DECISIONS #84): marker on copy, paste event decides; shared
+  `insertImageFile` (Add image uses it too).
+- Group menu (DECISIONS #86): right-click / long-press / Shift+F10 on a group; Align submenu.
+- Tests: 137 unit (+ `zoomCrop`, canvas geometry, vignette on the photo) · 97 e2e
+  (+ `canvas-crop.spec.ts`).
+- Test stability: ⌘V pastes a moment later now (paste event / 50 ms fallback), so e2e waits with
+  `expect.poll`; the sticker-tiles test waits for images to finish loading (it raced under load).
+  Full e2e green 3 runs in a row.
+
+## 2026-09-26 · Phase 7.2 — owner review round 1
+
+- Cropped photo + canvas space: the space showed the cropped-away photo (looked off-centre) —
+  renderers now clip to the crop (`clipToPhoto`, GPU + Canvas2D); crop view unaffected.
+- Locked shapes can join a group; only unlocked members move; fully locked group = dashed box;
+  group menu "Unlock all"; Lock all keeps the selection; duplicates are unlocked.
+- Align popover: compact 3-column grid, no empty space.
+- Tests: 137 unit · 98 e2e (+ cropped canvas, group lock / unlock).
+- Round 2: Photo position popover fits its grid; right-click / long-press anywhere inside the group
+  box (also between members) opens the group menu. Tests: 98 e2e.

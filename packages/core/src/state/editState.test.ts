@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEditState, EditStateError, getBeforeState, parseEditState } from './editState';
+import { getCanvasRect, getOutputSize, getPhotoRect } from './geometry';
 
 describe('parseEditState', () => {
   it('round-trips through JSON', () => {
@@ -90,5 +91,35 @@ describe('getBeforeState', () => {
     expect(before.resize).toBe(edited.resize);
     expect(before.finetune.contrast).toBe(0);
     expect(before.annotations).toEqual([]);
+  });
+});
+
+describe('canvas (space around the photo)', () => {
+  const image = { width: 400, height: 200 };
+
+  it('square canvas: output grows, photo centred, sizes follow', () => {
+    const state = createEditState();
+    state.canvas = { aspect: 1, padding: 0, anchor: { x: 0.5, y: 0.5 } };
+    expect(getCanvasRect(image, state)).toEqual({ x: 0, y: -100, width: 400, height: 400 });
+    expect(getOutputSize(image, state)).toEqual({ width: 400, height: 400 });
+    expect(getPhotoRect(image, state)).toEqual({ x: 0, y: 100, width: 400, height: 200 });
+  });
+
+  it('padding on every side, then the anchor places the photo in the extra space', () => {
+    const state = createEditState();
+    state.canvas = { aspect: 1, padding: 0.1, anchor: { x: 0.5, y: 0 } };
+    // 20 px padding (10% of 200) → 440 × 240, then 440 × 440 with the photo at the top.
+    expect(getCanvasRect(image, state)).toEqual({ x: -20, y: -20, width: 440, height: 440 });
+  });
+
+  it('parses and drops a canvas that adds nothing', () => {
+    expect(parseEditState({ canvas: { aspect: 0, padding: 0 } }).canvas).toBeNull();
+    expect(
+      parseEditState({ canvas: { aspect: 1.5, padding: 5, anchor: { x: 2 } } }).canvas,
+    ).toEqual({
+      aspect: 1.5,
+      padding: 1,
+      anchor: { x: 1, y: 0.5 },
+    });
   });
 });

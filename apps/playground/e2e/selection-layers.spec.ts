@@ -136,7 +136,7 @@ test.describe('Multi-select', () => {
     await page.keyboard.press('ControlOrMeta+c');
     await page.mouse.move(2, 2);
     await page.keyboard.press('ControlOrMeta+v');
-    expect(await shapes(page)).toHaveLength(6);
+    await expect.poll(async () => (await shapes(page)).length).toBe(6);
     await expect(page.locator('.iu-annotate__member')).toHaveCount(3);
   });
 

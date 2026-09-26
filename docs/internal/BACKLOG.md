@@ -169,9 +169,26 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
   - Fix: remember the last pointer position over the stage; when it's over the photo, centre the
     paste there, otherwise fall back to "next to the original / same relative spot".
 
+### Found during 7.2
+
+- [x] **Cropped photo + added canvas space showed the cropped-away photo** in the space (owner) —
+      fixed: rendering clips to the crop (DECISIONS #87)
+- [x] **A locked group could never be selected again to unlock it** (owner) — fixed: locked shapes
+      can join a selection; group menu has "Unlock all"
+- [x] **Align popover had empty space on the right** (owner) — fixed: 3-column grid, fits content
+- [x] **Photo position popover (Resize › Canvas) had empty space on the sides** (owner) — fits now
+- [x] **Right-click on empty space inside a group box didn't open the group menu** (owner) — fixed
+- [ ] **One element model: redaction areas and the watermark selectable, groupable and reorderable
+      with shapes** (owner, 2026-09-26) — plan sent, waiting for approval (7.2b)
+
+- [ ] **Paste text from other apps as a text box** — now text on the system clipboard is ignored
+      by ⌘V in the editor (only images and our own copies paste) — _nice to have_
+- [ ] **Safari: check copy / paste events outside text fields** — the 50 ms fallback covers our
+      own copies; pasting images from other apps needs the paste event — _Phase 7.4 (real devices)_
+
 ### Found during 7.1
 
-- [ ] **Group menu** (owner, 2026-09-26) — right-click on a group member selects just it; group
+- [x] **Group menu** (owner, 2026-09-26) _(done in 7.2)_ — right-click on a group member selects just it; group
       actions live only in the inspector and on the keyboard — _Phase 7 (with 7.2)_
   - Fix: right-click / long-press / Shift+F10 on a member of the selection keeps the group and opens
     a group menu: Copy, Paste, Duplicate, Delete · Align ▸ · Bring to front / Send to back (keeping
@@ -185,7 +202,7 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Copy / cut from the Layers panel** _(done in 7.1)_ (its keys stay inside the panel; the "⋯" menu has Copy)
       — _Phase 7_
 
-- [ ] **Extend the canvas** (e.g. "make it square" with the Fill showing on the sides, for social
+- [x] **Extend the canvas** _(done in 7.2: Resize › Canvas)_ (e.g. "make it square" with the Fill showing on the sides, for social
       posts) — belongs with Resize — _Phase 7_ (owner, 2026-09-25)
 
 ### Found during Phase 5.1
@@ -201,7 +218,7 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 - [x] **Multi-select** (Shift-click, marquee) and group move/align — _done in 7.1 (2026-09-26)_
 - [x] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _done in 6.5 (2026-09-26)_
-- [ ] **Paste images from the system clipboard** (e.g. a screenshot → new image shape) — _Phase 7_
+- [x] **Paste images from the system clipboard** _(done in 7.2)_ (e.g. a screenshot → new image shape) — _Phase 7_
 - [x] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _done in 7.1_
 - [ ] **Phone layout: Annotate rows scroll sideways** — _Phase 7 (mobile pass)_
 - [x] **Line endpoint handles cover the arrow head** while selected — _done in 7.1 (hollow handle)_
@@ -244,10 +261,10 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [ ] **Phone layout: Adjust header row scrolls sideways** ("Horizontal" label clipped) — _Phase 7_
   - Fix: on narrow containers put the SegmentedControl on its own row or shorten labels
     (icons + tooltips), keeping the ControlBar height fixed.
-- [ ] **Vignette preview while cropping uses the whole image**, not the crop (export is correct) —
+- [x] **Vignette preview while cropping uses the whole image** _(fixed in 7.2)_, not the crop (export is correct) —
       _Phase 7_
   - Fix: pass the crop rect to the preview render as the vignette/ellipse reference frame.
-- [ ] **No zoom in crop view** (wheel/pinch disabled while cropping) — _Phase 7_
+- [x] **No zoom in crop view** _(done in 7.2: wheel + pinch)_ (wheel/pinch disabled while cropping) — _Phase 7_
   - Fix: Pintura-style zoom that shrinks the crop around the pointer.
 - [ ] **Canvas2D fallback approximates perspective with a 20×20 mesh** — _nice to have_
   - Fix: adaptive grid density based on the amount of tilt.

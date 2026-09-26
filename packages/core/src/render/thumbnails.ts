@@ -74,6 +74,8 @@ export function scaleEditState(state: EditState, k: number): EditState {
   return {
     ...state,
     resize: null,
+    // Thumbnails preview the photo itself, not space added around it.
+    canvas: null,
     geometry: {
       ...state.geometry,
       crop: crop

@@ -125,14 +125,45 @@ export function shapeActions(store: EditorStore, labels: Labels) {
     /** Copies the shapes on top of everything, slightly offset, keeping their order. Returns the new ids. */
     duplicateMany(ids: readonly string[], offset: number): string[] {
       const originals = store.getState().edit.annotations.filter((s) => ids.includes(s.id));
-      const copies = originals.map((s) => ({
-        ...moveShape(s, offset, offset),
-        id: createShapeId(),
-      }));
+      // Copies are always editable, like a paste.
+      const copies = originals.map((s) => {
+        const copy: Shape = { ...moveShape(s, offset, offset), id: createShapeId() };
+        delete copy.locked;
+        return copy;
+      });
       store.getState().update(labels.duplicate, (draft) => {
         draft.annotations.push(...copies);
       });
       return copies.map((c) => c.id);
+    },
+
+    /** Brings several shapes to the front (or sends them to the back), keeping their order. */
+    moveMany(ids: readonly string[], to: 'front' | 'back') {
+      store.getState().update(to === 'front' ? labels.bringToFront : labels.sendToBack, (draft) => {
+        const moving = draft.annotations.filter((s) => ids.includes(s.id));
+        const rest = draft.annotations.filter((s) => !ids.includes(s.id));
+        draft.annotations = to === 'front' ? [...rest, ...moving] : [...moving, ...rest];
+      });
+    },
+
+    /** Locks / unlocks or hides / shows several shapes (one step). */
+    setFlagMany(ids: readonly string[], flag: 'locked' | 'hidden', on = true) {
+      const label =
+        flag === 'locked'
+          ? on
+            ? labels.lockAll
+            : labels.unlockAll
+          : on
+            ? labels.hideAll
+            : labels.showAllLayers;
+      store.getState().update(label, (draft) => {
+        for (const s of draft.annotations) {
+          if (!ids.includes(s.id)) continue;
+          if (on) s[flag] = true;
+          else if (flag === 'locked') delete s.locked;
+          else delete s.hidden;
+        }
+      });
     },
 
     /** Replaces shapes by id (a group move / resize / rotate step). */

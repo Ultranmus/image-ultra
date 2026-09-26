@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { getCropRect, type AlignEdge, type Shape } from '@image-ultra/core';
+import { getCanvasRect, type AlignEdge, type Shape } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { Popover } from '../../controls/Popover';
@@ -42,25 +42,24 @@ export function AlignMenu({ ids }: { ids: readonly string[] }) {
   const edit = useEditorState((s) => s.edit);
   if (!image) return null;
   const actions = shapeActions(store, labels);
-  const photo = getCropRect(image, edit.geometry);
+  // A single shape aligns to the whole result (photo + any added space).
+  const photo = getCanvasRect(image, edit);
   return (
     <Popover
       label={labels.arrange}
       trigger={<IconButton label={labels.arrange} icon={<IconAlignEdgeLeft />} />}
     >
       <div className="iu-alignmenu">
-        <div className="iu-toolgroup">
-          {EDGES.map(([edge, Icon]) => (
-            <IconButton
-              key={edge}
-              label={labels.alignEdges[edge]}
-              icon={<Icon />}
-              onClick={() => actions.align(ids, edge, photo)}
-            />
-          ))}
-        </div>
+        {EDGES.map(([edge, Icon]) => (
+          <IconButton
+            key={edge}
+            label={labels.alignEdges[edge]}
+            icon={<Icon />}
+            onClick={() => actions.align(ids, edge, photo)}
+          />
+        ))}
         {ids.length > 1 && (
-          <div className="iu-toolgroup">
+          <>
             <IconButton
               label={labels.distributeX}
               icon={<IconDistributeX />}
@@ -73,7 +72,7 @@ export function AlignMenu({ ids }: { ids: readonly string[] }) {
               disabled={ids.length < 3}
               onClick={() => actions.distribute(ids, 'y')}
             />
-          </div>
+          </>
         )}
       </div>
     </Popover>

@@ -7,7 +7,9 @@ import {
   moveCrop,
   resizeCrop,
   syncResizeToCrop,
+  zoomCrop,
   type CropHandle,
+  type Point,
   type CropView,
   type EditorStore,
   type Rect,
@@ -18,10 +20,23 @@ import { useEditorState, useEditorStore, useLabels } from '../../context';
 const STAGE_PADDING = 40;
 /** Smallest crop box on screen, in CSS px. */
 const MIN_BOX_PX = 48;
+/** Zooming in stops when the crop's short side is this many image px. */
+const MIN_ZOOM_CROP = 32;
+/** A wheel gesture is one undo step: it ends after this pause (ms). */
+const WHEEL_IDLE_MS = 400;
 
 const HANDLES: CropHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 type DragKind = 'move' | CropHandle;
+
+/** Two fingers on the crop: zoom around their midpoint and pan with it. */
+interface PinchState {
+  ids: [number, number];
+  startDistance: number;
+  startMid: Point;
+  crop: Rect;
+  view: CropView;
+}
 
 interface DragState {
   kind: DragKind;
@@ -49,7 +64,58 @@ export function CropOverlay() {
   const [drag, setDrag] = useState<DragKind | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const keyActive = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const pointers = useRef(new Map<number, Point>());
+  const pinchRef = useRef<PinchState | null>(null);
   const { refit, freeze } = useCropView(store);
+
+  // Wheel / trackpad pinch zooms the photo under the crop, around the pointer (Pintura-style).
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let timer = 0;
+    let active = false;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const s = store.getState();
+      const v = s.cropView;
+      if (!s.image || !v || dragRef.current) return;
+      const rect = root.getBoundingClientRect();
+      const g = s.edit.geometry;
+      const current = getCropRect(s.image, g);
+      const speed = event.deltaMode === 1 ? 0.05 : event.ctrlKey ? 0.01 : 0.002;
+      const factor = Math.exp(-event.deltaY * speed);
+      if (!active) {
+        active = true;
+        s.beginChange(labels.zoomCrop);
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        active = false;
+        store.getState().endChange();
+      }, WHEEL_IDLE_MS);
+      const anchor = clampToRect(
+        {
+          x: (event.clientX - rect.left - v.x) / v.scale,
+          y: (event.clientY - rect.top - v.y) / v.scale,
+        },
+        current,
+      );
+      const next = zoomCrop(s.image, g, current, anchor, factor, MIN_ZOOM_CROP);
+      s.update('Crop', (draft) => {
+        draft.geometry.crop = next;
+        draft.resize = syncResizeToCrop(draft.resize, next);
+      });
+    };
+    root.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      root.removeEventListener('wheel', onWheel);
+      window.clearTimeout(timer);
+      if (active) store.getState().endChange();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads live state from the store
+  }, [store, image !== null && view !== null]);
 
   if (!image || !view) return null;
 
@@ -76,6 +142,25 @@ export function CropOverlay() {
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    // A second finger turns the move into a pinch (the open "Move crop" step becomes the zoom).
+    const first = dragRef.current;
+    if (first && first.kind === 'move' && pointers.current.size === 2 && !pinchRef.current) {
+      const a = pointers.current.get(first.pointerId);
+      const b = { x: event.clientX, y: event.clientY };
+      if (a) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        const state = store.getState();
+        pinchRef.current = {
+          ids: [first.pointerId, event.pointerId],
+          startDistance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+          startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+          crop: state.image ? getCropRect(state.image, state.edit.geometry) : crop,
+          view: state.cropView ?? view,
+        };
+      }
+      return;
+    }
     if (event.button !== 0 || dragRef.current) return;
     const handle = (event.target as HTMLElement).closest<HTMLElement>('[data-handle]')?.dataset[
       'handle'
@@ -96,6 +181,41 @@ export function CropOverlay() {
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (pointers.current.has(event.pointerId))
+      pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const pinch = pinchRef.current;
+    if (pinch) {
+      const a = pointers.current.get(pinch.ids[0]);
+      const b = pointers.current.get(pinch.ids[1]);
+      const state = store.getState();
+      if (!a || !b || !state.image) return;
+      const factor = Math.hypot(a.x - b.x, a.y - b.y) / pinch.startDistance;
+      const rect = rootRef.current?.getBoundingClientRect();
+      const left = rect?.left ?? 0;
+      const top = rect?.top ?? 0;
+      const anchor = clampToRect(
+        {
+          x: (pinch.startMid.x - left - pinch.view.x) / pinch.view.scale,
+          y: (pinch.startMid.y - top - pinch.view.y) / pinch.view.scale,
+        },
+        pinch.crop,
+      );
+      const g = state.edit.geometry;
+      const zoomed = zoomCrop(state.image, g, pinch.crop, anchor, factor, MIN_ZOOM_CROP);
+      // Moving both fingers pans: the photo follows them, so the crop moves the other way.
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const k = pinch.view.scale * (pinch.crop.width / zoomed.width);
+      applyCrop(
+        moveCrop(
+          state.image,
+          g,
+          zoomed,
+          -(mid.x - pinch.startMid.x) / k,
+          -(mid.y - pinch.startMid.y) / k,
+        ),
+      );
+      return;
+    }
     const d = dragRef.current;
     const state = store.getState();
     if (!d || d.pointerId !== event.pointerId || !state.image) return;
@@ -120,6 +240,17 @@ export function CropOverlay() {
   };
 
   const onPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+    pointers.current.delete(event.pointerId);
+    if (pinchRef.current?.ids.includes(event.pointerId)) {
+      // Lifting either finger ends the pinch and the drag.
+      pinchRef.current = null;
+      dragRef.current = null;
+      setDrag(null);
+      store.getState().endChange();
+      freeze(false);
+      refit();
+      return;
+    }
     const d = dragRef.current;
     if (!d || d.pointerId !== event.pointerId) return;
     dragRef.current = null;
@@ -168,6 +299,7 @@ export function CropOverlay() {
 
   return (
     <div
+      ref={rootRef}
       className="iu-crop"
       data-dragging={drag ?? undefined}
       onPointerDown={onPointerDown}
@@ -310,6 +442,13 @@ function useCropView(store: EditorStore) {
   return {
     refit: () => api.current.refit(),
     freeze: (frozen: boolean) => api.current.freeze(frozen),
+  };
+}
+
+function clampToRect(p: Point, r: Rect): Point {
+  return {
+    x: Math.min(r.x + r.width, Math.max(r.x, p.x)),
+    y: Math.min(r.y + r.height, Math.max(r.y, p.y)),
   };
 }
 

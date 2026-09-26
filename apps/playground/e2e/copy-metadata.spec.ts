@@ -25,6 +25,8 @@ test.describe('Copy / paste', () => {
     await page.keyboard.press('ControlOrMeta+c');
     await page.mouse.move(2, 2); // outside the editor
     await page.keyboard.press('ControlOrMeta+v');
+    // Paste lands a moment later (after the browser's paste event, or a 50 ms fallback).
+    await expect.poll(async () => (await editState(page)).annotations.length).toBe(2);
     const [original, copy] = (await editState(page)).annotations as RectShape[];
     expect(copy!.id).not.toBe(original!.id);
     expect(copy!.x).toBeGreaterThan(original!.x);
@@ -45,7 +47,7 @@ test.describe('Copy / paste', () => {
     const target = await stagePoint(page, 0.65, 0.6);
     await page.mouse.move(target.x, target.y);
     await page.keyboard.press('ControlOrMeta+v');
-    expect((await editState(page)).annotations).toHaveLength(2);
+    await expect.poll(async () => (await editState(page)).annotations.length).toBe(2);
     const box = (await page.locator('.iu-annotate__selection').first().boundingBox())!;
     expect(box.x + box.width / 2).toBeCloseTo(target.x, -1);
     expect(box.y + box.height / 2).toBeCloseTo(target.y, -1);

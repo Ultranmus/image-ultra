@@ -165,7 +165,7 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 ### Found during Phase 6.5 review
 
 - [x] **Paste should land at the mouse pointer** (owner) — now it pastes next to the original.
-  _(fixed 2026-09-26)_
+      _(fixed 2026-09-26)_
   - Fix: remember the last pointer position over the stage; when it's over the photo, centre the
     paste there, otherwise fall back to "next to the original / same relative spot".
 
@@ -227,13 +227,53 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [ ] **Touch long-press on a drawing tool** cancels the stroke it started; fine for now, verify on a
       real phone in Phase 7 (mobile pass)
 
+### Found during 7.4
+
+- [x] **Owner's real-phone test** of 7.4 (layout, pinch, two-finger pan, long-press menus, drawing)
+      — _done 2026-09-27, five review rounds below; owner: "looks great"_
+- [x] **Tool rail: no space after the last tool on phones** (owner, phone test) — the Watermark card
+      touched the right edge when scrolled to the end: the list was only as wide as the rail, so
+      the tools overflowed past its end padding. Fix: the list is as wide as its content
+      (`width: max-content; min-width: 100%`) — _fixed 2026-09-27_
+- [x] **Resize panel / Adjust panel lost their layout** (owner, phone test) — Phase 7.2 slipped the
+      Canvas ruler rule into the middle of `.iu-adjust, .iu-resize { … }`, so `.iu-adjust` lost its
+      column layout and max width. Fix: split the rules again; the Canvas ruler uses the default
+      tick spacing so its scale fills the ruler like the other tools — _fixed 2026-09-27_
+- [x] **Resize: Size | Canvas switch not centred** (owner) — it sat in the left column. Fix: it's in
+      the middle column now, on every width — _fixed 2026-09-27_
+- [x] **Resize › Canvas: Reset on phones** (owner) — on narrow editors Reset sits at the start of the
+      header row, the switch stays centred on the same line — _fixed 2026-09-27_
+- [x] **Watermark too tall on phones** (owner) — 4 rows (223px at 390). Fix: position, opacity and
+      the Size ruler share one line on narrow editors — _fixed 2026-09-27_
+- [x] **Sticker: copy / delete below the tabs** (owner) — a selected sticker's actions should be at
+      the top. Fix: on narrow editors they take the first line, at the end — _fixed 2026-09-27_
+- [x] **Redact › Solid looks empty** (owner, all widths) — a lone colour button and a large hint.
+      Fix: an inline colour strip (like Fill); the hint uses the small text size — _fixed 2026-09-27_
+- [x] **Finetune: Auto should be at the start on phones** (owner) — Save look / Reset stay at the
+      end — _fixed 2026-09-27_
+- [x] **Annotate too tall on phones** (owner) — the 9 tools wrapped to 2 lines. Owner's choice: one
+      line that scrolls sideways on phones; Layers moves to the end of the selection row — _fixed 2026-09-27_
+- [x] **Curves: graph beside the channel switch on phones** (owner) — Fix: below 480px the switch +
+      reset take one line and the graph the full row — _fixed 2026-09-27_
+- [x] **Annotate selection row still messy on phones** (owner) — it wrapped onto 2–3 lines. Fix: one
+      line; the style controls scroll sideways (edge fade), Duplicate / Delete stay at the end
+      — _fixed 2026-09-27_
+- [x] **Layers belongs in the TopBar** (owner: "a global thing") — Fix: ▤ button after History, works
+      from every tool; TopBar reordered (Close, Reset | Undo, Redo | Compare, History, Layers | zoom |
+      Done); Reset hides on phones (DECISIONS #92) — _fixed 2026-09-27_
+- [x] **Curves: two stacked switches look bad** (owner, phone) — Adjust | Curves | Levels above
+      RGB | Red | Green | Blue read as two equal menus. Fix: channels are chips with a colour dot (the
+      Adjust mode's chip style), on every width; tighter chips below 360px — _fixed 2026-09-27_
+- [ ] **Segmented switches are 28px tall** (below the 40px touch size of buttons; WCAG 2.2 minimum
+      is 24px, so they pass) — consider 36–40px on touch devices — _7.5 (a11y)_
+
 ### From Phase 5 — Annotate
 
 - [x] **Multi-select** (Shift-click, marquee) and group move/align — _done in 7.1 (2026-09-26)_
 - [x] **Copy / paste shapes** (⌘C / ⌘V, also between photos) — _done in 6.5 (2026-09-26)_
 - [x] **Paste images from the system clipboard** _(done in 7.2)_ (e.g. a screenshot → new image shape) — _Phase 7_
 - [x] **Layers: drag to reorder and rename** (now: ↑/↓ buttons, Alt+↑/↓) — _done in 7.1_
-- [ ] **Phone layout: Annotate rows scroll sideways** — _Phase 7 (mobile pass)_
+- [x] **Phone layout: Annotate rows scroll sideways** — _fixed 2026-09-27 (7.4): rows wrap_
 - [x] **Line endpoint handles cover the arrow head** while selected — _done in 7.1 (hollow handle)_
   - Fix: smaller hollow endpoint handles, or place them just behind the tip.
 - [x] **In-place text editor may wrap slightly differently from the canvas** (CSS vs our measure) — _done in 7.1 (DECISIONS #82)_ —
@@ -272,7 +312,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### From Phase 3 — Adjust
 
-- [ ] **Phone layout: Adjust header row scrolls sideways** ("Horizontal" label clipped) — _Phase 7_
+- [x] **Phone layout: Adjust header row scrolls sideways** ("Horizontal" label clipped) — _fixed
+      2026-09-27 (7.4): rows wrap, switch on its own line below 480px_
   - Fix: on narrow containers put the SegmentedControl on its own row or shorten labels
     (icons + tooltips), keeping the ControlBar height fixed.
 - [x] **Vignette preview while cropping uses the whole image** _(fixed in 7.2)_, not the crop (export is correct) —

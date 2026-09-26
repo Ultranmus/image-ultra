@@ -195,6 +195,46 @@ test.describe('Layers panel', () => {
     await expect(page.locator('.iu-layers__row[data-selected]')).toHaveCount(2);
     await expect(page.locator('.iu-annotate__member')).toHaveCount(2);
   });
+
+  test('the TopBar Layers button works from any tool and stays open across element tools', async ({
+    page,
+  }) => {
+    await openEditor(page);
+    await drawRects(page, TWO);
+    await page.getByRole('tab', { name: 'Finetune' }).click();
+    const layers = page.getByRole('button', { name: 'Layers' });
+    await expect(layers).toHaveAttribute('aria-pressed', 'false');
+    // From a tool without elements, Layers opens Annotate with the panel.
+    await layers.click();
+    await expect(page.getByRole('tab', { name: 'Annotate' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.locator('.iu-layers__row')).toHaveCount(2);
+    await expect(layers).toHaveAttribute('aria-pressed', 'true');
+    // Still open in Redact; hidden (and not pressed) in a tool without elements.
+    await page.getByRole('tab', { name: 'Redact' }).click();
+    await expect(page.locator('.iu-layers__row')).toHaveCount(2);
+    await page.getByRole('tab', { name: 'Filter' }).click();
+    await expect(page.locator('.iu-layers__row')).toHaveCount(0);
+    await expect(layers).toHaveAttribute('aria-pressed', 'false');
+    await page.getByRole('tab', { name: 'Annotate' }).click();
+    await layers.click();
+    await expect(page.locator('.iu-layers__row')).toHaveCount(0);
+  });
+
+  test('TopBar order: close, reset, undo, redo, compare, history, layers, zoom, shortcuts, Done', async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const names = await page
+      .locator('.iu-topbar button:visible')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') ?? el.textContent ?? ''));
+    const order = ['Reset', 'Undo', 'Redo', 'Compare', 'History', 'Layers', 'Zoom out', 'Done'];
+    const at = order.map((name) => names.findIndex((n) => n.startsWith(name)));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+  });
 });
 
 test.describe('Small fixes', () => {

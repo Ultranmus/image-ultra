@@ -1,12 +1,6 @@
 /* Built-in tool panels and overlays. */
 @layer image-ultra {
   .iu-adjust,
-  /* Canvas panel: padding ruler, then the photo-position button. */
-  .iu-resize__ruler {
-    flex: 1;
-    min-width: 0;
-  }
-
   .iu-resize {
     display: flex;
     flex-direction: column;
@@ -52,11 +46,15 @@
     color: var(--iu-warning);
   }
 
+  /* Canvas panel: padding ruler, then the photo-position button. */
+  .iu-resize__ruler {
+    flex: 1;
+    min-width: 0;
+  }
+
   @container iu (max-width: 767px) {
     .iu-adjust__row {
       display: flex;
-      overflow-x: auto;
-      scrollbar-width: none;
     }
 
     .iu-toolgroup--end {
@@ -257,6 +255,35 @@
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-start;
+  }
+
+  /* Channel chips: a dot in the channel's colour (RGB = all three). */
+  .iu-curves__swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--iu-radius-full);
+    background: conic-gradient(
+      var(--iu-channel-red) 0 33%,
+      var(--iu-channel-green) 0 66%,
+      var(--iu-channel-blue) 0
+    );
+  }
+
+  .iu-curves__swatch[data-channel='red'] {
+    background: var(--iu-channel-red);
+  }
+
+  .iu-curves__swatch[data-channel='green'] {
+    background: var(--iu-channel-green);
+  }
+
+  .iu-curves__swatch[data-channel='blue'] {
+    background: var(--iu-channel-blue);
+  }
+
+  .iu-curves__side .iu-presets {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .iu-curves__graph {
@@ -583,6 +610,12 @@
     text-align: left;
   }
 
+  /* Text, colour, font, bold: one group, so it stays together on its own line when narrow. */
+  .iu-watermark__textrow {
+    align-items: center;
+    gap: inherit;
+  }
+
   /* 3×3 spots: where the watermark sits (the dot shows the spot). */
   .iu-watermark__grid {
     display: grid;
@@ -795,6 +828,15 @@
 
   .iu-redact__inspector {
     justify-content: flex-start;
+  }
+
+  .iu-redact__inspector .iu-colorstrip {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .iu-redact__inspector .iu-controlbar__hint {
+    font-size: var(--iu-text-xs);
   }
 
   .iu-annotate-layer {
@@ -1179,5 +1221,195 @@
     opacity: 0.45;
     cursor: crosshair;
     touch-action: none;
+  }
+}
+
+/* ── Narrow editors (< 768px) — last, so it wins over the base rules above ── */
+@layer image-ultra {
+  @container iu (max-width: 767px) {
+    /* Header rows wrap onto a second line instead of scrolling (DECISIONS #91); thumbnail,
+       sticker and colour strips still scroll sideways. */
+    .iu-adjust__row,
+    .iu-inspector,
+    .iu-sticker__row {
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: var(--iu-space-1);
+      overflow-x: visible;
+    }
+
+    .iu-toolgroup {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* A long button group shares its line with the end group and wraps inside it (Annotate). */
+    .iu-toolgroup--fill {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  /* Phones: a switch in a header row takes the second line, so the end button (Reset, Clear all)
+     stays on the first line with the tool buttons. */
+  @container iu (max-width: 479px) {
+    .iu-adjust__row > .iu-segmented {
+      order: 1;
+      margin-inline: auto;
+    }
+  }
+
+  /* Resize header: the Size | Canvas switch stays centred on one line; on narrow editors the
+     Reset button moves to the start (owner, 7.4 phone test). */
+  @container iu (max-width: 767px) {
+    .iu-adjust__row.iu-resize__head {
+      display: grid;
+    }
+
+    .iu-resize__head > .iu-segmented {
+      grid-area: 1 / 2;
+      margin-inline: 0;
+    }
+
+    .iu-resize__head > .iu-toolgroup--end {
+      grid-area: 1 / 1;
+      justify-content: flex-start;
+      margin-left: 0;
+    }
+  }
+
+  /* Annotate: the drawing tools fill the header row (Layers is in the TopBar). */
+  .iu-annotate__tools {
+    grid-column: 1 / -1;
+  }
+
+  /* Annotate: the style controls (or the hint) for what's selected / drawn next. */
+  .iu-annotate__style {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    min-width: 0;
+  }
+
+  /* Narrow editors: shorter tool panels (owner, 7.4 review). */
+  @container iu (max-width: 767px) {
+    /* Watermark: position, opacity and the Size ruler share one line. */
+    .iu-row-centered {
+      gap: var(--iu-space-2);
+    }
+
+    .iu-watermark__place {
+      flex-wrap: nowrap;
+    }
+
+    .iu-watermark__place > .iu-rulerfield {
+      flex: 1 1 0;
+    }
+
+    .iu-watermark__textrow {
+      flex: 1 1 100%;
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+
+    .iu-watermark__text {
+      flex: 1 1 12ch;
+      min-width: 0;
+    }
+
+    .iu-watermark__text .iu-field__input,
+    .iu-sticker__search .iu-field__input {
+      width: 100%;
+    }
+
+    .iu-annotate__style {
+      justify-content: center;
+    }
+
+    /* Sticker: search takes the room that's left; a selected sticker's actions go first. */
+    .iu-sticker__search {
+      flex: 1 1 10ch;
+      min-width: 0;
+    }
+
+    .iu-sticker__actions {
+      flex-basis: 100%;
+      order: -1;
+      justify-content: flex-end;
+      margin-left: 0;
+    }
+  }
+
+  @container iu (max-width: 479px) {
+    /* Curves: channels + reset on one line, the graph takes the full row below. */
+    .iu-curves {
+      flex-direction: column;
+      gap: var(--iu-space-2);
+    }
+
+    .iu-curves__side {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: var(--iu-space-2);
+    }
+
+    .iu-curves__graph {
+      flex: none;
+      width: 100%;
+    }
+
+    /* Finetune: Auto at the start, Save look and Reset at the end. */
+    .iu-finetune .iu-adjust__row > .iu-toolgroup--end {
+      flex: 1 1 auto;
+    }
+
+    .iu-finetune__auto {
+      margin-right: auto;
+    }
+
+    /* Annotate: the tools are one line that scrolls sideways (owner's choice). The selection
+       row is one line too: style controls scroll, copy / delete stay at the end. */
+    .iu-annotate__tools,
+    .iu-annotate__style {
+      flex: 1 1 auto;
+      flex-wrap: nowrap;
+      justify-content: safe center;
+      min-width: 0;
+      padding: var(--iu-space-1);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .iu-annotate__style > .iu-toolgroup {
+      flex: none;
+      flex-wrap: nowrap;
+    }
+
+    .iu-annotate__inspector {
+      flex-wrap: nowrap;
+      padding: 0;
+    }
+
+    .iu-annotate__actions {
+      flex: none;
+      flex-wrap: nowrap;
+    }
+  }
+
+  /* The smallest editors: tighter channel chips so all four fit beside the reset. */
+  @container iu (max-width: 359px) {
+    .iu-curves__side {
+      gap: var(--iu-space-1);
+    }
+
+    .iu-curves__side .iu-presets {
+      gap: var(--iu-space-1);
+    }
+
+    .iu-curves__side .iu-chip {
+      gap: var(--iu-space-1);
+      padding: 0 var(--iu-space-2);
+    }
   }
 }

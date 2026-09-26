@@ -478,3 +478,36 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Filter thumbnails preview presets on top of the user's colour edits.
 - Tests: 141 unit (+ coalescing) · 106 e2e (+ key-press merging, histogram outline, thumbnails).
 
+## 2026-09-27 · Phase 7.4 — Mobile
+
+- 7.3 committed (`feat: phase 7.3`).
+- Audit at 320 × 568 and 390 × 844 (every tool): header rows scrolled sideways (Adjust, Finetune,
+  Annotate, Redact, Sticker — Sticker's tabs were clipped on the left), Resize taller than the bar,
+  and the playground page left the editor ~150px on a phone.
+- Rows wrap, ControlBar grows (DECISIONS #91, new token `--iu-size-controlbar-max`); buttons never
+  wrap their label; `iu-toolgroup--fill` for Annotate's tools and shape inspector.
+- Two-finger pinch / pan works in every tool; the first finger's stroke / shape / drag is cancelled.
+- Playground: phone layout (Settings button, dev panel below), reachable over Wi-Fi.
+- Tests: 141 unit · 111 e2e (+ `mobile.spec.ts`: no sideways rows at 320 / 390, playground layout,
+  two-finger pinch over a drawing tool). The pinch test picks its tool with a plain DOM click:
+  Playwright's click sometimes scrolls the (taller than the screen) playground page first, so the
+  CDP touches missed the photo.
+- Owner phone test: tool rail had no space after the last tool (list was only as wide as the
+  rail) — fixed; e2e checks the gap.
+
+- Owner phone test, round 2: Resize header — switch centred (was in the left column), Reset at the
+  start on narrow editors; `.iu-adjust` layout restored (a 7.2 edit had merged its rule with the
+  Canvas ruler's); Canvas ruler uses the default tick spacing. e2e checks the Resize header at
+  320 / 390.
+- Owner phone test, round 3 (ControlBar height at 390px, before → after): Watermark 223 → 183
+  (position / opacity / Size on one line), Annotate 159 → 148 (tools scroll on one line, Layers in
+  the selection row — owner's choice, DECISIONS #91 amended), Finetune Auto at the start, a selected
+  sticker's actions on the first line, Redact › Solid shows an inline colour strip (all widths) with
+  a smaller hint. e2e: 117 (+ Annotate phone row at 320 / 390). Redact is 19px taller on phones (strip + hint).
+- Owner phone test, round 4: Curves graph on its own full row on phones; Annotate's selection row
+  is one line (style controls scroll with an edge fade — new `useEdgeFade` hook + `.iu-fade-x`);
+  **Layers moved to the TopBar** and works from any tool (DECISIONS #92; flag in
+  `toolState['layers']`, `tools/annotate/layers.ts`); TopBar reordered, Reset hidden below 480px.
+  e2e: 119 (+ TopBar Layers from any tool, TopBar order; phone Annotate test updated).
+- Owner phone test, round 5: Curves channels are chips with a colour dot instead of a second
+  SegmentedControl (all widths; all four fit at 320px). All checks green (141 unit, 119 e2e).

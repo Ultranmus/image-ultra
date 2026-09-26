@@ -74,6 +74,7 @@
     --iu-size-rail: 72px;
     --iu-size-rail-mobile: 64px;
     --iu-size-controlbar: 148px;
+    --iu-size-controlbar-max: 248px;
     --iu-size-touch: 40px;
     /* TopBar buttons in the narrowest (≤ 359px) editor. */
     --iu-size-topbar-compact: 34px;

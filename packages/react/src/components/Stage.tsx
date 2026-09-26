@@ -388,6 +388,36 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     if (pointers.current.size === 0) setIsDragging(false);
   };
 
+  // Every finger on the stage, seen before the tool overlay gets it (capture phase). A second
+  // finger always pinches / pans, whatever the tool started with the first one: the stage takes
+  // both pointers, and the overlay cancels its action when it loses the first (lostpointercapture).
+  const touches = useRef(new Map<number, Point>());
+  const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>) => {
+    pressClaimed.current = true;
+    const element = containerRef.current;
+    if (event.pointerType !== 'touch' || !element) return;
+    touches.current.set(event.pointerId, localPoint(element, event));
+    if (touches.current.size < 2 || status !== 'ready' || cropping) return;
+    event.stopPropagation(); // the tool never sees the second finger
+    for (const [id, point] of touches.current) {
+      pointers.current.set(id, point);
+      try {
+        element.setPointerCapture(id);
+      } catch {
+        // The pointer is already gone.
+      }
+    }
+    setIsDragging(true);
+  };
+  const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => {
+    const element = containerRef.current;
+    if (element && touches.current.has(event.pointerId))
+      touches.current.set(event.pointerId, localPoint(element, event));
+  };
+  const onTouchEnd = (event: PointerEvent<HTMLDivElement>) => {
+    touches.current.delete(event.pointerId);
+  };
+
   const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (pressClaimed.current) return;
     const element = containerRef.current;
@@ -429,9 +459,10 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       data-pannable={status === 'ready' && !isFitted && !cropping ? '' : undefined}
       data-dragging={isDragging ? '' : undefined}
       data-drop-target={isDropTarget ? '' : undefined}
-      onPointerDownCapture={() => {
-        pressClaimed.current = true;
-      }}
+      onPointerDownCapture={onPointerDownCapture}
+      onPointerMoveCapture={onPointerMoveCapture}
+      onPointerUpCapture={onTouchEnd}
+      onPointerCancelCapture={onTouchEnd}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}

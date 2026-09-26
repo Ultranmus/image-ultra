@@ -33,6 +33,8 @@ export default function PlaygroundPage() {
   const [log, setLog] = useState('Ready');
   const [appWatermark, setAppWatermark] = useState<'off' | 'on' | 'locked'>('off');
   const [metadata, setMetadata] = useState<'strip' | 'keep' | 'keep + GPS'>('strip');
+  // Phones: the settings sit behind a button so the editor gets the screen.
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Test hook for Playwright (e2e) — not part of the package API.
   useEffect(() => {
@@ -48,56 +50,66 @@ export default function PlaygroundPage() {
     <div className="pg">
       <header className="pg-bar">
         <strong className="pg-logo">image-ultra</strong>
+        <button
+          className="pg-btn pg-settings-toggle"
+          aria-expanded={settingsOpen}
+          aria-controls="pg-settings"
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          Settings
+        </button>
 
-        <Segmented label="Theme" options={THEMES} value={theme} onChange={setTheme} />
-        <Segmented
-          label="Frame"
-          options={['full', 'tablet', 'phone'] as const}
-          value={frame}
-          onChange={setFrame}
-        />
+        <div id="pg-settings" className="pg-settings" data-open={settingsOpen || undefined}>
+          <Segmented label="Theme" options={THEMES} value={theme} onChange={setTheme} />
+          <Segmented
+            label="Frame"
+            options={['full', 'tablet', 'phone'] as const}
+            value={frame}
+            onChange={setFrame}
+          />
 
-        <div className="pg-group" aria-label="Accent">
-          {ACCENTS.map((color) => (
-            <button
-              key={color ?? 'default'}
-              className="pg-swatch"
-              style={{ background: color ?? '#4d194d' }}
-              aria-pressed={accent === color}
-              aria-label={color ? `Accent ${color}` : 'Default accent'}
-              onClick={() => setAccent(color)}
-            />
-          ))}
+          <div className="pg-group" aria-label="Accent">
+            {ACCENTS.map((color) => (
+              <button
+                key={color ?? 'default'}
+                className="pg-swatch"
+                style={{ background: color ?? '#4d194d' }}
+                aria-pressed={accent === color}
+                aria-label={color ? `Accent ${color}` : 'Default accent'}
+                onClick={() => setAccent(color)}
+              />
+            ))}
+          </div>
+
+          <div className="pg-group">
+            <button className="pg-btn" onClick={() => setSrc('/sample.jpg')}>
+              Sample
+            </button>
+            <button className="pg-btn" onClick={() => setSrc('/does-not-exist.jpg')}>
+              Broken URL
+            </button>
+            <button className="pg-btn" onClick={() => setSrc(undefined)}>
+              Empty
+            </button>
+          </div>
+
+          <Segmented
+            label="App watermark"
+            options={['off', 'on', 'locked'] as const}
+            value={appWatermark}
+            onChange={(v) => {
+              setAppWatermark(v);
+              setEditorKey((k) => k + 1); // the watermark prop is read when an image opens
+            }}
+          />
+
+          <Segmented
+            label="Metadata"
+            options={['strip', 'keep', 'keep + GPS'] as const}
+            value={metadata}
+            onChange={setMetadata}
+          />
         </div>
-
-        <div className="pg-group">
-          <button className="pg-btn" onClick={() => setSrc('/sample.jpg')}>
-            Sample
-          </button>
-          <button className="pg-btn" onClick={() => setSrc('/does-not-exist.jpg')}>
-            Broken URL
-          </button>
-          <button className="pg-btn" onClick={() => setSrc(undefined)}>
-            Empty
-          </button>
-        </div>
-
-        <Segmented
-          label="App watermark"
-          options={['off', 'on', 'locked'] as const}
-          value={appWatermark}
-          onChange={(v) => {
-            setAppWatermark(v);
-            setEditorKey((k) => k + 1); // the watermark prop is read when an image opens
-          }}
-        />
-
-        <Segmented
-          label="Metadata"
-          options={['strip', 'keep', 'keep + GPS'] as const}
-          value={metadata}
-          onChange={setMetadata}
-        />
 
         <span className="pg-log" data-testid="log">
           {log}

@@ -154,7 +154,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
       edits migrate (redactions at the bottom, watermark on top).
 - [x] **7.3** Colour tools: histogram Before/After; filter thumbnails "on my edits"; arrow-key
       presses on one control coalesce into one undo step.
-- [ ] **7.4** Mobile: 320–430px layouts, thumb-zone controls, no sideways-scrolling rows (Annotate,
+- [x] **7.4** Mobile (owner's phone test done 2026-09-27): 320–430px layouts, thumb-zone controls, no sideways-scrolling rows (Annotate,
       Adjust header), pinch / two-finger pan / long-press; owner tests on a real phone.
 - [ ] **7.5** A11y & motion: axe in e2e (zero violations per tool), focus management audit,
       screen-reader labels + live announcements, reduced-motion everywhere.

@@ -17,7 +17,7 @@ import {
   type CurvePoint,
 } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
-import { SegmentedControl } from '../../controls/SegmentedControl';
+import { PresetStrip } from '../../controls/PresetStrip';
 import { IconButton } from '../../components/IconButton';
 import { IconReset } from '../../icons/Icon';
 import type { Histograms } from '../../hooks/useHistogram';
@@ -165,16 +165,17 @@ export function CurveEditor({ histogram }: { histogram: Histograms | null }) {
   return (
     <div className="iu-curves" data-channel={channel}>
       <div className="iu-curves__side">
-        <SegmentedControl
+        <PresetStrip
           label={labels.modeCurves}
           value={channel}
-          onChange={(c) => {
+          onSelect={(c) => {
             setChannel(c);
             setActive(null);
           }}
-          options={(['rgb', 'red', 'green', 'blue'] as const).map((c) => ({
+          presets={(['rgb', 'red', 'green', 'blue'] as const).map((c) => ({
             value: c,
             label: labels.curveChannels[c],
+            glyph: <span className="iu-curves__swatch" data-channel={c} aria-hidden="true" />,
           }))}
         />
         <IconButton

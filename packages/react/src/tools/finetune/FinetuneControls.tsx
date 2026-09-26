@@ -122,6 +122,7 @@ export function FinetuneControls() {
           ) : (
             <>
               <IconButton
+                className="iu-finetune__auto"
                 label={labels.auto}
                 title={labels.autoHint}
                 icon={<IconSparkle size={18} />}

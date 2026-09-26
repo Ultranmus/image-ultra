@@ -39,10 +39,12 @@ Update this file at the end of every session.
   (137 unit, 98 e2e).
 - **7.2b Unified elements — committed** (2026-09-26, `feat: phase 7.2b`; DECISIONS #88, #89): redaction
   areas and the watermark are elements with shapes (select, group, reorder anywhere). All checks green.
-- **7.3 Colour tools — done, not committed** (2026-09-26; DECISIONS #90): arrow-key presses merge
-  into one undo step, Curves / Levels "after" histogram outline, filter thumbnails on the user's
-  edits. All checks green (141 unit, 106 e2e). Waiting for owner review.
-- Next: **7.4 Mobile** (320–430px layouts; owner tests on a real phone).
+- **7.3 Colour tools — committed** (`feat: phase 7.3`; DECISIONS #90).
+- **7.4 Mobile — committed** (2026-09-27, `feat: phase 7.4`; DECISIONS #91, #92): rows wrap, ControlBar
+  grows, two-finger pinch everywhere, playground phone layout + Wi-Fi access. Owner's phone test: five
+  rounds of fixes (Resize header, per-tool phone layouts, Annotate tools scroll on phones, **Layers in
+  the TopBar**, Curves channel chips). All checks green (141 unit, 119 e2e).
+- Next: **7.5 A11y & motion**.
 
 ## How to work with this owner
 
@@ -55,6 +57,8 @@ Update this file at the end of every session.
 ## Commands & gotchas
 
 - Run: `pnpm playground` → http://localhost:3100 (builds packages, then `next dev`).
+  On a phone (same Wi-Fi): `http://<Mac's LAN IP>:3100` (`ipconfig getifaddr en0`); the config
+  allows the LAN addresses (`allowedDevOrigins`). Restart `pnpm playground` after changing networks.
 - Checks: `pnpm lint`, `pnpm build`, `pnpm typecheck`, `pnpm test` (Vitest), `pnpm e2e` (Playwright, 34 tests).
   Run e2e with stdin closed (`< /dev/null`) and free port 3100 first (`lsof -ti tcp:3100 | xargs kill`).
 - Playwright `webServer` starts `node node_modules/next/dist/bin/next start` directly (pnpm doesn't forward

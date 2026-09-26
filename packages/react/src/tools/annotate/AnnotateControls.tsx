@@ -26,7 +26,6 @@ import {
   IconDuplicate,
   IconFont,
   IconImagePlus,
-  IconLayers,
   IconLine,
   IconOpacity,
   IconPen,
@@ -58,6 +57,7 @@ import { shapeActions } from './actions';
 import { AlignMenu, GroupInspector } from './GroupControls';
 import { insertImageFile } from './insertImage';
 import { undoStep } from '../../controls/undoStep';
+import { useEdgeFade } from '../../hooks/useEdgeFade';
 
 const MODE_ICONS: Record<AnnotateMode, (p: IconProps) => React.JSX.Element> = {
   select: IconPointer,
@@ -98,6 +98,10 @@ export function AnnotateControls() {
   const image = useEditorState((s) => s.image);
   const edit = useEditorState((s) => s.edit);
   const fileInput = useRef<HTMLInputElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  const styleRef = useRef<HTMLDivElement>(null);
+  useEdgeFade(toolsRef);
+  useEdgeFade(styleRef);
   const watermarkLocked = useWatermarkLocked();
   if (!image) return null;
 
@@ -464,7 +468,12 @@ export function AnnotateControls() {
   return (
     <div className="iu-annotate">
       <div className="iu-adjust__row">
-        <div className="iu-toolgroup" role="radiogroup" aria-label={labels.annotateTools}>
+        <div
+          ref={toolsRef}
+          className="iu-toolgroup iu-toolgroup--fill iu-annotate__tools iu-fade-x"
+          role="radiogroup"
+          aria-label={labels.annotateTools}
+        >
           {MODES.map((mode) => {
             const Icon = MODE_ICONS[mode];
             const label = `${labels.annotateModes[mode]} (${MODE_SHORTCUTS[mode]})`;
@@ -498,49 +507,41 @@ export function AnnotateControls() {
             }}
           />
         </div>
-        <span />
-        <div className="iu-toolgroup iu-toolgroup--end">
-          <IconButton
-            label={labels.layers}
-            icon={<IconLayers />}
-            aria-pressed={ui.layersOpen}
-            data-active={ui.layersOpen ? '' : undefined}
-            onClick={() => setUi((u) => ({ ...u, layersOpen: !u.layersOpen }))}
-          />
-        </div>
       </div>
 
-      <div className="iu-inspector">
-        {multi ? (
-          <GroupInspector members={members} />
-        ) : other ? (
-          <div className="iu-toolgroup">
-            <IconButton
-              label={other.type === 'redact' ? labels.editInRedact : labels.editInWatermark}
-              icon={other.type === 'redact' ? <IconRedact /> : <IconWatermark />}
-              showLabel
-              onClick={() => {
-                const tool = other.type === 'redact' ? 'redact' : 'watermark';
-                // Keep it selected there (the Redact tool shares the selection model).
-                if (tool === 'redact') {
-                  const current = store.getState().toolState['redact'] as object | undefined;
-                  store
-                    .getState()
-                    .setToolState('redact', { ...current, ...selectPatch([other.id]) });
-                }
-                store.getState().setActiveTool(tool);
-              }}
-            />
-          </div>
-        ) : inspector.length > 0 ? (
-          <div className="iu-toolgroup">{inspector}</div>
-        ) : (
-          <p className="iu-controlbar__hint">
-            {ui.mode === 'polygon' ? labels.polygonHint : labels.annotateHint}
-          </p>
-        )}
+      <div className="iu-inspector iu-annotate__inspector">
+        <div ref={styleRef} className="iu-annotate__style iu-fade-x">
+          {multi ? (
+            <GroupInspector members={members} />
+          ) : other ? (
+            <div className="iu-toolgroup">
+              <IconButton
+                label={other.type === 'redact' ? labels.editInRedact : labels.editInWatermark}
+                icon={other.type === 'redact' ? <IconRedact /> : <IconWatermark />}
+                showLabel
+                onClick={() => {
+                  const tool = other.type === 'redact' ? 'redact' : 'watermark';
+                  // Keep it selected there (the Redact tool shares the selection model).
+                  if (tool === 'redact') {
+                    const current = store.getState().toolState['redact'] as object | undefined;
+                    store
+                      .getState()
+                      .setToolState('redact', { ...current, ...selectPatch([other.id]) });
+                  }
+                  store.getState().setActiveTool(tool);
+                }}
+              />
+            </div>
+          ) : inspector.length > 0 ? (
+            <div className="iu-toolgroup iu-toolgroup--fill">{inspector}</div>
+          ) : (
+            <p className="iu-controlbar__hint">
+              {ui.mode === 'polygon' ? labels.polygonHint : labels.annotateHint}
+            </p>
+          )}
+        </div>
         {(picked || multi) && (
-          <div className="iu-toolgroup iu-toolgroup--end">
+          <div className="iu-toolgroup iu-toolgroup--end iu-annotate__actions">
             {multi && (
               <span className="iu-controlbar__count" aria-live="polite">
                 {labels.selectedCount.replace('{count}', String(members.length))}

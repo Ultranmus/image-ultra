@@ -16,6 +16,7 @@
     font: inherit;
     font-size: var(--iu-text-md);
     font-weight: var(--iu-weight-medium);
+    white-space: nowrap;
     cursor: pointer;
     user-select: none;
     transition:
@@ -247,6 +248,11 @@
     padding: 3px;
     overflow-x: auto;
     scrollbar-width: none;
+  }
+
+  /* Sideways-scrolling rows fade an edge when there is more past it (`useEdgeFade`). */
+  .iu-presets,
+  .iu-fade-x {
     --iu-fade-start: #000;
     --iu-fade-end: #000;
     -webkit-mask-image: linear-gradient(
@@ -266,11 +272,13 @@
   }
 
   /* Fade an edge only when there is more content scrolled past it. */
-  .iu-presets[data-more-start] {
+  .iu-presets[data-more-start],
+  .iu-fade-x[data-more-start] {
     --iu-fade-start: transparent;
   }
 
-  .iu-presets[data-more-end] {
+  .iu-presets[data-more-end],
+  .iu-fade-x[data-more-end] {
     --iu-fade-end: transparent;
   }
 

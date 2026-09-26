@@ -21,11 +21,20 @@ body {
   grid-template-rows: auto 1fr;
   height: 100dvh;
 }
-.pg-bar {
+.pg-bar,
+.pg-settings {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
+}
+.pg-settings {
+  display: contents;
+}
+.pg-settings-toggle {
+  display: none;
+}
+.pg-bar {
   padding: 10px 16px;
   border-bottom: 1px solid #27272a;
   font-size: 12px;
@@ -172,5 +181,55 @@ body {
     border-left: 0;
     border-top: 1px solid #27272a;
     max-height: 40vh;
+  }
+}
+
+/* Phones: the editor fills the screen; settings behind a button, dev panel below (page scrolls). */
+@media (max-width: 767px) {
+  .pg {
+    display: block;
+    height: auto;
+  }
+  .pg-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #09090b;
+  }
+  .pg-settings-toggle {
+    display: inline-block;
+  }
+  .pg-log {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pg-settings {
+    display: none;
+  }
+  .pg-settings[data-open] {
+    display: flex;
+    flex-basis: 100%;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .pg-main {
+    display: block;
+  }
+  .pg-stage {
+    height: calc(100dvh - 45px);
+    padding: 0;
+  }
+  .pg-frame {
+    border: 0;
+    border-radius: 0;
+  }
+  .pg-panel {
+    max-height: none;
   }
 }

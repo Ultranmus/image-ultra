@@ -1,10 +1,10 @@
 import { REDACT_STYLES, type RedactShape, type RedactStyle } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
+import { ColorStrip } from '../../controls/ColorStrip';
 import { Popover } from '../../controls/Popover';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { SegmentedControl } from '../../controls/SegmentedControl';
-import { ColorButton, SwatchPicker } from '../../controls/SwatchPicker';
 import { IconBrush, IconPointer, IconSquare, IconStrokeWidth, IconTrash } from '../../icons/Icon';
 import { shapeActions } from '../annotate/actions';
 import { selectionIds, selectPatch } from '../annotate/state';
@@ -156,17 +156,11 @@ export function RedactControls() {
 
       <div className="iu-inspector iu-redact__inspector">
         {style === 'solid' ? (
-          <div className="iu-toolgroup">
-            <Popover
-              label={labels.redactColor}
-              trigger={<ColorButton swatch={color} label={labels.redactColor} />}
-            >
-              <SwatchPicker
-                value={color}
-                onChange={(v) => v && apply(labels.redactColor, { color: v })}
-              />
-            </Popover>
-          </div>
+          <ColorStrip
+            label={labels.redactColor}
+            value={color}
+            onChange={(v) => apply(labels.redactColor, { color: v })}
+          />
         ) : (
           <div className="iu-rulerfield">
             <RulerSlider

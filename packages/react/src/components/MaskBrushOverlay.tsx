@@ -94,6 +94,12 @@ export function MaskBrushOverlay({ strokes, onChange, size, mode, color }: MaskB
         current.current = null;
         paint();
       }}
+      // The stage took the pointer (a second finger pinches): drop the stroke.
+      onLostPointerCapture={(event) => {
+        if (current.current?.pointerId !== event.pointerId) return;
+        current.current = null;
+        paint();
+      }}
     />
   );
 }

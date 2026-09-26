@@ -57,7 +57,6 @@ export interface AnnotateState {
   selectedIds?: string[];
   /** Text shape being edited in place (hidden from the canvas while editing). */
   editingId: string | null;
-  layersOpen: boolean;
   style: AnnotateStyle;
 }
 
@@ -67,7 +66,6 @@ export const INITIAL_ANNOTATE_STATE: AnnotateState = {
   mode: 'select',
   selectedId: null,
   editingId: null,
-  layersOpen: false,
   style: {
     stroke: '#ff3b30',
     fill: null,

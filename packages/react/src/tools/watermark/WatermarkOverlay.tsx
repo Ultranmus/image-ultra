@@ -132,6 +132,14 @@ export function WatermarkOverlay() {
     store.getState().endChange();
   };
 
+  /** The stage took the pointer (a second finger pinches): undo the drag. */
+  const onLostPointerCapture = (event: PointerEvent<HTMLDivElement>) => {
+    if (!drag.current || drag.current.pointerId !== event.pointerId) return;
+    drag.current = null;
+    setDragging(null);
+    store.getState().cancelChange();
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = (event.shiftKey ? 0.05 : 0.01) * Math.min(out.width, out.height);
     const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
@@ -161,6 +169,7 @@ export function WatermarkOverlay() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onLostPointerCapture={onLostPointerCapture}
         onKeyDown={onKeyDown}
       >
         {CORNERS.map((corner) => (

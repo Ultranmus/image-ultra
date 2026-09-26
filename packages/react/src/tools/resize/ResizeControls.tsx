@@ -59,7 +59,8 @@ export function ResizeControls() {
 
   return (
     <div className="iu-resize">
-      <div className="iu-adjust__row">
+      <div className="iu-adjust__row iu-resize__head">
+        <span />
         <SegmentedControl
           label={labels.tools.resize}
           value={mode}
@@ -69,7 +70,6 @@ export function ResizeControls() {
             { value: 'canvas', label: labels.resizeModeCanvas },
           ]}
         />
-        <span />
         <div className="iu-toolgroup iu-toolgroup--end">
           {mode === 'canvas' && (
             <IconButton
@@ -275,7 +275,6 @@ function CanvasPanel() {
             value={Math.round(canvas.padding * 100)}
             min={0}
             max={50}
-            unitWidth={5}
             tickEvery={1}
             majorEvery={10}
             defaultValue={0}

@@ -103,7 +103,7 @@ export function WatermarkControls() {
           onChange={choose}
         />
         {kind === 'text' && (
-          <>
+          <div className="iu-toolgroup iu-watermark__textrow">
             <label className="iu-field iu-watermark__text">
               <span className="iu-sr-only">{labels.watermarkText}</span>
               <input
@@ -154,7 +154,7 @@ export function WatermarkControls() {
                 change(labels.watermarkBold, { fontWeight: current.fontWeight === 700 ? 400 : 700 })
               }
             />
-          </>
+          </div>
         )}
         {kind === 'logo' && (
           <div className="iu-fill__image">
@@ -184,7 +184,7 @@ export function WatermarkControls() {
       </div>
 
       {watermark && (
-        <div className="iu-inspector iu-row-centered">
+        <div className="iu-inspector iu-row-centered iu-watermark__place">
           {/* Where and how strong: position and opacity together, then the size. */}
           <div className="iu-toolgroup">
             <Popover

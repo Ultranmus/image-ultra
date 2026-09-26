@@ -7,6 +7,7 @@ import {
   IconCompare,
   IconHistory,
   IconKeyboard,
+  IconLayers,
   IconMinus,
   IconPlus,
   IconRedo,
@@ -19,6 +20,7 @@ import { useDelayedFlag } from '../hooks/useDelayedFlag';
 import { HistoryPanel } from './HistoryPanel';
 import { IconButton } from './IconButton';
 import { ShortcutsPanel } from './ShortcutsPanel';
+import { isLayersShown, toggleLayers } from '../tools/annotate/layers';
 
 const ZOOM_STEP = 1.25;
 /** Pressing the Compare button this long shows the original until released. */
@@ -32,6 +34,8 @@ export interface TopBarProps {
   /** Keyboard shortcuts popover (also opened with `?`). */
   shortcutsOpen: boolean;
   onShortcutsOpenChange: (open: boolean) => void;
+  /** Tool the Layers button opens when the active one doesn't show elements; `null` = no button. */
+  layersTool: string | null;
 }
 
 export function TopBar({
@@ -40,6 +44,7 @@ export function TopBar({
   saving,
   shortcutsOpen,
   onShortcutsOpenChange,
+  layersTool,
 }: TopBarProps) {
   const store = useEditorStore();
   const labels = useLabels();
@@ -51,6 +56,7 @@ export function TopBar({
   const canUndo = useEditorState(selectCanUndo);
   const canRedo = useEditorState(selectCanRedo);
   const isDirty = useEditorState(selectIsDirty);
+  const layersShown = useEditorState(isLayersShown);
 
   const showSaving = useDelayedFlag(saving, 300);
 
@@ -66,6 +72,7 @@ export function TopBar({
       <div className="iu-topbar__group">
         {onCancel && <IconButton label={labels.cancel} icon={<IconClose />} onClick={onCancel} />}
         <IconButton
+          className="iu-topbar__reset"
           label={labels.reset}
           icon={<IconReset />}
           disabled={!ready || !isDirty}
@@ -86,6 +93,8 @@ export function TopBar({
           disabled={!ready || !canRedo}
           onClick={() => store.getState().redo()}
         />
+        <span className="iu-topbar__divider" aria-hidden="true" />
+        <CompareButton disabled={!ready} />
         <Popover
           label={labels.history}
           side="bottom"
@@ -100,8 +109,16 @@ export function TopBar({
         >
           <HistoryPanel />
         </Popover>
-        <span className="iu-topbar__divider" aria-hidden="true" />
-        <CompareButton disabled={!ready} />
+        {layersTool && (
+          <IconButton
+            label={labels.layers}
+            icon={<IconLayers />}
+            disabled={!ready}
+            aria-pressed={layersShown}
+            data-active={layersShown ? '' : undefined}
+            onClick={() => toggleLayers(store, layersTool)}
+          />
+        )}
         <span className="iu-topbar__divider" aria-hidden="true" />
         <div className="iu-zoom" role="group" aria-label={labels.zoomLevel}>
           <IconButton

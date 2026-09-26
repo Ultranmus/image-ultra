@@ -29,7 +29,7 @@ the component is wrong (or this doc must be updated first, deliberately).
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ TopBar: [✕][↺]    [↶][↷][🕘] │ [◧] │ [− 100% +]      [⌨][Done ▸] │  48px
+│ TopBar: [✕][↺]  [↶][↷] │ [◧][🕘][▤] │ [− 100% +]    [⌨][Done ▸] │  48px
 ├────────┬─────────────────────────────────────────────────────┤
 │ Tool   │                                                     │
 │ Rail   │                    STAGE                            │
@@ -45,7 +45,7 @@ the component is wrong (or this doc must be updated first, deliberately).
 ### Mobile / narrow (container width < 768px)
 
 ```
-TopBar (compact: ✕ ↺  ↶ ↷ 🕘 ◧ 100%  ✓)
+TopBar (compact: ✕  ↶ ↷ ◧ 🕘 ▤ 100%  ✓ — no ↺ below 480px)
 STAGE
 ControlBar (contextual)
 ToolRail (horizontal, scrollable, bottom — thumb zone)
@@ -53,12 +53,28 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 
 - Breakpoints use **container queries** on `.iu-root`, not viewport — the editor may live in a small modal.
 - Minimum usable size: 320 × 480.
+- **Rows never scroll sideways** (owner, 7.4): a tool's header / inspector row that doesn't fit
+  wraps onto a second line, and the ControlBar grows to fit (148px minimum,
+  `--iu-size-controlbar-max` = 248px, then it scrolls up/down). Below 480px a switch in a header
+  row takes the second line so the end button (Reset, Clear all) stays with the tool buttons; a
+  long button group (Annotate tools, shape inspector) wraps inside its own line next to the end
+  group. Thumbnail, sticker and colour **strips** still scroll sideways (edge fade shows more).
+- **Phone layouts per tool** (owner, 7.4 review; DECISIONS #91): below 480px Annotate's drawing
+  tools are **one line that scrolls sideways** (the one exception to "rows wrap"), and so is the
+  selection row: its style controls scroll (edge fade), Duplicate / Delete stay at the end.
+  Finetune: Auto at the start, Save look / Reset at the end; Curves puts the channel chips + reset
+  on one line and the graph on the full row below.
+  Resize: the Size | Canvas switch stays centred, Reset at the start. Below 768px Watermark puts
+  position, opacity and Size on one line (text, colour, font, bold on the line above), and a
+  selected sticker's opacity / copy / delete take the first line, at the end.
+- **Two fingers always pinch / pan** the photo, in every tool: a second finger cancels what the
+  first one started (a stroke, a new shape, a drag).
 
 ## 4. Region names (use these names in code and conversation)
 
 | Region     | Component       | Purpose                                                                                             |
 | ---------- | --------------- | --------------------------------------------------------------------------------------------------- |
-| TopBar     | `<TopBar/>`     | Cancel, Reset, Undo/Redo, Zoom, Done/Save                                                           |
+| TopBar     | `<TopBar/>`     | Cancel, Reset, Undo/Redo, Compare, History, Layers, Zoom, Done/Save                                 |
 | ToolRail   | `<ToolRail/>`   | Tool switcher (Adjust, Finetune, Filter, Annotate, Redact, Sticker, Frame, Fill, Resize, Watermark) |
 | Stage      | `<Stage/>`      | Canvas + interaction overlays (crop box, shape handles)                                             |
 | ControlBar | `<ControlBar/>` | Current tool's controls                                                                             |
@@ -97,7 +113,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   shapes, stickers and text can sit on it. Vignette and the round crop stay on the photo.
 - **Finetune** ControlBar: SegmentedControl [Adjust | Curves | Levels] — [✨ Auto] [Save look]
   [reset]. Adjust = RulerSlider (−100…+100, "+25"/"−25") above a chip strip of the 16 adjustments
-  (a dot marks changed ones). Curves = channel SegmentedControl + small reset on the left, 80px
+  (a dot marks changed ones). Curves = channel chips (RGB · Red · Green · Blue, each with a dot in its colour — a sub-choice, so
+  chips, not a second SegmentedControl; owner, 7.4 review) + small reset on the left, 80px
   graph (tinted histogram, thirds grid, dashed identity, points = sliders; click adds, double-click
   or Delete removes). Levels = 32px histogram with clipped areas dimmed, three triangle handles,
   values row ("Black point 0 · Mid-tones 1.00 · White point 255").
@@ -113,7 +130,7 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   ring): Original, then the user's looks (bookmark badge; hover ✕ / Delete key removes), a divider,
   then the 28 presets. Own looks come first so a just-saved look is visible without scrolling.
 - **Annotate** ControlBar: row 1 = drawing tools as icon radios (Select V, Pen P, Line L, Arrow A,
-  Rectangle R, Ellipse O, Polygon G, Text T) + Add image — [Layers]; row 2 = inspector for the selected
+  Rectangle R, Ellipse O, Polygon G, Text T) + Add image; row 2 = inspector for the selected
   shape (or the defaults of the current tool): colour/fill buttons (round swatch dots; fill shows a
   ring), width / text size / font / corner radius / opacity as popovers, Bold + alignment + arrow-head
   toggles inline (`data-active`), Align (a compact popover: 3-column grid — left / centre / right,
@@ -126,7 +143,9 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   (transparent textarea over the canvas, dashed accent outline) and keeps its resize/rotate handles
   while editing — resize or rotate without leaving the text (like Canva); the editor wraps lines exactly
   like the drawn text. Line ends with an arrow / dot get a hollow round handle so the head stays
-  visible. Layers = floating panel top-right; each row: name (drag to reorder, with an accent drop
+  visible. **Layers** (▤ in the TopBar, owner 2026-09-27; DECISIONS #92) = floating panel top-right. It
+  is editor-wide: open, it shows in every tool that shows elements (Annotate, Sticker, Redact); from any
+  other tool the button switches to Annotate and opens it. Each row of the panel: each row: name (drag to reorder, with an accent drop
   line; double-click or F2 to rename inline), show/hide, lock, up/down, and "⋯" (the shape menu);
   "Show all" in the header while anything is hidden; Shift / ⌘-click rows to select several.
 - **Multi-select** (Annotate, Sticker and Redact — any element): Shift-click adds/removes one (with
@@ -157,6 +176,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   key for the selected shape; "⋯" in Layers): Lock/Unlock, Hide/Show · Bring to front, Bring forward,
   Send backward, Send to back · Copy, Paste, Duplicate, Delete · Show in Layers. Compact 32px rows, separators,
   Delete in the danger colour, disabled rows muted. Same surface as popovers.
+- **TopBar order** (owner, 2026-09-27): ✕ Close, ↺ Reset | ↶ Undo, ↷ Redo | ◧ Compare, 🕘 History,
+  ▤ Layers | zoom | ⌨, Done. Below 480px Reset hides (History › "Original" does the same).
 - **TopBar extras:** 🕘 History popover (list: "Original" + each step label, current step in
   accent, later steps muted = redo-able; click jumps). ◧ Compare: press-and-hold shows the whole
   "before" image, a click toggles split view (aria-pressed). ⌨ Keyboard shortcuts popover (also `?`):
@@ -171,8 +192,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   (`--iu-overlay` background). Before = same crop/rotation, no colour or annotations.
 - **Redact** ControlBar: row 1 = Select / Box / Brush icon radios (+ brush size popover in Brush mode) —
   style SegmentedControl Pixelate · Blur · Solid (default Pixelate) — Delete (when selected) and
-  "Clear all" on the right. Row 2 = Strength RulerSlider (0–100) for Pixelate/Blur, or the colour
-  button for Solid. With Blur a muted hint: "For faces, names and numbers, Pixelate or Solid is
+  "Clear all" on the right. Row 2 = Strength RulerSlider (0–100) for Pixelate/Blur, or an inline
+  colour strip for Solid (like Fill; owner, 7.4 review). Hints use the small text size. With Blur a muted hint: "For faces, names and numbers, Pixelate or Solid is
   safer." Nothing drawn and nothing selected → the controls set the style for the next area; with
   areas selected they edit all of them. Delete removes whatever is selected (any element).
 - **Redact stage:** Box = drag a rectangle (a plain click draws nothing); Brush = paint, round, size
@@ -200,7 +221,7 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   kind's options **underneath** (owner): Colour = an inline **ColorStrip** (32px round swatches like
   the filter strip, selected = accent ring, the last button = custom colour → popover with the HSV
   picker); Image = "Choose image…" + a small preview; None / Blurred photo = a muted hint that Fill
-  shows where the photo is transparent (PNGs, round crops). Rows scroll sideways on narrow editors.
+  shows where the photo is transparent (PNGs, round crops). Its colour row scrolls sideways on narrow editors (a strip).
   JPEG export uses the fill instead of white.
 - **Watermark** ControlBar: row 1 = SegmentedControl None · Text · Logo, then the text field (Text)
   or "Choose logo…" + preview (Logo), the colour button, Font (the same menu as Annotate text, the

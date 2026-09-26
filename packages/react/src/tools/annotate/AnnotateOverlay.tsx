@@ -42,6 +42,7 @@ import { createRedactBox, createRedactBrush, type RedactDraw } from '../redact/s
 import { elementsOf, WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { shapeActions } from './actions';
 import { LayersPanel } from './LayersPanel';
+import { useLayersOpen } from './layers';
 import { GroupMenu } from './GroupMenu';
 import { ShapeMenu } from './ShapeMenu';
 
@@ -155,6 +156,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
   const store = useEditorStore();
   const labels = useLabels();
   const [storedUi, setUi] = useAnnotateState();
+  const [layersOpen, setLayersOpen] = useLayersOpen();
   const ui =
     selectOnly && storedUi.mode !== 'select' ? { ...storedUi, mode: 'select' as const } : storedUi;
   const image = useEditorState((s) => s.image);
@@ -858,6 +860,19 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
     }
   };
 
+  /** The stage took the pointer (a second finger pinches): drop what this press started. */
+  const onLostPointerCapture = (event: PointerEvent<HTMLDivElement>) => {
+    const it = interaction.current;
+    if (!it || it.pointerId !== event.pointerId) return; // normal release: already handled
+    cancelLongPress();
+    interaction.current = null;
+    setDragCursor(undefined);
+    setGuides([]);
+    setMarquee(null);
+    setGroupFrame(null);
+    if (store.getState().pendingChange) store.getState().cancelChange();
+  };
+
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     cancelLongPress();
     setDragCursor(undefined);
@@ -1185,6 +1200,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onLostPointerCapture={onLostPointerCapture}
       onPointerLeave={() => {
         setHoverId(null);
         setHoverCursor(undefined);
@@ -1269,14 +1285,14 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
           <Selection shape={selected} toS={toS} outline={false} />
         </svg>
       )}
-      {ui.layersOpen && (
+      {layersOpen && (
         <LayersPanel
           shapes={shapes}
           selectedIds={selectedIds}
           revealId={revealLayer}
           onSelect={(id) => select(id)}
           onSelectMany={selectMany}
-          onClose={() => setUi((u) => ({ ...u, layersOpen: false }))}
+          onClose={() => setLayersOpen(false)}
         />
       )}
       {menu?.group && isGroup && (
@@ -1313,7 +1329,8 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
           onSelect={select}
           onShowInLayers={() => {
             keepMenuFocus.current = true;
-            setUi((u) => ({ ...u, layersOpen: true, ...selectPatch([menuShape.id]) }));
+            setLayersOpen(true);
+            setUi((u) => ({ ...u, ...selectPatch([menuShape.id]) }));
             setRevealLayer({ id: menuShape.id });
           }}
           onCloseAutoFocus={(event) => event.preventDefault()}

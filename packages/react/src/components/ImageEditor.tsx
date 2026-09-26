@@ -37,6 +37,7 @@ import {
 import { applyWatermarkInput, type WatermarkInput } from '../tools/watermark/input';
 import { setWatermarkLocked } from '../tools/annotate/watermarkElement';
 import { DEFAULT_STICKER_LIBRARY_URL } from '../tools/sticker/emojiData';
+import { ELEMENT_TOOLS } from '../tools/annotate/layers';
 import { DEFAULT_FONTS } from '../fonts';
 import {
   clipboardMarker,
@@ -165,6 +166,9 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
 ) {
   const idPrefix = `iu${useId().replace(/:/g, '')}`;
   const resolvedTools = useMemo(() => resolveTools(tools), [tools]);
+  // Layers opens in the first tool that shows elements (Annotate, else Sticker, else Redact).
+  const layersTool =
+    ELEMENT_TOOLS.find((id) => resolvedTools.some((tool) => tool.id === id)) ?? null;
   const [store] = useState(() =>
     createEditorStore({ defaultTool: defaultTool ?? resolvedTools[0]?.id ?? 'adjust' }),
   );
@@ -447,6 +451,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
           saving={saving}
           shortcutsOpen={shortcutsOpen}
           onShortcutsOpenChange={setShortcutsOpen}
+          layersTool={layersTool}
         />
         <div className="iu-body">
           <ToolRail tools={resolvedTools} idPrefix={idPrefix} />

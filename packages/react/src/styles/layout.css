@@ -199,6 +199,9 @@
 
     .iu-rail__list {
       flex-direction: row;
+      /* As wide as the tools, so the end padding shows after the last one when scrolled. */
+      width: max-content;
+      min-width: 100%;
       height: 100%;
       padding: var(--iu-space-1) var(--iu-space-2);
     }
@@ -219,11 +222,24 @@
       gap: var(--iu-space-1);
       padding: 0 var(--iu-space-1);
     }
+
+    /* Tool rows wrap instead of scrolling sideways, so the ControlBar grows to fit (DECISIONS #91). */
+    .iu-main {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .iu-controlbar {
+      min-height: var(--iu-size-controlbar);
+      max-height: var(--iu-size-controlbar-max);
+      overflow-y: auto;
+    }
   }
 
   /* Phones: zoom is the % button (tap = fit ↔ 100%) plus pinch; Done shows only its icon. */
   @container iu (max-width: 479px) {
-    .iu-zoom > .iu-button {
+    /* No Reset on phones (room for Layers): History › Original does the same. */
+    .iu-zoom > .iu-button,
+    .iu-topbar .iu-topbar__reset {
       display: none;
     }
 

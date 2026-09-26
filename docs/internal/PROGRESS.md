@@ -511,3 +511,13 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   e2e: 119 (+ TopBar Layers from any tool, TopBar order; phone Annotate test updated).
 - Owner phone test, round 5: Curves channels are chips with a colour dot instead of a second
   SegmentedControl (all widths; all four fit at 320px). All checks green (141 unit, 119 e2e).
+
+## 2026-09-27 · Phase 7.5 — Accessibility & motion
+
+- 7.4 committed (`32c3496`). 7.5 plan approved: 4 steps (a axe, b keyboard & focus incl. Tab through
+  elements, c screen readers, d motion & 36px touch switches).
+- **7.5a axe:** `@axe-core/playwright`; `e2e/a11y.spec.ts` (4 runs: dark/light × 1280/390, ~40
+  states each). First run: 6 problems — unlabelled hidden file inputs, `aria-label` on a role-less
+  div (Annotate layer), `aria-expanded` on a radio (Custom colour) and on the menu anchor, light
+  danger red 4.45:1, Shortcuts panel scrolls but isn't focusable. All fixed (DECISIONS #93). All
+  checks green (141 unit, 123 e2e).

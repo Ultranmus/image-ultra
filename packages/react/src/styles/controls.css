@@ -851,7 +851,8 @@
     cursor: pointer;
   }
 
-  .iu-colorstrip__swatch[aria-checked='true'] {
+  .iu-colorstrip__swatch[aria-checked='true'],
+  .iu-colorstrip__custom[aria-pressed='true'] {
     box-shadow:
       0 0 0 2px var(--iu-surface-1),
       0 0 0 4px var(--iu-accent-text);

@@ -132,7 +132,7 @@ test.describe('Fill tool', () => {
     const stripBox = (await strip.boundingBox())!;
     expect(stripBox.y).toBeGreaterThanOrEqual(kinds.y + kinds.height); // below, not beside
 
-    await strip.getByRole('radio', { name: 'Custom colour' }).click();
+    await strip.getByRole('button', { name: 'Custom colour' }).click();
     await expect(page.getByRole('slider', { name: 'Hue' })).toBeVisible();
     await page.keyboard.press('Escape');
 

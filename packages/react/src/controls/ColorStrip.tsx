@@ -66,10 +66,10 @@ export function ColorStrip({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         trigger={
+          // A plain button (it opens the picker): pressed while the colour is a custom one.
           <button
             type="button"
-            role="radio"
-            aria-checked={isCustom}
+            aria-pressed={isCustom}
             aria-label={labels.colorCustom}
             data-tooltip={labels.colorCustom}
             className="iu-colorstrip__swatch iu-colorstrip__custom"

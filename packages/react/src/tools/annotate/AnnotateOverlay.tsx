@@ -1195,6 +1195,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       data-mode={mode}
       data-cursor={spaceHeld ? 'grab' : (dragCursor ?? hoverCursor)}
       tabIndex={-1}
+      role="group"
       aria-label={labels.tools.annotate}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -1309,6 +1310,8 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
           trigger={
             <span
               className="iu-annotate__menu-anchor"
+              // Only positions the menu (opened by right-click / long-press): not a control.
+              aria-hidden="true"
               style={{ left: menu.at.x, top: menu.at.y }}
             />
           }
@@ -1337,6 +1340,8 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
           trigger={
             <span
               className="iu-annotate__menu-anchor"
+              // Only positions the menu (opened by right-click / long-press): not a control.
+              aria-hidden="true"
               style={{ left: menu.at.x, top: menu.at.y }}
             />
           }

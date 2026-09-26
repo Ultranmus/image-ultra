@@ -296,6 +296,11 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - All controls have accessible names; sliders expose `aria-valuenow/min/max/valuetext`.
 - Visible focus ring (`--iu-focus-ring`) on keyboard focus only (`:focus-visible`).
 - Stage announces tool changes and key results via a polite live region.
+- **Checked automatically** (7.5a, DECISIONS #93): `e2e/a11y.spec.ts` runs axe (WCAG 2.2 A + AA) on every
+  tool, mode, selection and popover, in dark + light, at desktop + 390px — zero problems allowed.
+- A hidden `<input type="file">` opened by a visible button is `aria-hidden` (the button is the
+  control). Invisible menu anchors are `aria-hidden`. A button that opens a picker is a button
+  (`aria-pressed` for "selected"), never a radio. A panel that scrolls is focusable.
 
 ## 10. AI features (Phase 9 — spec in `AI_ROADMAP.md`)
 

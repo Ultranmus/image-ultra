@@ -33,7 +33,8 @@ export function ShortcutsPanel() {
     [labels.shapeMenu, ['⇧', 'F10']],
   ];
   return (
-    <div className="iu-panel iu-shortcuts">
+    // It scrolls on short screens: focusable so the keyboard can scroll it too.
+    <div className="iu-panel iu-shortcuts" role="region" aria-label={labels.shortcuts} tabIndex={0}>
       <p className="iu-panel__title">{labels.shortcuts}</p>
       <Group title={labels.shortcutsGeneral} rows={general} />
       <Group title={labels.tools.annotate} rows={annotate} />

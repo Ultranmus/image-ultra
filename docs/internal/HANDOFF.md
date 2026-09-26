@@ -44,7 +44,10 @@ Update this file at the end of every session.
   grows, two-finger pinch everywhere, playground phone layout + Wi-Fi access. Owner's phone test: five
   rounds of fixes (Resize header, per-tool phone layouts, Annotate tools scroll on phones, **Layers in
   the TopBar**, Curves channel chips). All checks green (141 unit, 119 e2e).
-- Next: **7.5 A11y & motion**.
+- **7.5 A11y & motion — in progress** (plan approved, PLAN.md; commit after each step): **7.5a axe —
+  done** (DECISIONS #93; `e2e/a11y.spec.ts`, zero WCAG 2.2 AA problems). Next: 7.5b keyboard & focus
+  (incl. Tab / Shift+Tab through elements in Select mode — owner's choice), then 7.5c screen readers,
+  7.5d motion + 36px touch switches.
 
 ## How to work with this owner
 

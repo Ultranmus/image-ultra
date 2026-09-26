@@ -168,6 +168,8 @@ export function StickerControls() {
           accept="image/*"
           className="iu-sr-only"
           tabIndex={-1}
+          // Opened by the visible button next to it: hidden from screen readers.
+          aria-hidden="true"
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = '';

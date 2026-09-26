@@ -25,35 +25,35 @@ Rule: text/icons in accent colour use `--iu-accent-text`, never `--iu-accent` / 
 
 ## Colour tokens
 
-| Token                         | Dark                                                 | Light                         | Used for                           |
-| ----------------------------- | ---------------------------------------------------- | ----------------------------- | ---------------------------------- |
-| `--iu-bg`                     | `#0b0b0d`                                            | `#f4f4f6`                     | editor root background             |
-| `--iu-stage`                  | `#060607`                                            | `#e9e9ed`                     | behind the image                   |
-| `--iu-surface-1`              | `#131316`                                            | `#ffffff`                     | TopBar, ToolRail, ControlBar       |
-| `--iu-surface-2`              | `#1c1c21`                                            | `#f1f1f4`                     | hover, inputs, strip items         |
-| `--iu-surface-3`              | `#26262d`                                            | `#e4e4ea`                     | pressed, popovers                  |
-| `--iu-border`                 | `rgba(255,255,255,0.08)`                             | `rgba(0,0,0,0.08)`            | hairlines                          |
-| `--iu-border-strong`          | `rgba(255,255,255,0.16)`                             | `rgba(0,0,0,0.16)`            | control outlines                   |
-| `--iu-text`                   | `#f4f4f5`                                            | `#18181b`                     | primary text/icons                 |
-| `--iu-text-muted`             | `#a1a1aa`                                            | `#5b5b66`                     | labels, secondary                  |
-| `--iu-text-subtle`            | `#6b6b75`                                            | `#8a8a94`                     | ticks, disabled                    |
-| `--iu-accent`                 | `#9c479c` (brand plum, lightened)                    | `#4d194d` (brand)             | primary button, focus, slider fill |
-| `--iu-accent-hover`           | `#ab55ab`                                            | `#3a123a`                     | primary hover                      |
-| `--iu-accent-contrast`        | `#ffffff`                                            | `#ffffff`                     | text on accent                     |
-| `--iu-accent-soft`            | `rgba(156,71,156,0.22)`                              | `rgba(77,25,77,0.10)`         | selected backgrounds               |
-| `--iu-accent-text`            | `#d08bd0`                                            | `#4d194d`                     | accent text/icons on surfaces      |
-| `--iu-danger`                 | `#ff5c6c`                                            | `#e5293d`                     | destructive                        |
-| `--iu-warning`                | `#f5b54a`                                            | `#9a5b00`                     | soft warnings (upscaling)          |
-| `--iu-crop-shade`             | `rgba(0,0,0,0.62)`                                   | same                          | outside the crop box               |
-| `--iu-crop-frame`             | `rgba(255,255,255,0.95)`                             | same                          | crop frame + handles               |
-| `--iu-crop-grid`              | `rgba(255,255,255,0.45)`                             | same                          | thirds grid, circle bounds         |
-| `--iu-channel-red/green/blue` | `#ff6b6b` `#4cd97b` `#5aa9ff`                        | `#d62f2f` `#1f9d4c` `#1f6fd6` | curve channels                     |
-| `--iu-handle-fill`            | `#ffffff`                                            | same                          | annotation handles (on photo)      |
-| `--iu-guide`                  | `#ff2d95`                                            | same                          | snap guides                        |
-| `--iu-overlay`                | `rgba(0,0,0,0.55)`                                   | `rgba(0,0,0,0.45)`            | crop mask outside box              |
-| `--iu-checker-a`              | `#26262b`                                            | `#ffffff`                     | transparency checkerboard          |
-| `--iu-checker-b`              | `#1d1d21`                                            | `#e6e6ea`                     | transparency checkerboard          |
-| `--iu-focus-ring`             | `0 0 0 2px var(--iu-bg), 0 0 0 4px var(--iu-accent)` | same                          | `:focus-visible`                   |
+| Token                         | Dark                                                 | Light                         | Used for                               |
+| ----------------------------- | ---------------------------------------------------- | ----------------------------- | -------------------------------------- |
+| `--iu-bg`                     | `#0b0b0d`                                            | `#f4f4f6`                     | editor root background                 |
+| `--iu-stage`                  | `#060607`                                            | `#e9e9ed`                     | behind the image                       |
+| `--iu-surface-1`              | `#131316`                                            | `#ffffff`                     | TopBar, ToolRail, ControlBar           |
+| `--iu-surface-2`              | `#1c1c21`                                            | `#f1f1f4`                     | hover, inputs, strip items             |
+| `--iu-surface-3`              | `#26262d`                                            | `#e4e4ea`                     | pressed, popovers                      |
+| `--iu-border`                 | `rgba(255,255,255,0.08)`                             | `rgba(0,0,0,0.08)`            | hairlines                              |
+| `--iu-border-strong`          | `rgba(255,255,255,0.16)`                             | `rgba(0,0,0,0.16)`            | control outlines                       |
+| `--iu-text`                   | `#f4f4f5`                                            | `#18181b`                     | primary text/icons                     |
+| `--iu-text-muted`             | `#a1a1aa`                                            | `#5b5b66`                     | labels, secondary                      |
+| `--iu-text-subtle`            | `#6b6b75`                                            | `#8a8a94`                     | ticks, disabled                        |
+| `--iu-accent`                 | `#9c479c` (brand plum, lightened)                    | `#4d194d` (brand)             | primary button, focus, slider fill     |
+| `--iu-accent-hover`           | `#ab55ab`                                            | `#3a123a`                     | primary hover                          |
+| `--iu-accent-contrast`        | `#ffffff`                                            | `#ffffff`                     | text on accent                         |
+| `--iu-accent-soft`            | `rgba(156,71,156,0.22)`                              | `rgba(77,25,77,0.10)`         | selected backgrounds                   |
+| `--iu-accent-text`            | `#d08bd0`                                            | `#4d194d`                     | accent text/icons on surfaces          |
+| `--iu-danger`                 | `#ff5c6c`                                            | `#c41d30`                     | destructive (≥ 4.5:1 on every surface) |
+| `--iu-warning`                | `#f5b54a`                                            | `#9a5b00`                     | soft warnings (upscaling)              |
+| `--iu-crop-shade`             | `rgba(0,0,0,0.62)`                                   | same                          | outside the crop box                   |
+| `--iu-crop-frame`             | `rgba(255,255,255,0.95)`                             | same                          | crop frame + handles                   |
+| `--iu-crop-grid`              | `rgba(255,255,255,0.45)`                             | same                          | thirds grid, circle bounds             |
+| `--iu-channel-red/green/blue` | `#ff6b6b` `#4cd97b` `#5aa9ff`                        | `#d62f2f` `#1f9d4c` `#1f6fd6` | curve channels                         |
+| `--iu-handle-fill`            | `#ffffff`                                            | same                          | annotation handles (on photo)          |
+| `--iu-guide`                  | `#ff2d95`                                            | same                          | snap guides                            |
+| `--iu-overlay`                | `rgba(0,0,0,0.55)`                                   | `rgba(0,0,0,0.45)`            | crop mask outside box                  |
+| `--iu-checker-a`              | `#26262b`                                            | `#ffffff`                     | transparency checkerboard              |
+| `--iu-checker-b`              | `#1d1d21`                                            | `#e6e6ea`                     | transparency checkerboard              |
+| `--iu-focus-ring`             | `0 0 0 2px var(--iu-bg), 0 0 0 4px var(--iu-accent)` | same                          | `:focus-visible`                       |
 
 ## Non-colour tokens (shared)
 

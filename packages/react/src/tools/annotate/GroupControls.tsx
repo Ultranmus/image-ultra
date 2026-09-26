@@ -209,7 +209,7 @@ export function GroupInspector({ members }: { members: Shape[] }) {
         }
       />
     </Popover>,
-    <AlignMenu key="align" ids={ids} />,
+    <AlignMenu key="arrange" ids={ids} />,
   );
   return <div className="iu-toolgroup">{items}</div>;
 }

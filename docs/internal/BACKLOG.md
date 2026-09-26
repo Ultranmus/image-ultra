@@ -171,6 +171,11 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### Found during 7.2b
 
+- [x] **Duplicate React key `align` when a text box is selected** (owner) — the text-alignment group
+      and the Align menu shared a key; the Align menu is now `arrange`. Note: e2e runs a production
+      build, where React doesn't print key warnings — dev-only warnings need a manual check in
+      `pnpm playground` (or a React unit-test setup, Phase 8).
+
 - [ ] **App watermark logo reports a 1×1 size** until decoded, so its on-photo box (Watermark tool
       and element box) is square for an unlocked app logo — _Phase 7 polish_
 - [ ] **Redaction over a shape is processed on the element layer on its own** (pixelating a shape on

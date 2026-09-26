@@ -434,7 +434,7 @@ export function AnnotateControls() {
       </Popover>,
     );
   }
-  if (selected && !selected.locked) inspector.push(<AlignMenu key="align" ids={[selected.id]} />);
+  if (selected && !selected.locked) inspector.push(<AlignMenu key="arrange" ids={[selected.id]} />);
   if (kind) {
     inspector.push(
       <Popover

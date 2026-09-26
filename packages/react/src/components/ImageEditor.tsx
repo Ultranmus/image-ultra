@@ -35,6 +35,7 @@ import {
   type StickerOption,
 } from '../context';
 import { applyWatermarkInput, type WatermarkInput } from '../tools/watermark/input';
+import { setWatermarkLocked } from '../tools/annotate/watermarkElement';
 import { DEFAULT_STICKER_LIBRARY_URL } from '../tools/sticker/emojiData';
 import { DEFAULT_FONTS } from '../fonts';
 import {
@@ -258,6 +259,9 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   }, [src, store]);
 
   useEffect(() => () => store.getState().destroy(), [store]);
+
+  // Element actions need to know whether the watermark is the app's (never selectable).
+  useEffect(() => setWatermarkLocked(store, watermarkLocked), [store, watermarkLocked]);
 
   // Surface load errors.
   useEffect(

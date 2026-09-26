@@ -14,8 +14,12 @@ export type WatermarkInput = Partial<Omit<WatermarkState, 'assetId' | 'kind'>> &
 /** Asset id used for the app's logo. */
 export const APP_WATERMARK_ASSET = 'app-watermark-logo';
 
-/** Puts the app's watermark (and its logo asset) into `state`. */
-export function applyWatermarkInput(state: EditState, input: WatermarkInput): EditState {
+/**
+ * Puts the app's watermark (and its logo asset) into `state`. It goes on top of everything: any
+ * place the user gave a watermark in the element order is dropped (DECISIONS #88).
+ */
+export function applyWatermarkInput(base: EditState, input: WatermarkInput): EditState {
+  const state = { ...base, annotations: base.annotations.filter((s) => s.type !== 'watermark') };
   const { logo, ...fields } = input;
   const watermark =
     parseWatermark({

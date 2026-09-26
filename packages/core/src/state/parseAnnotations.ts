@@ -1,5 +1,12 @@
 import type { Point } from '../types';
-import type { LineCap, Paint, Shape, TextAlign } from './annotations';
+import {
+  WATERMARK_ELEMENT_ID,
+  type LineCap,
+  type Paint,
+  type Shape,
+  type TextAlign,
+} from './annotations';
+import { parseRedaction } from './redactions';
 
 /** Validates untrusted annotation JSON; broken shapes are dropped, fields get defaults. */
 export function parseAnnotations(input: unknown): Shape[] {
@@ -66,6 +73,20 @@ function parseShape(input: unknown): Shape | null {
       if (!b || typeof input['assetId'] !== 'string') return null;
       return { ...base, type: 'image', ...b, assetId: input['assetId'] };
     }
+    case 'redact': {
+      const r = parseRedaction(input);
+      if (!r) return null;
+      return {
+        ...r,
+        type: 'redact',
+        opacity: base.opacity,
+        ...(base.name !== undefined && { name: base.name }),
+        ...(base.locked && { locked: true }),
+        ...(base.hidden && { hidden: true }),
+      };
+    }
+    case 'watermark':
+      return { ...base, id: WATERMARK_ELEMENT_ID, type: 'watermark', rotation: 0, opacity: 1 };
     case 'line': {
       const pts = points(input['points']);
       if (!pts || pts.length !== 2) return null;

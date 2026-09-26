@@ -17,6 +17,11 @@ export interface DrawRedactionsOptions {
   transform: Affine;
   /** The image's short side in oriented px (`redactReference`): strength is relative to it. */
   reference: number;
+  /**
+   * Clear the area before drawing the hidden version — for a transparent layer (elements), where
+   * the original would otherwise show through. The photo is opaque and doesn't need it.
+   */
+  replace?: boolean;
 }
 
 /**
@@ -29,7 +34,7 @@ export function drawRedactions(
   ctx: Context2D,
   source: CanvasImageSource,
   redactions: readonly Redaction[],
-  { transform, reference }: DrawRedactionsOptions,
+  { transform, reference, replace = false }: DrawRedactionsOptions,
 ): void {
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
@@ -76,30 +81,46 @@ export function drawRedactions(
 
     // Keep only the area's shape.
     actx.globalCompositeOperation = 'destination-in';
-    actx.setTransform(sx, 0, 0, sy, tx - x0, ty - y0);
-    if (r.rotation) {
-      const c = boxCenter(redactionBounds(r));
-      actx.translate(c.x, c.y);
-      actx.rotate((r.rotation * Math.PI) / 180);
-      actx.translate(-c.x, -c.y);
-    }
-    actx.fillStyle = '#000';
-    actx.strokeStyle = '#000';
-    if (r.kind === 'box') {
-      actx.fillRect(r.x, r.y, r.width, r.height);
-    } else {
-      actx.lineCap = 'round';
-      actx.lineJoin = 'round';
-      actx.lineWidth = r.size;
-      actx.beginPath();
-      tracePath(actx, r.points.length === 1 ? [r.points[0]!, r.points[0]!] : r.points, true, false);
-      actx.stroke();
-    }
+    traceMask(actx, r, [sx, 0, 0, sy, tx - x0, ty - y0]);
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (replace) {
+      // Cut the area's exact shape out first, so nothing of the original stays under it.
+      const mask = createCanvas(width, height);
+      const mctx = mask.getContext('2d') as Context2D | null;
+      if (mctx) {
+        traceMask(mctx, r, [sx, 0, 0, sy, tx - x0, ty - y0]);
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.drawImage(mask, x0, y0);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
     ctx.drawImage(area, x0, y0);
     ctx.restore();
+  }
+}
+
+/** Fills the area's shape (box or brush stroke, rotated) in black with `transform`. */
+function traceMask(c: Context2D, r: Redaction, transform: Affine): void {
+  c.setTransform(...transform);
+  if (r.rotation) {
+    const center = boxCenter(redactionBounds(r));
+    c.translate(center.x, center.y);
+    c.rotate((r.rotation * Math.PI) / 180);
+    c.translate(-center.x, -center.y);
+  }
+  c.fillStyle = '#000';
+  c.strokeStyle = '#000';
+  if (r.kind === 'box') {
+    c.fillRect(r.x, r.y, r.width, r.height);
+  } else {
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.lineWidth = r.size;
+    c.beginPath();
+    tracePath(c, r.points.length === 1 ? [r.points[0]!, r.points[0]!] : r.points, true, false);
+    c.stroke();
   }
 }
 

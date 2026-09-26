@@ -1,4 +1,5 @@
 import type { Point, Size } from '../types';
+import { resizeRedaction, type RedactBox, type RedactBrush } from './redactions';
 
 /*
  * Annotations are vector shapes drawn on top of the photo. Coordinates are in ORIENTED space — the
@@ -7,7 +8,8 @@ import type { Point, Size } from '../types';
  * them upright. Sizes (stroke width, font size) are in image pixels, so they scale with the export.
  */
 
-export type ShapeType = 'rect' | 'ellipse' | 'line' | 'path' | 'text' | 'image';
+export type ShapeType =
+  'rect' | 'ellipse' | 'line' | 'path' | 'text' | 'image' | 'redact' | 'watermark';
 
 interface ShapeBase {
   id: string;
@@ -107,7 +109,37 @@ export interface ImageShape extends ShapeBase {
   assetId: string;
 }
 
-export type Shape = RectShape | EllipseShape | LineShape | PathShape | TextShape | ImageShape;
+/**
+ * A redaction area (pixelate / blur / solid) as an element (DECISIONS #88): it hides the photo and
+ * every element below it in the list. Box or brush stroke — the fields of `RedactBox` / `RedactBrush`.
+ */
+export type RedactShape = (RedactBox | RedactBrush) &
+  Omit<ShapeBase, 'id' | 'rotation' | 'type'> & { type: 'redact' };
+
+/**
+ * Where the watermark is drawn in the element order. Its look and layout stay in
+ * `EditState.watermark`; with no marker in the list it's drawn on top of everything. Only one;
+ * ignored when there's no watermark (and for an app-locked one, which is always on top).
+ */
+export interface WatermarkShape extends ShapeBase {
+  type: 'watermark';
+}
+
+/** Id of the watermark's element (marker, and its selection on the photo). */
+export const WATERMARK_ELEMENT_ID = 'watermark';
+
+export type Shape =
+  | RectShape
+  | EllipseShape
+  | LineShape
+  | PathShape
+  | TextShape
+  | ImageShape
+  | RedactShape
+  | WatermarkShape;
+
+/** Shapes you draw and style (everything except redaction areas and the watermark marker). */
+export type DrawnShape = RectShape | EllipseShape | LineShape | PathShape | TextShape | ImageShape;
 
 /** Axis-aligned rectangle before rotation. */
 export interface Box {
@@ -139,7 +171,18 @@ export function getShapeBox(shape: Shape, textHeight?: number): Box {
     case 'line':
     case 'path':
       return pointsBox(shape.points);
+    case 'redact':
+      if (shape.kind === 'box')
+        return { x: shape.x, y: shape.y, width: shape.width, height: shape.height };
+      return inflate(pointsBox(shape.points), shape.size / 2);
+    case 'watermark':
+      // Laid out from `EditState.watermark` by the editor, not from the marker.
+      return { x: 0, y: 0, width: 0, height: 0 };
   }
+}
+
+function inflate(box: Box, by: number): Box {
+  return { x: box.x - by, y: box.y - by, width: box.width + by * 2, height: box.height + by * 2 };
 }
 
 export function pointsBox(points: readonly Point[]): Box {
@@ -212,7 +255,7 @@ export function hitTestShape(
   tolerance: number,
   textHeight?: number,
 ): boolean {
-  if (shape.hidden) return false;
+  if (shape.hidden || shape.type === 'watermark') return false;
   const box = getShapeBox(shape, textHeight);
   // Work in the shape's unrotated frame.
   const p = rotatePoint(point, boxCenter(box), -shape.rotation);
@@ -248,6 +291,23 @@ export function hitTestShape(
         Math.hypot(p.x - pts[0]!.x, p.y - pts[0]!.y) <= shape.strokeWidth / 2 + tolerance
       );
     }
+    case 'redact': {
+      if (shape.kind === 'box') {
+        return (
+          p.x >= box.x - tolerance &&
+          p.x <= box.x + box.width + tolerance &&
+          p.y >= box.y - tolerance &&
+          p.y <= box.y + box.height + tolerance
+        );
+      }
+      const reach = shape.size / 2 + tolerance;
+      const pts = shape.points;
+      if (pts.length === 1) return Math.hypot(p.x - pts[0]!.x, p.y - pts[0]!.y) <= reach;
+      for (let i = 1; i < pts.length; i++) {
+        if (distanceToSegment(p, pts[i - 1]!, pts[i]!) <= reach) return true;
+      }
+      return false;
+    }
   }
 }
 
@@ -276,9 +336,10 @@ export function moveShape<T extends Shape>(shape: T, dx: number, dy: number): T 
       points: shape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) as [Point, Point],
     };
   }
-  if (shape.type === 'path') {
+  if (shape.type === 'path' || (shape.type === 'redact' && shape.kind === 'brush')) {
     return { ...shape, points: shape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
   }
+  if (shape.type === 'watermark') return shape;
   return { ...shape, x: (shape as RectShape).x + dx, y: (shape as RectShape).y + dy };
 }
 
@@ -316,6 +377,14 @@ export function setShapeBox<T extends Shape>(
       const map = (p: Point) => ({ x: box.x + (p.x - old.x) * sx, y: box.y + (p.y - old.y) * sy });
       return { ...shape, points: shape.points.map(map) } as T;
     }
+    case 'redact':
+      return (
+        shape.kind === 'box'
+          ? { ...shape, x: box.x, y: box.y, width, height }
+          : resizeRedaction(shape, box)
+      ) as T;
+    case 'watermark':
+      return shape;
   }
   return shape;
 }
@@ -400,8 +469,10 @@ export function rotateAnnotations(
   const map = (p: Point): Point =>
     direction === 1 ? { x: size.height - p.y, y: p.x } : { x: p.y, y: size.width - p.x };
   return shapes.map((shape) => {
+    if (shape.type === 'watermark') return shape;
     if (shape.type === 'line') return { ...shape, points: shape.points.map(map) as [Point, Point] };
-    if (shape.type === 'path') return { ...shape, points: shape.points.map(map) };
+    if (shape.type === 'path' || (shape.type === 'redact' && shape.kind === 'brush'))
+      return { ...shape, points: shape.points.map(map) };
     // Box shapes: move the centre, keep the box, and turn it with the photo.
     const box = getShapeBox(shape);
     const c = map(boxCenter(box));
@@ -422,10 +493,12 @@ export function flipAnnotations(shapes: readonly Shape[], size: Size, axis: 'x' 
   const map = (p: Point): Point =>
     axis === 'x' ? { x: size.width - p.x, y: p.y } : { x: p.x, y: size.height - p.y };
   return shapes.map((shape) => {
+    if (shape.type === 'watermark') return shape;
     const rotation = normalizeDegrees(-shape.rotation);
     if (shape.type === 'line')
       return { ...shape, rotation, points: shape.points.map(map) as [Point, Point] };
-    if (shape.type === 'path') return { ...shape, rotation, points: shape.points.map(map) };
+    if (shape.type === 'path' || (shape.type === 'redact' && shape.kind === 'brush'))
+      return { ...shape, rotation, points: shape.points.map(map) };
     const box = getShapeBox(shape);
     const c = map(boxCenter(box));
     return { ...shape, rotation, x: c.x - box.width / 2, y: c.y - box.height / 2 };
@@ -452,6 +525,10 @@ export function defaultShapeName(shape: Shape): string {
       return `Text: ${shape.text.split('\n')[0]!.slice(0, 24) || '…'}`;
     case 'image':
       return 'Image';
+    case 'redact':
+      return shape.style === 'pixelate' ? 'Pixelate' : shape.style === 'blur' ? 'Blur' : 'Solid';
+    case 'watermark':
+      return 'Watermark';
   }
 }
 

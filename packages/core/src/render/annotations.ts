@@ -5,6 +5,7 @@ import {
   rotatePoint,
   type LineShape,
   type Shape,
+  type RedactShape,
   type TextShape,
 } from '../state/annotations';
 import type { EditState } from '../state/editState';
@@ -238,6 +239,13 @@ export interface DrawAnnotationsOptions {
   assets?: ReadonlyMap<string, CanvasImageSource>;
   /** Shape ids to leave out (e.g. the text currently being edited in place). */
   skip?: ReadonlySet<string>;
+  /**
+   * A redaction area in the order: hide what's already drawn under it (the elements below).
+   * Without it, redaction areas are left out here.
+   */
+  onRedact?: (shape: RedactShape) => void;
+  /** The watermark's place in the order: draw it now. */
+  onWatermark?: () => void;
 }
 
 /** Draws shapes bottom → top. The context's clip (e.g. round crop) is respected. */
@@ -248,6 +256,14 @@ export function drawAnnotations(
 ): void {
   for (const shape of shapes) {
     if (shape.hidden || options.skip?.has(shape.id) || shape.opacity <= 0) continue;
+    if (shape.type === 'redact') {
+      options.onRedact?.(shape);
+      continue;
+    }
+    if (shape.type === 'watermark') {
+      options.onWatermark?.();
+      continue;
+    }
     ctx.save();
     ctx.setTransform(...options.transform);
     ctx.globalAlpha = shape.opacity;

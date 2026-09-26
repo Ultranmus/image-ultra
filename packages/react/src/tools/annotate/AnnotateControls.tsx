@@ -1,6 +1,13 @@
 import { useRef, type ReactNode } from 'react';
 import { type Shape, type TextAlign } from '@image-ultra/core';
-import { useEditorState, useEditorStore, useFonts, useLabels } from '../../context';
+import {
+  useEditorState,
+  useEditorStore,
+  useFonts,
+  useLabels,
+  useWatermarkLocked,
+} from '../../context';
+import { elementsOf, WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { IconButton } from '../../components/IconButton';
 import { Popover } from '../../controls/Popover';
 import { PresetStrip } from '../../controls/PresetStrip';
@@ -25,11 +32,13 @@ import {
   IconPen,
   IconPointer,
   IconPolygon,
+  IconRedact,
   IconSquare,
   IconStrokeWidth,
   IconText,
   IconTextSize,
   IconTrash,
+  IconWatermark,
 } from '../../icons/Icon';
 import type { IconProps } from '../../icons/Icon';
 import {
@@ -88,15 +97,21 @@ export function AnnotateControls() {
   const image = useEditorState((s) => s.image);
   const edit = useEditorState((s) => s.edit);
   const fileInput = useRef<HTMLInputElement>(null);
+  const watermarkLocked = useWatermarkLocked();
   if (!image) return null;
 
   const ref = referenceSize(image, edit);
   const ids = selectionIds(ui);
-  const members = edit.annotations.filter((s) => ids.includes(s.id) && !s.hidden);
+  // Every element on the photo — the watermark's box too (DECISIONS #88).
+  const elements = elementsOf(image, edit, watermarkLocked);
+  const members = elements.filter((s) => ids.includes(s.id) && !s.hidden);
   const multi = members.length > 1;
-  const selected = multi
-    ? null
-    : (edit.annotations.find((s) => s.id === ui.selectedId && !s.hidden) ?? null);
+  const picked = multi ? null : (elements.find((s) => s.id === ui.selectedId && !s.hidden) ?? null);
+  /** A redaction area or the watermark: styled in their own tools. */
+  const other =
+    picked && (picked.type === 'redact' || picked.id === WATERMARK_ELEMENT_ID) ? picked : null;
+  /** The selected shape Annotate styles. */
+  const selected = other ? null : picked;
   const kind: Kind = selected?.type ?? kindForMode(ui.mode);
   const style = ui.style;
   const polygonOrClosed = selected?.type === 'path' ? selected.closed : ui.mode === 'polygon';
@@ -151,14 +166,14 @@ export function AnnotateControls() {
       setUi((u) => ({ ...u, ...selectPatch(copies) }));
       return;
     }
-    if (!selected) return;
-    const copyId = actions.duplicate(selected, ref * 0.03);
+    if (!picked || picked.id === WATERMARK_ELEMENT_ID) return;
+    const copyId = actions.duplicate(picked, ref * 0.03);
     setUi((u) => ({ ...u, ...selectPatch([copyId]) }));
   };
 
   const remove = () => {
     if (multi) actions.removeMany(members.map((s) => s.id));
-    else if (selected) actions.remove(selected.id);
+    else if (picked) actions.remove(picked.id);
     else return;
     setUi((u) => ({ ...u, ...selectPatch([]) }));
   };
@@ -501,6 +516,25 @@ export function AnnotateControls() {
       <div className="iu-inspector">
         {multi ? (
           <GroupInspector members={members} />
+        ) : other ? (
+          <div className="iu-toolgroup">
+            <IconButton
+              label={other.type === 'redact' ? labels.editInRedact : labels.editInWatermark}
+              icon={other.type === 'redact' ? <IconRedact /> : <IconWatermark />}
+              showLabel
+              onClick={() => {
+                const tool = other.type === 'redact' ? 'redact' : 'watermark';
+                // Keep it selected there (the Redact tool shares the selection model).
+                if (tool === 'redact') {
+                  const current = store.getState().toolState['redact'] as object | undefined;
+                  store
+                    .getState()
+                    .setToolState('redact', { ...current, ...selectPatch([other.id]) });
+                }
+                store.getState().setActiveTool(tool);
+              }}
+            />
+          </div>
         ) : inspector.length > 0 ? (
           <div className="iu-toolgroup">{inspector}</div>
         ) : (
@@ -508,18 +542,20 @@ export function AnnotateControls() {
             {ui.mode === 'polygon' ? labels.polygonHint : labels.annotateHint}
           </p>
         )}
-        {(selected || multi) && (
+        {(picked || multi) && (
           <div className="iu-toolgroup iu-toolgroup--end">
             {multi && (
               <span className="iu-controlbar__count" aria-live="polite">
                 {labels.selectedCount.replace('{count}', String(members.length))}
               </span>
             )}
-            <IconButton
-              label={`${labels.duplicate} (⌘D)`}
-              icon={<IconDuplicate />}
-              onClick={duplicate}
-            />
+            {picked?.id !== WATERMARK_ELEMENT_ID && (
+              <IconButton
+                label={`${labels.duplicate} (⌘D)`}
+                icon={<IconDuplicate />}
+                onClick={duplicate}
+              />
+            )}
             <IconButton
               label={`${labels.deleteShape} (⌫)`}
               icon={<IconTrash />}

@@ -46,7 +46,7 @@ export function FrameControls() {
   const geometry = edit.geometry;
   const look = edit.filter;
   const base = useMemo<EditState>(
-    () => ({ ...edit, frame: null, annotations: [], redactions: [] }),
+    () => ({ ...edit, frame: null, annotations: [] }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only crop and look change the photo
     [geometry, look],
   );

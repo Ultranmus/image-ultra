@@ -145,6 +145,8 @@ export interface Labels {
   distributeY: string;
   renameLayer: string;
   groupMenu: string;
+  editInRedact: string;
+  editInWatermark: string;
   lockAll: string;
   unlockAll: string;
   hideAll: string;
@@ -408,6 +410,8 @@ export const defaultLabels: Labels = {
   distributeY: 'Distribute vertically',
   renameLayer: 'Rename',
   groupMenu: 'Selection',
+  editInRedact: 'Edit in Redact',
+  editInWatermark: 'Edit in Watermark',
   lockAll: 'Lock all',
   unlockAll: 'Unlock all',
   hideAll: 'Hide all',

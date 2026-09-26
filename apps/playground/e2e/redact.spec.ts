@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { RedactBox, RedactBrush } from '@image-ultra/react';
+import type { RedactBox, RedactBrush, RedactShape } from '@image-ultra/react';
 import {
   dragOnStage,
   editState,
@@ -16,7 +16,12 @@ async function openRedact(page: Page) {
   await page.getByRole('tab', { name: 'Redact' }).click();
 }
 
-const areas = async (page: Page) => (await editState(page)).redactions;
+/** Redaction areas — elements of type `redact` since 7.2b (DECISIONS #88). */
+const areas = async (page: Page) =>
+  (await editState(page)).annotations.filter((s): s is RedactShape => s.type === 'redact') as (
+    RedactBox | RedactBrush
+  )[] &
+    RedactShape[];
 
 /** Exported PNG pixels (RGBA) at image coordinates. */
 function exportPixels(page: Page, points: [number, number][]) {
@@ -232,7 +237,7 @@ test.describe('Redact tool', () => {
     await openRedact(page);
     await dragOnStage(page, [0.3, 0.3], [0.5, 0.5]); // selected
     await dragOnStage(page, [0.6, 0.6], [0.7, 0.7]); // now this one is selected
-    const layer = page.locator('.iu-redact-layer');
+    const layer = page.locator('.iu-annotate-layer');
     const cursor = () => layer.evaluate((el) => getComputedStyle(el).cursor);
     const first = await stagePoint(page, 0.4, 0.4);
     const second = await stagePoint(page, 0.65, 0.65);
@@ -262,7 +267,9 @@ test.describe('Redact tool', () => {
     await page.getByRole('tab', { name: 'Adjust' }).click();
     await page.getByRole('button', { name: 'Rotate left' }).click();
     const after = (await areas(page))[0] as RedactBox;
-    expect(after.width).toBeCloseTo(before.height, 3);
+    // Turned with the photo like any element: same box, a quarter turn more.
+    expect(after.width).toBeCloseTo(before.width, 3);
+    expect(after.rotation).toBe(-90);
     expect(after.y + after.height / 2).toBeGreaterThan(before.y + before.height / 2);
 
     await page.getByRole('button', { name: /^Compare/ }).click();

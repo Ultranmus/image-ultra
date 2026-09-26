@@ -11,7 +11,6 @@ import {
 } from '../state/geometry';
 import { redactReference } from '../state/redactions';
 import {
-  drawAnnotations,
   ensureAnnotationFonts,
   getOrientedToOutput,
   loadAnnotationAssets,
@@ -22,6 +21,7 @@ import { drawWatermark, watermarkFont } from '../render/watermark';
 import type { WatermarkState } from '../state/watermark';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
 import { drawRedactions } from '../render/redactions';
+import { drawElements, redactElements } from '../render/elements';
 import type { AnyCanvas, RendererKind } from '../render/renderer';
 import type { ImageSource, LoadedImage, Size } from '../types';
 
@@ -144,18 +144,19 @@ export async function renderToCanvas(
         c.clip();
       };
 
-      // 1. Redactions (from the rendered pixels), inside a round crop.
-      if (state.redactions.length > 0) {
+      const reference = redactReference(getOrientedSize(image, state.geometry));
+
+      // 1. Every redaction area hides the photo under it, inside a round crop. (The Fill's blur
+      //    samples this, so hidden content can't leak through it.)
+      const redacts = redactElements(state.annotations);
+      if (redacts.length > 0) {
         ctx.save();
         roundClip(ctx);
-        drawRedactions(ctx, out, state.redactions, {
-          transform,
-          reference: redactReference(getOrientedSize(image, state.geometry)),
-        });
+        drawRedactions(ctx, out, redacts, { transform, reference });
         ctx.restore();
       }
 
-      // 2. Fill underneath (its blur uses the already redacted result), or flatten for JPEG.
+      // 2. Fill underneath, or flatten for JPEG.
       if (state.background || options.background) {
         const flat = createCanvas(size.width, size.height);
         const fctx = context2d(flat);
@@ -177,28 +178,41 @@ export async function renderToCanvas(
         ctx = fctx;
       }
 
-      // 3. Vector annotations (sharp at any size), inside a round crop.
-      if (state.annotations.length > 0) {
-        const [assets] = await Promise.all([
-          loadAnnotationAssets(state),
-          ensureAnnotationFonts(state.annotations),
-        ]);
-        ctx.save();
-        // With added canvas space, shapes may sit on that space: no round clip then.
-        if (!state.canvas) roundClip(ctx);
-        drawAnnotations(ctx, state.annotations, { transform, assets });
-        ctx.restore();
-      }
-
-      // 4. The frame, then 5. the watermark on top of everything.
+      // 3. The frame, on the photo (elements can sit over it).
       if (state.frame) drawFrame(ctx, state.frame, size);
+
+      // 4. Elements in order on their own layer (a redaction area also hides the elements below
+      //    it), with the watermark at its place — 5. or on top of everything.
+      let drawMark: ((c: Context2D) => void) | null = null;
       if (state.watermark) {
         const wm = state.watermark;
         const asset = wm.kind === 'image' && wm.assetId ? state.assets[wm.assetId] : undefined;
         const logo = asset ? await loadAssetBitmap(asset.src) : null;
         if (wm.kind === 'text') await ensureWatermarkFont(wm);
-        drawWatermark(ctx, wm, size, logo ?? undefined);
+        drawMark = (c) => drawWatermark(c, wm, size, logo ?? undefined);
       }
+      let markDrawn = false;
+      if (state.annotations.length > 0) {
+        const [assets] = await Promise.all([
+          loadAnnotationAssets(state),
+          ensureAnnotationFonts(state.annotations),
+        ]);
+        const layer = createCanvas(size.width, size.height);
+        const lctx = context2d(layer);
+        lctx.save();
+        // With added canvas space, shapes may sit on that space: no round clip then.
+        if (!state.canvas) roundClip(lctx);
+        const mark = drawMark;
+        markDrawn = drawElements(lctx, state.annotations, {
+          transform,
+          assets,
+          reference,
+          drawWatermark: mark ? () => mark(lctx) : undefined,
+        }).watermarkDrawn;
+        lctx.restore();
+        ctx.drawImage(layer, 0, 0);
+      }
+      if (drawMark && !markDrawn) drawMark(ctx);
 
       return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };
     } catch (error) {

@@ -1,6 +1,6 @@
 import { parseAnnotations } from './parseAnnotations';
 import type { Shape } from './annotations';
-import { parseRedactions, type Redaction } from './redactions';
+import { parseRedactions } from './redactions';
 import { parseBackground, parseFrame, type BackgroundState, type FrameState } from './frame';
 import { parseWatermark, type WatermarkState } from './watermark';
 /**
@@ -211,8 +211,6 @@ export interface EditState {
   filter: FilterState | null;
   /** Vector shapes on top of the photo, bottom → top (see `annotations.ts`). */
   annotations: Shape[];
-  /** Hidden areas (pixelate / blur / solid), drawn under the annotations (see `redactions.ts`). */
-  redactions: Redaction[];
   /** Decorative frame over the photo's edges (see `frame.ts`). */
   frame: FrameState | null;
   /** What shows through transparent parts (colour, image or a blurred copy). */
@@ -273,7 +271,6 @@ export function createEditState(): EditState {
     curves: createCurvesState(),
     filter: null,
     annotations: [],
-    redactions: [],
     frame: null,
     background: null,
     watermark: null,
@@ -379,11 +376,22 @@ export function parseEditState(input: unknown): EditState {
   }
 
   state.filter = parseFilter(value['filter']);
-  state.annotations = parseAnnotations(value['annotations']);
-  state.redactions = parseRedactions(value['redactions']);
+  // Before 7.2b redaction areas had their own list, always under the shapes: they become the
+  // bottom elements (DECISIONS #88), so old edits look the same.
+  const legacyRedactions = parseRedactions(value['redactions']).map((r) => ({
+    ...r,
+    type: 'redact' as const,
+    opacity: 1,
+  }));
+  const elements = parseAnnotations(value['annotations']);
+  const taken = new Set(elements.map((s) => s.id));
+  state.annotations = [...legacyRedactions.filter((r) => !taken.has(r.id)), ...elements];
+
   state.frame = parseFrame(value['frame']);
   state.background = parseBackground(value['background']);
   state.watermark = parseWatermark(value['watermark']);
+  // The watermark's place in the order means nothing without a watermark.
+  if (!state.watermark) state.annotations = state.annotations.filter((s) => s.type !== 'watermark');
 
   state.canvas = parseCanvas(value['canvas']);
 

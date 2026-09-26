@@ -147,7 +147,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
       anchor, Fill shows on the sides); zoom in crop view (wheel + pinch); vignette preview uses
       the crop; paste images from the system clipboard as image shapes. Group menu: right-click a
       multi-selection → group actions (owner, BACKLOG).
-- [ ] **7.2b** Unified elements (owner, 2026-09-26; DECISIONS #88): redaction areas and the watermark
+- [x] **7.2b** Unified elements (owner, 2026-09-26; DECISIONS #88): redaction areas and the watermark
       become elements in one ordered list with shapes — select, group, move, align, copy/paste,
       Layers, bring forward / send backward across types. A redact area blurs everything drawn
       below it (Canva-style). An app-locked watermark stays on top and isn't selectable. Old saved

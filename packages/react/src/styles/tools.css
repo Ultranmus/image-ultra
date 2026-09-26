@@ -798,7 +798,7 @@
 
   /* Redact Brush: a brush cursor (our IconBrush, white with a dark edge) on empty photo; the tip is
      the hot spot. A cursor image can't read CSS variables, so its colours are fixed. */
-  .iu-redact-layer[data-mode='brush'] {
+  .iu-annotate-layer[data-mode='redactBrush'] {
     cursor:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg stroke='%23000' stroke-width='3.5'%3E%3Cpath d='M19.5 4.5l-8.3 8.3'/%3E%3Cpath d='M11.2 12.8c-2.2-.6-4.2.9-4.5 3.1-.2 1.3-.9 2.3-2.2 2.9 2.6 1.3 6.3 1 7.8-1.4.9-1.4.7-3.1-1.1-4.6z'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1.75'%3E%3Cpath d='M19.5 4.5l-8.3 8.3'/%3E%3Cpath d='M11.2 12.8c-2.2-.6-4.2.9-4.5 3.1-.2 1.3-.9 2.3-2.2 2.9 2.6 1.3 6.3 1 7.8-1.4.9-1.4.7-3.1-1.1-4.6z' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E")
         4 19,

@@ -169,6 +169,14 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
   - Fix: remember the last pointer position over the stage; when it's over the photo, centre the
     paste there, otherwise fall back to "next to the original / same relative spot".
 
+### Found during 7.2b
+
+- [ ] **App watermark logo reports a 1×1 size** until decoded, so its on-photo box (Watermark tool
+      and element box) is square for an unlocked app logo — _Phase 7 polish_
+- [ ] **Redaction over a shape is processed on the element layer on its own** (pixelating a shape on
+      a transparent layer, then the pixelated photo under it): very close to pixelating the
+      combined image, not identical at soft edges — fine for hiding; note for docs (Phase 8)
+
 ### Found during 7.2
 
 - [x] **Cropped photo + added canvas space showed the cropped-away photo** in the space (owner) —
@@ -178,8 +186,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Align popover had empty space on the right** (owner) — fixed: 3-column grid, fits content
 - [x] **Photo position popover (Resize › Canvas) had empty space on the sides** (owner) — fits now
 - [x] **Right-click on empty space inside a group box didn't open the group menu** (owner) — fixed
-- [ ] **One element model: redaction areas and the watermark selectable, groupable and reorderable
-      with shapes** (owner, 2026-09-26) — plan sent, waiting for approval (7.2b)
+- [x] **One element model: redaction areas and the watermark selectable, groupable and reorderable
+      with shapes** (owner, 2026-09-26) — _done in 7.2b_
 
 - [ ] **Paste text from other apps as a text box** — now text on the system clipboard is ignored
       by ⌘V in the editor (only images and our own copies paste) — _nice to have_

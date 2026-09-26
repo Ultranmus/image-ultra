@@ -4,6 +4,7 @@ import { useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { shapeActions } from './actions';
 import { ShapeMenu } from './ShapeMenu';
+import { WATERMARK_ELEMENT_ID } from './watermarkElement';
 import {
   IconChevronDown,
   IconChevronUp,
@@ -16,9 +17,11 @@ import {
   IconLock,
   IconMore,
   IconPen,
+  IconRedact,
   IconSquare,
   IconText,
   IconUnlock,
+  IconWatermark,
 } from '../../icons/Icon';
 import type { IconProps } from '../../icons/Icon';
 
@@ -29,6 +32,8 @@ const TYPE_ICONS: Record<Shape['type'], (p: IconProps) => React.JSX.Element> = {
   path: IconPen,
   text: IconText,
   image: IconImage,
+  redact: IconRedact,
+  watermark: IconWatermark,
 };
 
 /** Pointer travel (CSS px) before a press on a row becomes a drag. */
@@ -167,8 +172,9 @@ export function LayersPanel({
       ) : (
         <ul ref={listRef} className="iu-layers__list">
           {ordered.map((shape, index) => {
-            const Icon = TYPE_ICONS[shape.type];
-            const name = shape.name ?? defaultShapeName(shape);
+            const isMark = shape.id === WATERMARK_ELEMENT_ID;
+            const Icon = isMark ? IconWatermark : TYPE_ICONS[shape.type];
+            const name = isMark ? labels.tools.watermark : (shape.name ?? defaultShapeName(shape));
             const isSelected = selectedIds.includes(shape.id);
             return (
               <li
@@ -200,7 +206,7 @@ export function LayersPanel({
                     type="button"
                     className="iu-layers__name"
                     aria-current={isSelected}
-                    title={labels.renameLayer}
+                    title={isMark ? undefined : labels.renameLayer}
                     onPointerDown={(e) => onRowPointerDown(e, shape)}
                     onPointerMove={onRowPointerMove}
                     onPointerUp={onRowPointerUp}
@@ -209,12 +215,12 @@ export function LayersPanel({
                       if (e.shiftKey || e.metaKey || e.ctrlKey) toggle(shape);
                       else onSelect(shape.id);
                     }}
-                    onDoubleClick={() => setRenaming(shape.id)}
+                    onDoubleClick={() => !isMark && setRenaming(shape.id)}
                     onKeyDown={(e) => {
                       if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
                         e.preventDefault();
                         actions.move(shape.id, e.key === 'ArrowUp' ? 'forward' : 'backward');
-                      } else if (e.key === 'F2') {
+                      } else if (e.key === 'F2' && !isMark) {
                         e.preventDefault();
                         setRenaming(shape.id);
                       }
@@ -224,14 +230,17 @@ export function LayersPanel({
                     <span>{name}</span>
                   </button>
                 )}
+                {/* The watermark can't be hidden or locked here (the Watermark tool has None). */}
                 <IconButton
                   size="sm"
+                  disabled={isMark}
                   label={shape.hidden ? labels.showLayer : labels.hideLayer}
                   icon={shape.hidden ? <IconEyeOff size={16} /> : <IconEye size={16} />}
                   onClick={() => actions.toggleHidden(shape)}
                 />
                 <IconButton
                   size="sm"
+                  disabled={isMark}
                   label={shape.locked ? labels.unlockLayer : labels.lockLayer}
                   icon={shape.locked ? <IconLock size={16} /> : <IconUnlock size={16} />}
                   onClick={() => actions.toggleLocked(shape)}

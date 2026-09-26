@@ -37,7 +37,9 @@ Update this file at the end of every session.
   crop-view wheel/pinch zoom, vignette on the photo, paste images from other apps, group menu.
   Review round 1 fixed (cropped canvas, locked groups, Align popover). All checks green
   (137 unit, 98 e2e).
-- Next: **7.2b Unified elements** (plan in PLAN.md, DECISIONS #88), then **7.3 Colour tools**.
+- **7.2b Unified elements — committed** (2026-09-26, `feat: phase 7.2b`; DECISIONS #88, #89): redaction
+  areas and the watermark are elements with shapes (select, group, reorder anywhere). All checks green.
+- Next: **7.3 Colour tools** (plan sent to the owner, waiting for OK).
 
 ## How to work with this owner
 

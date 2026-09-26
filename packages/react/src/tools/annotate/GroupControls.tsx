@@ -20,6 +20,7 @@ import {
   type IconProps,
 } from '../../icons/Icon';
 import { shapeActions } from './actions';
+import { WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { referenceSize, strokeWidthFor, type SizeStep } from './state';
 
 const EDGES: [AlignEdge, (p: IconProps) => React.JSX.Element][] = [
@@ -79,7 +80,9 @@ export function AlignMenu({ ids }: { ids: readonly string[] }) {
   );
 }
 
-const hasStroke = (s: Shape) => s.type !== 'image' && s.type !== 'text';
+/** Shapes Annotate styles (not redaction areas or the watermark, styled in their own tools). */
+const isDrawn = (s: Shape) => s.type !== 'redact' && s.id !== WATERMARK_ELEMENT_ID;
+const hasStroke = (s: Shape) => isDrawn(s) && s.type !== 'image' && s.type !== 'text';
 const hasFill = (s: Shape) =>
   s.type === 'rect' || s.type === 'ellipse' || s.type === 'text' || (s.type === 'path' && s.closed);
 const STEPS: SizeStep[] = ['S', 'M', 'L', 'XL'];
@@ -103,7 +106,7 @@ export function GroupInspector({ members }: { members: Shape[] }) {
     });
 
   const first = members[0]!;
-  const colored = members.filter((s) => s.type !== 'image');
+  const colored = members.filter((s) => isDrawn(s) && s.type !== 'image');
   const filled = members.filter(hasFill);
   const stroked = members.filter(hasStroke);
   const color =

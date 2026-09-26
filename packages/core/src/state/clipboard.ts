@@ -2,7 +2,6 @@ import type { Point } from '../types';
 import { boxCenter, createShapeId, getShapeBox, type Box, type Shape } from './annotations';
 import { groupBounds, transformShape } from './arrange';
 import type { EditAsset, EditState } from './editState';
-import { redactionBounds, type Redaction } from './redactions';
 
 /*
  * Copy / paste of shapes and redaction areas, also between photos (DECISIONS #78). A copied item
@@ -11,15 +10,14 @@ import { redactionBounds, type Redaction } from './redactions';
  * keeping their layout. Everything here is plain data — the clipboard itself lives in the UI.
  */
 
-export type ClipboardItem =
-  | {
-      kind: 'shape';
-      /** Bottom to top, as in `annotations`. */
-      shapes: Shape[];
-      /** Images the shapes need (stickers, logos), so they paste into any photo. */
-      assets: Record<string, EditAsset>;
-    }
-  | { kind: 'redaction'; redaction: Redaction };
+/** Copied elements (shapes, text, images, redaction areas — never the watermark, there's one). */
+export interface ClipboardItem {
+  kind: 'shape';
+  /** Bottom to top, as in `annotations`. */
+  shapes: Shape[];
+  /** Images the shapes need (stickers, logos), so they paste into any photo. */
+  assets: Record<string, EditAsset>;
+}
 
 export interface ClipboardEntry {
   item: ClipboardItem;
@@ -36,7 +34,7 @@ export function copyShapes(
   ids: readonly string[],
   area: Box,
 ): ClipboardEntry | null {
-  const shapes = state.annotations.filter((s) => ids.includes(s.id));
+  const shapes = state.annotations.filter((s) => ids.includes(s.id) && s.type !== 'watermark');
   if (shapes.length === 0) return null;
   const assets: Record<string, EditAsset> = {};
   for (const shape of shapes) {
@@ -45,13 +43,6 @@ export function copyShapes(
     if (asset) assets[shape.assetId] = clone(asset);
   }
   return { item: { kind: 'shape', shapes: clone(shapes), assets }, area: { ...area } };
-}
-
-/** Copies the redaction area with id `id`; `null` if it doesn't exist. */
-export function copyRedaction(state: EditState, id: string, area: Box): ClipboardEntry | null {
-  const redaction = state.redactions.find((r) => r.id === id);
-  if (!redaction) return null;
-  return { item: { kind: 'redaction', redaction: clone(redaction) }, area: { ...area } };
 }
 
 /**
@@ -70,16 +61,6 @@ export function pasteClipboard(
   const { item } = entry;
   const step = Math.min(area.width, area.height) * 0.03;
   const nudge = (p: Point) => ({ x: p.x + step, y: p.y + step });
-  if (item.kind === 'redaction') {
-    let r = fitRedaction(item.redaction, entry.area, area, at);
-    for (let i = 0; i < 50 && draft.redactions.some((o) => sameBox(o, r)); i++) {
-      r = transformRedaction(r, nudge, 1);
-    }
-    const id = `redact-${Math.random().toString(36).slice(2, 10)}`;
-    draft.redactions.push({ ...r, id });
-    return [id];
-  }
-
   let shapes = fitShapes(item.shapes, entry.area, area, at);
   const taken = () => shapes.some((shape) => draft.annotations.some((o) => sameShapeBox(o, shape)));
   for (let i = 0; i < 50 && taken(); i++) {
@@ -138,17 +119,6 @@ export function fitShapes(shapes: readonly Shape[], from: Box, to: Box, at?: Poi
   return shapes.map((s) => transformShape(s, map, k));
 }
 
-export function fitRedaction(r: Redaction, from: Box, to: Box, at?: Point): Redaction {
-  const { map, k } = fit(boxCenter(redactionBounds(r)), from, to, at);
-  return transformRedaction(r, map, k);
-}
-
-function transformRedaction(r: Redaction, map: (p: Point) => Point, k: number): Redaction {
-  if (r.kind === 'brush') return { ...r, points: r.points.map(map), size: r.size * k };
-  const p = map({ x: r.x, y: r.y });
-  return { ...r, ...p, width: r.width * k, height: r.height * k };
-}
-
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
 const near = (a: Box, b: Box) =>
@@ -159,10 +129,6 @@ const near = (a: Box, b: Box) =>
 
 function sameShapeBox(a: Shape, b: Shape): boolean {
   return a.type === b.type && near(getShapeBox(a), getShapeBox(b));
-}
-
-function sameBox(a: Redaction, b: Redaction): boolean {
-  return a.kind === b.kind && near(redactionBounds(a), redactionBounds(b));
 }
 
 function clone<T>(value: T): T {

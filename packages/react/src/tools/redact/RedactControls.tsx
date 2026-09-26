@@ -1,58 +1,82 @@
-import { REDACT_STYLES, type Redaction, type RedactStyle } from '@image-ultra/core';
+import { REDACT_STYLES, type RedactShape, type RedactStyle } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { Popover } from '../../controls/Popover';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { SegmentedControl } from '../../controls/SegmentedControl';
 import { ColorButton, SwatchPicker } from '../../controls/SwatchPicker';
-import { IconBrush, IconSquare, IconStrokeWidth, IconTrash } from '../../icons/Icon';
+import { IconBrush, IconPointer, IconSquare, IconStrokeWidth, IconTrash } from '../../icons/Icon';
+import { shapeActions } from '../annotate/actions';
+import { selectionIds, selectPatch } from '../annotate/state';
 import { redactRef, useRedactState, type RedactMode } from './state';
 
-const MODE_ICONS = { box: IconSquare, brush: IconBrush } as const;
+const MODE_ICONS = { select: IconPointer, box: IconSquare, brush: IconBrush } as const;
 
 /**
- * Redact ControlBar (UI_VISION §5b): Box / Brush, the style, strength or fill colour, Delete and
- * Clear all. With an area selected the controls edit it; otherwise they set up the next one.
+ * Redact ControlBar (UI_VISION §5b): Select / Box / Brush, the style, strength or fill colour,
+ * Delete and Clear all. With redaction areas selected the controls edit all of them; otherwise
+ * they set up the next one.
  */
 export function RedactControls() {
   const store = useEditorStore();
   const labels = useLabels();
   const [ui, setUi] = useRedactState();
-  const redactions = useEditorState((s) => s.edit.redactions);
-  const selected = redactions.find((r) => r.id === ui.selectedId) ?? null;
+  const elements = useEditorState((s) => s.edit.annotations);
+  const ids = selectionIds(ui);
+  const selected = elements.filter(
+    (s): s is RedactShape => s.type === 'redact' && ids.includes(s.id),
+  );
+  const first = selected[0] ?? null;
+  const areas = elements.filter((s) => s.type === 'redact');
 
-  const style = selected?.style ?? ui.style;
-  const strength = selected?.strength ?? ui.strength;
-  const color = selected?.color ?? ui.color;
+  const style = first?.style ?? ui.redactStyle;
+  const strength = first?.strength ?? ui.strength;
+  const color = first?.color ?? ui.color;
   // Brush size is stored in image px; the control shows % of the image's short side.
   const ref = useEditorState((s) => (s.image ? redactRef(s.image, s.edit) : 1000));
-  const selectedBrush = selected?.kind === 'brush' ? selected : null;
-  const brushSize = selectedBrush
-    ? Math.min(20, Math.max(1, Math.round((selectedBrush.size / ref) * 100)))
-    : ui.brushSize;
+  const brushes = selected.filter((s) => s.kind === 'brush');
+  const firstBrush = brushes[0];
+  const brushSize =
+    firstBrush?.kind === 'brush'
+      ? Math.min(20, Math.max(1, Math.round((firstBrush.size / ref) * 100)))
+      : ui.brushSize;
   const setBrushSize = (percent: number) => {
     setUi((u) => ({ ...u, brushSize: percent }));
-    if (!selectedBrush) return;
+    if (brushes.length === 0) return;
+    const brushIds = brushes.map((b) => b.id);
     store.getState().update(labels.brushSize, (draft) => {
-      const area = draft.redactions.find((r) => r.id === selectedBrush.id);
-      if (area?.kind === 'brush') area.size = (percent / 100) * ref;
+      for (const s of draft.annotations)
+        if (s.type === 'redact' && s.kind === 'brush' && brushIds.includes(s.id))
+          s.size = (percent / 100) * ref;
     });
   };
 
-  /** Changes the selected area (one undo step) and remembers the value for the next area. */
+  /** Changes the selected areas (one undo step) and remembers the value for the next area. */
   const apply = (
     label: string,
-    change: Partial<Pick<Redaction, 'style' | 'strength' | 'color'>>,
+    change: Partial<Pick<RedactShape, 'style' | 'strength' | 'color'>>,
   ) => {
-    setUi((u) => ({ ...u, ...change }));
-    if (!selected) return;
+    setUi((u) => ({
+      ...u,
+      ...(change.style && { redactStyle: change.style }),
+      ...(change.strength !== undefined && { strength: change.strength }),
+      ...(change.color && { color: change.color }),
+    }));
+    if (selected.length === 0) return;
+    const targets = selected.filter((s) => !s.locked).map((s) => s.id);
     store.getState().update(label, (draft) => {
-      const area = draft.redactions.find((r) => r.id === selected.id);
-      if (area) Object.assign(area, change);
+      for (const s of draft.annotations)
+        if (s.type === 'redact' && targets.includes(s.id)) Object.assign(s, change);
     });
   };
 
-  const modes: RedactMode[] = ['box', 'brush'];
+  const modes: RedactMode[] = ['select', 'box', 'brush'];
+  const modeLabel = (mode: RedactMode) =>
+    mode === 'select'
+      ? labels.annotateModes.select
+      : mode === 'box'
+        ? labels.redactBox
+        : labels.redactBrush;
 
   return (
     <div className="iu-annotate">
@@ -63,16 +87,16 @@ export function RedactControls() {
             return (
               <IconButton
                 key={mode}
-                label={mode === 'box' ? labels.redactBox : labels.redactBrush}
+                label={modeLabel(mode)}
                 icon={<Icon />}
                 role="radio"
-                aria-checked={ui.mode === mode}
-                data-active={ui.mode === mode ? '' : undefined}
-                onClick={() => setUi((u) => ({ ...u, mode }))}
+                aria-checked={ui.redactMode === mode}
+                data-active={ui.redactMode === mode ? '' : undefined}
+                onClick={() => setUi((u) => ({ ...u, redactMode: mode }))}
               />
             );
           })}
-          {(ui.mode === 'brush' || selectedBrush) && (
+          {(ui.redactMode === 'brush' || brushes.length > 0) && (
             <Popover
               label={labels.brushSize}
               trigger={<IconButton label={labels.brushSize} icon={<IconStrokeWidth />} />}
@@ -87,9 +111,9 @@ export function RedactControls() {
                 defaultValue={5}
                 format={(v) => `${v}%`}
                 onChangeStart={() =>
-                  selectedBrush && store.getState().beginChange(labels.brushSize)
+                  brushes.length > 0 && store.getState().beginChange(labels.brushSize)
                 }
-                onChangeEnd={() => selectedBrush && store.getState().endChange()}
+                onChangeEnd={() => brushes.length > 0 && store.getState().endChange()}
                 onChange={setBrushSize}
               />
             </Popover>
@@ -102,15 +126,13 @@ export function RedactControls() {
           onChange={(value: RedactStyle) => apply(labels.redactStyle, { style: value })}
         />
         <div className="iu-toolgroup iu-toolgroup--end">
-          {selected && (
+          {ids.length > 0 && (
             <IconButton
               label={`${labels.redactDelete} (⌫)`}
               icon={<IconTrash />}
               onClick={(event) => {
-                store.getState().update(labels.redactDelete, (draft) => {
-                  draft.redactions = draft.redactions.filter((r) => r.id !== selected.id);
-                });
-                setUi((u) => ({ ...u, selectedId: null }));
+                shapeActions(store, labels).removeMany(ids);
+                setUi((u) => ({ ...u, ...selectPatch([]) }));
                 focusPhoto(event.currentTarget);
               }}
             />
@@ -118,12 +140,14 @@ export function RedactControls() {
           <button
             type="button"
             className="iu-button iu-button--text"
-            disabled={redactions.length === 0}
+            disabled={areas.length === 0}
             onClick={(event) => {
               store.getState().update(labels.redactClear, (draft) => {
-                draft.redactions = [];
+                draft.annotations = draft.annotations.filter(
+                  (s) => s.type !== 'redact' || s.locked,
+                );
               });
-              setUi((u) => ({ ...u, selectedId: null }));
+              setUi((u) => ({ ...u, ...selectPatch([]) }));
               focusPhoto(event.currentTarget);
             }}
           >
@@ -156,8 +180,10 @@ export function RedactControls() {
               tickEvery={5}
               majorEvery={25}
               defaultValue={50}
-              onChangeStart={() => selected && store.getState().beginChange(labels.redactStrength)}
-              onChangeEnd={() => selected && store.getState().endChange()}
+              onChangeStart={() =>
+                selected.length > 0 && store.getState().beginChange(labels.redactStrength)
+              }
+              onChangeEnd={() => selected.length > 0 && store.getState().endChange()}
               onChange={(v) => apply(labels.redactStrength, { strength: v / 100 })}
             />
             <span className="iu-rulerfield__label" aria-hidden="true">
@@ -166,11 +192,7 @@ export function RedactControls() {
           </div>
         )}
         <p className="iu-controlbar__hint">
-          {style === 'blur'
-            ? labels.redactBlurHint
-            : redactions.length === 0
-              ? labels.redactHint
-              : ''}
+          {style === 'blur' ? labels.redactBlurHint : areas.length === 0 ? labels.redactHint : ''}
         </p>
       </div>
     </div>
@@ -184,6 +206,6 @@ export function RedactControls() {
 function focusPhoto(from: HTMLElement) {
   from
     .closest('.iu-root')
-    ?.querySelector<HTMLElement>('.iu-redact-layer')
+    ?.querySelector<HTMLElement>('.iu-annotate-layer')
     ?.focus({ preventScroll: true });
 }

@@ -144,6 +144,9 @@ export {
   type RectShape,
   type Shape,
   type ShapeType,
+  type RedactShape,
+  type WatermarkShape,
+  type DrawnShape,
   type TextAlign,
   type TextShape,
 } from './state/annotations';
@@ -193,10 +196,10 @@ export {
   type Redaction,
 } from './state/redactions';
 export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
+export { drawElements, redactElements, type DrawElementsOptions } from './render/elements';
+export { WATERMARK_ELEMENT_ID } from './state/annotations';
 export {
-  copyRedaction,
   copyShapes,
-  fitRedaction,
   fitShapes,
   pasteClipboard,
   type ClipboardEntry,

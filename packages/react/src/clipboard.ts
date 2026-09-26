@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import {
   applyToPoint,
-  copyRedaction,
   copyShapes,
   getCanvasRect,
   invert,
@@ -19,7 +18,6 @@ import {
   type AnnotateState,
 } from './tools/annotate/state';
 import { insertImageFile } from './tools/annotate/insertImage';
-import { INITIAL_REDACT_STATE } from './tools/redact/state';
 
 /*
  * One clipboard for every editor on the page, kept in memory (DECISIONS #78): copy on one photo,
@@ -84,35 +82,30 @@ export function copyShapeById(store: EditorStore, id: string): void {
   if (copied) setEntry(copied);
 }
 
-/** Tools whose selection can be copied, and the list each one selects from. */
-const SHAPE_TOOLS = ['annotate', 'sticker'];
-const REDACT_TOOL = 'redact';
+/** Tools that select elements (shapes, stickers, redaction areas…) on the photo. */
+const SHAPE_TOOLS = ['annotate', 'sticker', 'redact'];
 
 /**
- * Copies the active tool's selection — shapes (a group too) or a redaction area. `cut` also removes
- * it (one undo step; locked shapes stay). Returns `false` when nothing is selected.
+ * Copies the active tool's selection — one element or a group (shapes, stickers, redaction areas;
+ * never the watermark, there's only one). `cut` also removes it (one undo step; locked elements
+ * stay). Returns `false` when nothing is selected.
  */
 export function copySelection(store: EditorStore, labels: Labels, cut = false): boolean {
   const state = store.getState();
   const { image, edit, activeTool } = state;
   const ui = state.toolState[activeTool] as Partial<AnnotateState> | undefined;
-  const isShape = SHAPE_TOOLS.includes(activeTool);
-  if (!image || !ui?.selectedId || (!isShape && activeTool !== REDACT_TOOL)) return false;
-  const area = getCanvasRect(image, edit);
-  const ids = isShape
-    ? selectionIds({ selectedId: ui.selectedId, selectedIds: ui.selectedIds ?? [] })
-    : [ui.selectedId];
-  const copied = isShape ? copyShapes(edit, ids, area) : copyRedaction(edit, ids[0]!, area);
+  if (!image || !ui?.selectedId || !SHAPE_TOOLS.includes(activeTool)) return false;
+  const ids = selectionIds({ selectedId: ui.selectedId, selectedIds: ui.selectedIds ?? [] });
+  const copied = copyShapes(edit, ids, getCanvasRect(image, edit));
   if (!copied) return false;
   setEntry(copied);
   if (!cut) return true;
-  const removable = isShape
-    ? ids.filter((id) => !edit.annotations.find((s) => s.id === id)?.locked)
-    : ids;
+  const removable = copied.item.shapes
+    .filter((s) => !edit.annotations.find((o) => o.id === s.id)?.locked)
+    .map((s) => s.id);
   if (removable.length === 0) return true;
   state.update(labels.cut, (draft) => {
-    if (isShape) draft.annotations = draft.annotations.filter((s) => !removable.includes(s.id));
-    else draft.redactions = draft.redactions.filter((r) => !removable.includes(r.id));
+    draft.annotations = draft.annotations.filter((s) => !removable.includes(s.id));
   });
   state.setToolState(activeTool, { ...ui, ...selectPatch([]) });
   return true;
@@ -120,10 +113,10 @@ export function copySelection(store: EditorStore, labels: Labels, cut = false): 
 
 /**
  * Pastes the clipboard as one undo step and selects the copy: centred on the mouse pointer when
- * it's over the photo, else next to the original / at the same relative spot. Shapes paste into Annotate (or
- * Sticker when that's open), areas into Redact; the editor switches tool when needed. `tools`
- * = the tool ids shown in this editor. Returns the copies' ids, or `null` when there's nothing
- * to paste or no tool to paste into.
+ * it's over the photo, else next to the original / at the same relative spot. Pastes into the
+ * open tool when it selects elements (Annotate, Sticker, Redact), else switches to Annotate.
+ * `tools` = the tool ids shown in this editor. Returns the copies' ids, or `null` when there's
+ * nothing to paste or no tool to paste into.
  */
 export function pasteSelection(
   store: EditorStore,
@@ -133,14 +126,9 @@ export function pasteSelection(
   const state = store.getState();
   const { image, activeTool } = state;
   if (!entry || !image) return null;
-  const target =
-    entry.item.kind === 'redaction'
-      ? tools.includes(REDACT_TOOL)
-        ? REDACT_TOOL
-        : null
-      : SHAPE_TOOLS.includes(activeTool)
-        ? activeTool
-        : (SHAPE_TOOLS.find((t) => tools.includes(t)) ?? null);
+  const target = SHAPE_TOOLS.includes(activeTool)
+    ? activeTool
+    : (SHAPE_TOOLS.find((t) => tools.includes(t)) ?? null);
   if (!target) return null;
 
   const pasted = entry;
@@ -151,10 +139,9 @@ export function pasteSelection(
   state.update(labels.paste, (draft) => {
     ids = pasteClipboard(draft, pasted, area, at);
   });
-  const initial = target === REDACT_TOOL ? INITIAL_REDACT_STATE : INITIAL_ANNOTATE_STATE;
-  const current = (store.getState().toolState[target] as object | undefined) ?? initial;
-  const selection = target === REDACT_TOOL ? { selectedId: ids[0] ?? null } : selectPatch(ids);
-  store.getState().setToolState(target, { ...current, ...selection });
+  const current =
+    (store.getState().toolState[target] as object | undefined) ?? INITIAL_ANNOTATE_STATE;
+  store.getState().setToolState(target, { ...current, ...selectPatch(ids) });
   if (target !== activeTool) store.getState().setActiveTool(target);
   return ids;
 }

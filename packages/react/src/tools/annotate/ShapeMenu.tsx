@@ -2,7 +2,14 @@ import * as Menu from '@radix-ui/react-dropdown-menu';
 import type { ReactNode } from 'react';
 import type { Shape } from '@image-ultra/core';
 import { copyShapeById, pasteSelection, useClipboardKind } from '../../clipboard';
-import { useEditorState, useEditorStore, useLabels, usePortalContainer } from '../../context';
+import {
+  useEditorState,
+  useEditorStore,
+  useLabels,
+  usePortalContainer,
+  useWatermarkLocked,
+} from '../../context';
+import { elementsOf, WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { canMove, shapeActions, type StackMove } from './actions';
 import { referenceSize } from './state';
 
@@ -41,7 +48,12 @@ export function ShapeMenu({
   const store = useEditorStore();
   const labels = useLabels();
   const container = usePortalContainer();
-  const shapes = useEditorState((s) => s.edit.annotations);
+  const image = useEditorState((s) => s.image);
+  const edit = useEditorState((s) => s.edit);
+  const locked = useWatermarkLocked();
+  const shapes = elementsOf(image, edit, locked);
+  /** The watermark: moved and reordered here, but not locked, hidden, copied or duplicated. */
+  const isMark = shape.id === WATERMARK_ELEMENT_ID;
   const actions = shapeActions(store, labels);
   const index = shapes.findIndex((s) => s.id === shape.id);
   const canPaste = useClipboardKind() === 'shape';
@@ -80,13 +92,17 @@ export function ShapeMenu({
           onKeyDown={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
         >
-          <Menu.Item className="iu-menu__item" onSelect={() => actions.toggleLocked(shape)}>
-            {shape.locked ? labels.unlockLayer : labels.lockLayer}
-          </Menu.Item>
-          <Menu.Item className="iu-menu__item" onSelect={() => actions.toggleHidden(shape)}>
-            {shape.hidden ? labels.showLayer : labels.hideLayer}
-          </Menu.Item>
-          <Menu.Separator className="iu-menu__separator" />
+          {!isMark && (
+            <>
+              <Menu.Item className="iu-menu__item" onSelect={() => actions.toggleLocked(shape)}>
+                {shape.locked ? labels.unlockLayer : labels.lockLayer}
+              </Menu.Item>
+              <Menu.Item className="iu-menu__item" onSelect={() => actions.toggleHidden(shape)}>
+                {shape.hidden ? labels.showLayer : labels.hideLayer}
+              </Menu.Item>
+              <Menu.Separator className="iu-menu__separator" />
+            </>
+          )}
           {order.map(([to, label]) => (
             <Menu.Item
               key={to}
@@ -98,7 +114,11 @@ export function ShapeMenu({
             </Menu.Item>
           ))}
           <Menu.Separator className="iu-menu__separator" />
-          <Menu.Item className="iu-menu__item" onSelect={() => copyShapeById(store, shape.id)}>
+          <Menu.Item
+            className="iu-menu__item"
+            disabled={isMark}
+            onSelect={() => copyShapeById(store, shape.id)}
+          >
             {labels.copy}
           </Menu.Item>
           <Menu.Item
@@ -112,7 +132,7 @@ export function ShapeMenu({
           >
             {labels.paste}
           </Menu.Item>
-          <Menu.Item className="iu-menu__item" onSelect={duplicate}>
+          <Menu.Item className="iu-menu__item" disabled={isMark} onSelect={duplicate}>
             {labels.duplicate}
           </Menu.Item>
           <Menu.Item

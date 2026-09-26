@@ -76,6 +76,15 @@ export function transformShape(shape: Shape, map: (p: Point) => Point, k: number
       const p = map({ x: shape.x, y: shape.y });
       return { ...shape, ...p, width: shape.width * k, height: shape.height * k };
     }
+    case 'redact': {
+      if (shape.kind === 'brush')
+        return { ...shape, points: shape.points.map(map), size: shape.size * k };
+      const p = map({ x: shape.x, y: shape.y });
+      return { ...shape, ...p, width: shape.width * k, height: shape.height * k };
+    }
+    case 'watermark':
+      // Moved and sized by the editor through `EditState.watermark`.
+      return shape;
   }
 }
 
@@ -105,7 +114,8 @@ export function rotateShapes(
         points: shape.points.map((p) => rotatePoint(p, center, degrees)) as [Point, Point],
       };
     }
-    if (shape.type === 'path') {
+    if (shape.type === 'watermark') return shape;
+    if (shape.type === 'path' || (shape.type === 'redact' && shape.kind === 'brush')) {
       return { ...shape, points: shape.points.map((p) => rotatePoint(p, center, degrees)) };
     }
     const box = getShapeBox(shape, heightOf(shape, textHeight));

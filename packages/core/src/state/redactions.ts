@@ -213,7 +213,7 @@ export function parseRedactions(input: unknown): Redaction[] {
   return list;
 }
 
-function parseRedaction(input: unknown): Redaction | null {
+export function parseRedaction(input: unknown): Redaction | null {
   if (!isRecord(input) || typeof input['id'] !== 'string') return null;
   const style = REDACT_STYLES.find((s) => s === input['style']) ?? 'pixelate';
   const base = {

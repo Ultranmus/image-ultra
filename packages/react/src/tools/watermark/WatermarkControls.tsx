@@ -70,6 +70,7 @@ export function WatermarkControls() {
     if (next === 'none') {
       store.getState().update(label, (draft) => {
         draft.watermark = null;
+        draft.annotations = draft.annotations.filter((s) => s.type !== 'watermark');
       });
     } else if (next === 'text') {
       change(label, { kind: 'text' });

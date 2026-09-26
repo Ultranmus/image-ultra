@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { copyRedaction, copyShapes, pasteClipboard } from './clipboard';
+import { copyShapes, pasteClipboard } from './clipboard';
 import { createEditState, type EditState } from './editState';
-import type { ImageShape, RectShape } from './annotations';
-import type { RedactBox } from './redactions';
+import type { ImageShape, RectShape, RedactShape } from './annotations';
 
 const rect: RectShape = {
   id: 'r',
@@ -44,7 +43,6 @@ function withShapes(): EditState {
 describe('clipboard', () => {
   it('returns null for an unknown id', () => {
     expect(copyShapes(createEditState(), ['nope'], area)).toBeNull();
-    expect(copyRedaction(createEditState(), 'nope', area)).toBeNull();
   });
 
   it('pasting into the same photo offsets the copy, and again for a second paste', () => {
@@ -118,8 +116,10 @@ describe('clipboard', () => {
     expect(r.y - i.y).toBeCloseTo(rect.y - sticker.y);
   });
 
-  it('copies redaction areas', () => {
-    const box: RedactBox = {
+  it('copies redaction areas (elements like any other) but never the watermark marker', () => {
+    const box: RedactShape = {
+      type: 'redact',
+      opacity: 1,
       id: 'x',
       kind: 'box',
       style: 'blur',
@@ -132,11 +132,16 @@ describe('clipboard', () => {
       height: 50,
     };
     const state = createEditState();
-    state.redactions.push(box);
-    const entry = copyRedaction(state, 'x', area)!;
+    state.annotations.push(box, { id: 'watermark', type: 'watermark', rotation: 0, opacity: 1 });
+    const entry = copyShapes(state, ['x', 'watermark'], area)!;
+    expect(entry.item.shapes).toHaveLength(1);
     const [id] = pasteClipboard(state, entry, area);
-    const pasted = state.redactions.find((r) => r.id === id) as RedactBox;
-    expect(state.redactions).toHaveLength(2);
+    const pasted = state.annotations.find((r) => r.id === id) as Extract<
+      RedactShape,
+      { kind: 'box' }
+    >;
+    expect(state.annotations).toHaveLength(3);
+    expect(pasted.type).toBe('redact');
     expect(pasted.x).toBeCloseTo(25);
     expect(pasted.style).toBe('blur');
     expect(pasted.strength).toBe(0.4);

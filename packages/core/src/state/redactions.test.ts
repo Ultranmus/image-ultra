@@ -110,8 +110,13 @@ describe('redactions', () => {
     expect(parsed).toHaveLength(2);
     expect(parsed[0]!.strength).toBe(1);
     expect(parsed[1]!.color).toBe('#000000');
-    expect(parseEditState({}).redactions).toEqual([]);
-    expect(parseEditState({ redactions: [box()] }).redactions).toHaveLength(1);
+    // Saved before 7.2b: the old list becomes the bottom elements (DECISIONS #88).
+    const migrated = parseEditState({
+      redactions: [box()],
+      annotations: [{ id: 's', type: 'rect', x: 0, y: 0, width: 5, height: 5 }],
+    }).annotations;
+    expect(migrated.map((s) => s.type)).toEqual(['redact', 'rect']);
+    expect(migrated[0]).toMatchObject({ kind: 'box', style: 'pixelate', opacity: 1 });
   });
 
   it('scales strength with the image', () => {

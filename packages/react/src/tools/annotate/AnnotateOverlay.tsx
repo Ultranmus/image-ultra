@@ -37,7 +37,9 @@ import {
   type Shape,
   type TextShape,
 } from '@image-ultra/core';
-import { useEditorState, useEditorStore, useLabels } from '../../context';
+import { useEditorState, useEditorStore, useLabels, useWatermarkLocked } from '../../context';
+import { createRedactBox, createRedactBrush, type RedactDraw } from '../redact/state';
+import { elementsOf, WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { shapeActions } from './actions';
 import { LayersPanel } from './LayersPanel';
 import { GroupMenu } from './GroupMenu';
@@ -85,7 +87,7 @@ type Interaction =
   | {
       kind: 'create';
       pointerId: number;
-      mode: AnnotateMode;
+      mode: DrawMode;
       start: Point;
       startScreen: Point;
       id: string | null;
@@ -139,9 +141,17 @@ export interface AnnotateOverlayProps {
    * The tool keeps its own selection (tool state is per tool).
    */
   selectOnly?: boolean;
+  /**
+   * The Redact tool: draw redaction areas (box or brush) with this look. Selecting, moving and
+   * grouping work as everywhere else.
+   */
+  redact?: RedactDraw | null;
 }
 
-export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {}) {
+/** Annotate's tools, plus drawing redaction areas (the Redact tool). */
+type DrawMode = AnnotateMode | 'redactBox' | 'redactBrush';
+
+export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateOverlayProps = {}) {
   const store = useEditorStore();
   const labels = useLabels();
   const [storedUi, setUi] = useAnnotateState();
@@ -187,7 +197,21 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
   const fromStage = toStage ? invert(toStage) : null;
   /** Screen px per oriented px (average for a non-uniform resize). */
   const k = toStage ? Math.sqrt(Math.abs(toStage[0] * toStage[3] - toStage[1] * toStage[2])) : 1;
-  const shapes = edit.annotations;
+  const redactRef = useRef(redact);
+  useEffect(() => {
+    redactRef.current = redact;
+  });
+  const watermarkLocked = useWatermarkLocked();
+  const watermarkLockedRef = useRef(watermarkLocked);
+  useEffect(() => {
+    watermarkLockedRef.current = watermarkLocked;
+  });
+  /** Every element on the photo, the watermark's box included (see `watermarkElement.ts`). */
+  const shapes = elementsOf(image, edit, watermarkLocked);
+  const mode: DrawMode = redact ? (redact.mode === 'box' ? 'redactBox' : 'redactBrush') : ui.mode;
+  /** History label for drawing with `m`. */
+  const modeLabel = (m: DrawMode) =>
+    m === 'redactBox' || m === 'redactBrush' ? labels.redactArea : labels.annotateModes[m];
   const selected = shapes.find((s) => s.id === ui.selectedId && !s.hidden) ?? null;
   const selectedIds = selectionIds(ui);
   /** A multi-selection (visible members; locked ones may be in it but never move). */
@@ -221,8 +245,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     store.getState().update(label, (draft) => {
       draft.annotations = recipe(draft.annotations as Shape[]);
     });
-  const replace = (label: string, shape: Shape) =>
-    update(label, (list) => list.map((s) => (s.id === shape.id ? shape : s)));
+  const replace = (label: string, shape: Shape) => actions.replaceMany(label, [shape]);
   /** Is this point (oriented px) on the result — the photo or space added around it? */
   const onPhoto = (p: Point): boolean => {
     if (!image) return false;
@@ -466,7 +489,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     };
 
     // Shift-click with Select: add the shape to the selection, or take it out.
-    if (event.shiftKey && ui.mode === 'select' && hit && selectable(hit)) {
+    // (Any tool: with a drawing tool, Shift only changes a drag — a click on a shape is a select.)
+    if (event.shiftKey && hit && selectable(hit)) {
       event.stopPropagation();
       const current = selectedIds.filter((id) => shapes.some((s) => s.id === id && selectable(s)));
       selectMany(
@@ -511,16 +535,16 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     }
 
     // 3. Select tool, or grabbing the already selected shape with any tool: move it.
-    if (hit && (ui.mode === 'select' || hit.id === ui.selectedId)) {
+    if (hit && (mode === 'select' || hit.id === ui.selectedId)) {
       capture();
       select(hit.id);
       // Text: a click on the box that's already selected (or any box with the Text tool) edits it.
-      move(hit, hit.type === 'text' && (ui.mode === 'text' || hit.id === ui.selectedId));
+      move(hit, hit.type === 'text' && (mode === 'text' || hit.id === ui.selectedId));
       return;
     }
 
     // 3. Text tool on a text box: a click edits it (caret where clicked), a drag moves it.
-    if (ui.mode === 'text' && hit?.type === 'text') {
+    if (mode === 'text' && hit?.type === 'text') {
       capture();
       event.preventDefault();
       select(hit.id);
@@ -529,7 +553,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     }
 
     // 4. Text / Polygon (before its first point) on another shape: switch to Select, pick it up.
-    if (hit && (ui.mode === 'text' || (ui.mode === 'polygon' && polygon.length === 0))) {
+    if (hit && (mode === 'text' || (mode === 'polygon' && polygon.length === 0))) {
       capture();
       selectWithSelectTool(hit.id);
       move(hit);
@@ -537,7 +561,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     }
 
     // 5. Polygon: each click adds a point; clicking the first point closes it.
-    if (ui.mode === 'polygon') {
+    if (mode === 'polygon') {
       capture();
       const first = polygon[0];
       if (
@@ -553,11 +577,15 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     }
 
     // 6. Pen draws, also over shapes; a click without drawing on a shape selects it (on release).
-    if (ui.mode === 'pen') {
+    //    The Redact brush paints a redaction area the same way.
+    if (mode === 'pen' || (mode === 'redactBrush' && redact)) {
       capture();
-      const shape = createPath([p], false, true, ui.style, ref);
-      store.getState().beginChange(labels.annotateModes.pen);
-      update(labels.annotateModes.pen, (list) => [...list, shape]);
+      const shape =
+        mode === 'redactBrush' && redact
+          ? createRedactBrush([p], redact)
+          : createPath([p], false, true, ui.style, ref);
+      store.getState().beginChange(modeLabel(mode));
+      update(modeLabel(mode), (list) => [...list, shape]);
       interaction.current = {
         kind: 'pen',
         pointerId: event.pointerId,
@@ -570,11 +598,11 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
 
     // 7. Text tool on empty photo: a new box reading "Text", all selected so typing replaces it.
     //    Outside the photo (the dark stage around it) a click only deselects.
-    if (ui.mode === 'text' && !onPhoto(p)) {
+    if (mode === 'text' && !onPhoto(p)) {
       select(null);
       return;
     }
-    if (ui.mode === 'text') {
+    if (mode === 'text') {
       capture();
       // Stop the browser's mouse-down focus change, which would blur the new text box at once.
       event.preventDefault();
@@ -586,12 +614,12 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     }
 
     // 8. Shape tools start a new shape once the pointer moves (a click on a shape selects it).
-    if (ui.mode !== 'select') {
+    if (mode !== 'select') {
       capture();
       interaction.current = {
         kind: 'create',
         pointerId: event.pointerId,
-        mode: ui.mode,
+        mode: mode,
         start: p,
         startScreen: screen,
         id: null,
@@ -621,13 +649,13 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     const screen = local(event);
     const p = toO(screen);
     const it = interaction.current;
-    if (ui.mode === 'polygon') setCursor(p);
+    if (mode === 'polygon') setCursor(p);
     const press = longPress.current;
     if (press && Math.hypot(screen.x - press.screen.x, screen.y - press.screen.y) >= DRAG_START)
       cancelLongPress();
     if (!it) {
       const over = shapeAt(shapes, p, HIT_TOLERANCE / k, measureTextHeight);
-      if (ui.mode === 'select') setHoverId(over?.id ?? null);
+      if (mode === 'select') setHoverId(over?.id ?? null);
       // Over the selected shape a drag moves it; over another one a click selects it.
       const onSelected =
         isGroup && groupBox
@@ -787,6 +815,8 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         const current = store.getState().edit.annotations.find((s) => s.id === it.id);
         if (current?.type === 'path')
           replace(labels.annotateModes.pen, { ...current, points: [...it.points] });
+        else if (current?.type === 'redact' && current.kind === 'brush')
+          replace(labels.redactArea, { ...current, points: [...it.points] });
         break;
       }
       case 'create': {
@@ -795,19 +825,33 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           Math.hypot(screen.x - it.startScreen.x, screen.y - it.startScreen.y) < DRAG_START
         )
           break;
-        const mode = it.mode as Parameters<typeof createShape>[0];
+        const drawMode = it.mode;
         let end = p;
         if (event.shiftKey)
           end =
-            mode === 'line' || mode === 'arrow' ? snapLine(it.start, p) : squareEnd(it.start, p);
-        const shape = createShape(mode, it.start, end, ui.style, ref);
+            drawMode === 'line' || drawMode === 'arrow'
+              ? snapLine(it.start, p)
+              : squareEnd(it.start, p);
+        const shape =
+          drawMode === 'redactBox'
+            ? redact
+              ? createRedactBox(it.start, end, redact)
+              : null
+            : createShape(
+                drawMode as Parameters<typeof createShape>[0],
+                it.start,
+                end,
+                ui.style,
+                ref,
+              );
+        if (!shape) break;
         if (!it.id) {
           it.id = shape.id;
-          store.getState().beginChange(labels.annotateModes[it.mode]);
-          update(labels.annotateModes[it.mode], (list) => [...list, shape]);
+          store.getState().beginChange(modeLabel(drawMode));
+          update(modeLabel(drawMode), (list) => [...list, shape]);
           select(shape.id);
         } else {
-          replace(labels.annotateModes[it.mode], { ...shape, id: it.id });
+          replace(modeLabel(drawMode), { ...shape, id: it.id });
         }
         break;
       }
@@ -838,7 +882,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       if (current?.type === 'text') startEditing(current, false, textIndexAt(current, it.start));
       return;
     }
-    if (it.kind === 'move' && !it.dragged && ui.mode !== 'select') {
+    if (it.kind === 'move' && !it.dragged && mode !== 'select') {
       // A click on a shape with a drawing tool: it's selected, and Select becomes the tool.
       store.getState().endChange();
       selectWithSelectTool(it.shape.id);
@@ -858,6 +902,11 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       select(null);
       return;
     }
+    if (it.kind === 'create' && !it.id && it.mode === 'redactBox') {
+      // A click without dragging in Redact: nothing to hide there — just deselect.
+      select(null);
+      return;
+    }
     if (it.kind === 'create' && !it.id) {
       // A click without dragging: drop a default-size shape centred on the point.
       const mode = it.mode as Parameters<typeof createShape>[0];
@@ -871,18 +920,17 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           ? { x: it.start.x + half, y: it.start.y }
           : { x: it.start.x + half, y: it.start.y + half };
       const shape = createShape(mode, from, to, ui.style, ref);
-      update(labels.annotateModes[it.mode], (list) => [...list, shape]);
+      update(modeLabel(it.mode), (list) => [...list, shape]);
       select(shape.id);
       return;
     }
     if (it.kind === 'pen') {
       const current = store.getState().edit.annotations.find((s) => s.id === it.id);
-      if (current?.type === 'path' && it.points.length > 2) {
-        replace(labels.annotateModes.pen, {
-          ...current,
-          points: simplifyPoints(it.points, 0.75 / k),
-        });
-      }
+      const simplified = it.points.length > 2 ? simplifyPoints(it.points, 0.75 / k) : null;
+      if (simplified && current?.type === 'path')
+        replace(labels.annotateModes.pen, { ...current, points: simplified });
+      else if (simplified && current?.type === 'redact' && current.kind === 'brush')
+        replace(labels.redactArea, { ...current, points: simplified });
       select(it.id);
     }
     if (handleWhileEditing.current) {
@@ -939,7 +987,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
       event.stopPropagation();
       return;
     }
-    if (ui.mode === 'polygon') {
+    if (mode === 'polygon') {
       event.stopPropagation();
       finishPolygon(polygon);
       return;
@@ -947,7 +995,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     const hit = shapeAt(shapes, toO(local(event)), HIT_TOLERANCE / k, measureTextHeight);
     // On a shape, a double-click never zooms the photo (the Stage zooms on empty photo only).
     if (hit) event.stopPropagation();
-    else if (ui.mode === 'select' && !spaceRef.current) {
+    else if (mode === 'select' && !spaceRef.current) {
       // Presses on empty space start a selection box, so the Stage never saw this press: zoom
       // here, the way the Stage does (fitted → in at the pointer; zoomed → back to fit).
       event.stopPropagation();
@@ -998,7 +1046,10 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
           setSpaceHeld(true);
         }
       } else if (mod && e.key.toLowerCase() === 'a') {
-        const all = state.edit.annotations.filter(selectable).map((s) => s.id);
+        // Every element, the watermark's box included.
+        const all = elementsOf(state.image, state.edit, watermarkLockedRef.current)
+          .filter(selectable)
+          .map((s) => s.id);
         setPolygon([]);
         setUi((v) => ({ ...v, mode: 'select', ...selectPatch(all) }));
       } else if (multi && (e.key === 'Delete' || e.key === 'Backspace')) {
@@ -1044,7 +1095,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
         state.update(labels.annotateModes.select, (draft) => {
           draft.annotations = draft.annotations.map((s) => (s.id === sel.id ? moved : s));
         });
-      } else if (!mod && !e.altKey && !selectOnly) {
+      } else if (!mod && !e.altKey && !selectOnly && !redactRef.current) {
         const mode = (Object.entries(MODE_SHORTCUTS) as [AnnotateMode, string][]).find(
           ([, key]) => key.toLowerCase() === e.key.toLowerCase(),
         )?.[0];
@@ -1121,7 +1172,7 @@ export function AnnotateOverlay({ selectOnly = false }: AnnotateOverlayProps = {
     <div
       ref={rootRef}
       className="iu-annotate-layer"
-      data-mode={ui.mode}
+      data-mode={mode}
       data-cursor={spaceHeld ? 'grab' : (dragCursor ?? hoverCursor)}
       tabIndex={-1}
       aria-label={labels.tools.annotate}
@@ -1324,9 +1375,14 @@ function Selection({
     s: mid(se, sw),
     w: mid(sw, nw),
   };
-  // Text keeps its height from the wrapped content: no top/bottom handles.
+  // Text keeps its height from the wrapped content: no top/bottom handles. The watermark only
+  // scales (it can't be stretched): corners only.
   const handles =
-    shape.type === 'text' ? BOX_HANDLES.filter((h) => h !== 'n' && h !== 's') : BOX_HANDLES;
+    shape.id === WATERMARK_ELEMENT_ID
+      ? BOX_HANDLES.filter((h) => h.length === 2)
+      : shape.type === 'text'
+        ? BOX_HANDLES.filter((h) => h !== 'n' && h !== 's')
+        : BOX_HANDLES;
   // Rotation handle sits above the top edge, perpendicular to it.
   const top = at.n;
   const center = mid(nw, se);

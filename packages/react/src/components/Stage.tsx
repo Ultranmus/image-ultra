@@ -11,7 +11,8 @@ import {
 import {
   compose,
   createRenderer,
-  drawAnnotations,
+  drawElements,
+  redactElements,
   ensureAnnotationFonts,
   getCropRect,
   getImageBounds,
@@ -224,40 +225,46 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       ctx.clearRect(0, 0, w, h);
       const { image, edit, viewport: vp, cropView } = state;
       if (!image) return;
-      // The frame, then the watermark, go on top of everything, in the result view.
-      const paintFrame = () => {
-        if ((!edit.frame && !edit.watermark) || cropView) return;
-        const out = getOutputSize(image, edit);
-        ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
-        if (edit.frame) drawFrame(ctx, edit.frame, out);
-        const wm = edit.watermark;
-        if (wm) {
-          const asset = wm.kind === 'image' && wm.assetId ? edit.assets[wm.assetId] : undefined;
-          let logo: ImageBitmap | undefined;
-          if (asset) {
-            // Decoded once; redraw when it arrives.
-            if (!logos.has(asset.src)) {
-              logos.set(asset.src, null);
-              void loadAssetBitmap(asset.src).then((bitmap) => {
-                logos.set(asset.src, bitmap);
-                schedule();
-              });
-            }
-            logo = logos.get(asset.src) ?? undefined;
-          }
-          if (wm.kind === 'text') {
-            const font = watermarkFont(wm, wm.size * Math.min(out.width, out.height));
-            if (fontsLoaded !== font) {
-              fontsLoaded = font;
-              void document.fonts?.load(font).then(schedule, () => undefined);
-            }
-          }
-          drawWatermark(ctx, wm, out, logo);
-        }
+      // Result view only: the frame (under the elements), and the watermark — at its place in
+      // the element order, or on top of everything (DECISIONS #88).
+      const out = getOutputSize(image, edit);
+      const outToCanvas = compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale));
+      if (edit.frame && !cropView) {
+        ctx.setTransform(...outToCanvas);
+        drawFrame(ctx, edit.frame, out);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      /** Draws the watermark (result view), in canvas px — the context's transform is set here. */
+      const paintWatermark = () => {
+        if (!edit.watermark || cropView) return;
+        ctx.save();
+        ctx.setTransform(...outToCanvas);
+        const wm = edit.watermark;
+        const asset = wm.kind === 'image' && wm.assetId ? edit.assets[wm.assetId] : undefined;
+        let logo: ImageBitmap | undefined;
+        if (asset) {
+          // Decoded once; redraw when it arrives.
+          if (!logos.has(asset.src)) {
+            logos.set(asset.src, null);
+            void loadAssetBitmap(asset.src).then((bitmap) => {
+              logos.set(asset.src, bitmap);
+              schedule();
+            });
+          }
+          logo = logos.get(asset.src) ?? undefined;
+        }
+        if (wm.kind === 'text') {
+          const font = watermarkFont(wm, wm.size * Math.min(out.width, out.height));
+          if (fontsLoaded !== font) {
+            fontsLoaded = font;
+            void document.fonts?.load(font).then(schedule, () => undefined);
+          }
+        }
+        drawWatermark(ctx, wm, out, logo);
+        ctx.restore();
       };
       if (edit.annotations.length === 0) {
-        paintFrame();
+        paintWatermark();
         return;
       }
 
@@ -286,13 +293,16 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         ctx.clip();
       }
       const editingId = getAnnotateState(store).editingId;
-      drawAnnotations(ctx, edit.annotations, {
+      // Elements in order; a redaction area also hides the elements below it.
+      const { watermarkDrawn } = drawElements(ctx, edit.annotations, {
         transform,
         assets,
+        reference: redactReference(getOrientedSize(image, edit.geometry)),
+        drawWatermark: paintWatermark,
         ...(editingId && { skip: new Set([editingId]) }),
       });
       ctx.restore();
-      paintFrame();
+      if (!watermarkDrawn) paintWatermark();
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(draw);
@@ -601,7 +611,8 @@ function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, s
   if (!ctx) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, target.width, target.height);
-  if (!image || edit.redactions.length === 0) return;
+  const redacts = redactElements(edit.annotations);
+  if (!image || redacts.length === 0) return;
   const dpr = window.devicePixelRatio || 1;
   ctx.save();
   if (!cropView && edit.geometry.cropShape === 'ellipse') {
@@ -611,7 +622,7 @@ function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, s
     ctx.clip();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
-  drawRedactions(ctx, source, edit.redactions, {
+  drawRedactions(ctx, source, redacts, {
     transform: orientedToCanvas(state, dpr),
     reference: redactReference(getOrientedSize(image, edit.geometry)),
   });

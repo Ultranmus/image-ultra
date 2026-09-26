@@ -126,7 +126,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   visible. Layers = floating panel top-right; each row: name (drag to reorder, with an accent drop
   line; double-click or F2 to rename inline), show/hide, lock, up/down, and "⋯" (the shape menu);
   "Show all" in the header while anything is hidden; Shift / ⌘-click rows to select several.
-- **Multi-select** (Annotate + Sticker): Shift-click adds/removes a shape, a mouse drag on empty space
+- **Multi-select** (Annotate, Sticker and Redact — any element): Shift-click adds/removes one (with
+  any tool), a mouse drag on empty space
   draws a selection box (dashed accent outline on `--iu-accent-soft`; touching counts; Shift adds),
   ⌘A selects all (not hidden ones; locked ones join but never move — a fully locked group shows a
   dashed box without handles). The group shows a faint outline on each member and one
@@ -165,18 +166,29 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - **Split compare:** thin white divider (`--iu-crop-frame`) across the stage with a round 28px solid grab
   handle (surface colour, ‹ › arrows) (role=slider, ←/→ move it), "Before" / "After" pills at the top on each side
   (`--iu-overlay` background). Before = same crop/rotation, no colour or annotations.
-- **Redact** ControlBar: row 1 = Box / Brush icon radios (+ brush size popover in Brush mode) —
+- **Redact** ControlBar: row 1 = Select / Box / Brush icon radios (+ brush size popover in Brush mode) —
   style SegmentedControl Pixelate · Blur · Solid (default Pixelate) — Delete (when selected) and
   "Clear all" on the right. Row 2 = Strength RulerSlider (0–100) for Pixelate/Blur, or the colour
   button for Solid. With Blur a muted hint: "For faces, names and numbers, Pixelate or Solid is
-  safer." Nothing drawn and nothing selected → the controls set the style for the next area.
+  safer." Nothing drawn and nothing selected → the controls set the style for the next area; with
+  areas selected they edit all of them. Delete removes whatever is selected (any element).
 - **Redact stage:** Box = drag a rectangle (a plain click draws nothing); Brush = paint, round, size
   relative to the photo. The effect shows live. Click an area to select it (accent outline + 8 white
   resize handles + the round rotate handle for boxes and brush areas alike — a brush stroke scales
   to fit; rotation soft-snaps to 90°, Shift = 15° steps), press anywhere
   inside the outline and drag to move, the brush size control changes a selected brush area, Delete removes,
   Esc deselects, hover outline. Brush size is set in its popover (no circle around the cursor). Selected area → the controls edit it. Compare's "before" side shows
-  no redactions.
+  no redactions. The stage is the shared element overlay (DECISIONS #88): Select mode, Shift-click,
+  selection box, groups, menus, Layers and reordering work exactly as in Annotate, on every element.
+- **Elements** (DECISIONS #88): shapes, text, images, stickers, emoji, redaction areas and the
+  watermark are one ordered list — any of them can be selected, grouped, moved, aligned and brought
+  forward / sent backward in Annotate, Sticker and Redact. A redaction area hides the photo and every
+  element below it (above it, elements stay sharp). The watermark shows up as an element (corner
+  handles only — it scales, never stretches; not lockable, hideable, copyable or duplicable — there's
+  one; the Layers row greys out those buttons); by default it's on top, and new shapes go under it.
+  An app-locked watermark is always on top and never selectable. Draw order: photo → Fill → Frame →
+  elements (in order) → watermark if it's on top. A selected redaction area or the watermark shows
+  "Edit in Redact" / "Edit in Watermark" in Annotate's inspector.
 - **Frame** ControlBar: a thumbnail PresetStrip (the current photo with each frame): None, Border,
   Rounded, Bevel, Line, Double line, Inset, Plus, Lumber, Corners, Polaroid. Row 2 (not for None): Size RulerSlider (1–15 % of
   the photo's short side) + colour button. Frames are drawn over the photo's edges — the image size

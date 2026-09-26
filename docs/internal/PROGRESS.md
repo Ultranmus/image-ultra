@@ -454,3 +454,15 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Tests: 137 unit · 98 e2e (+ cropped canvas, group lock / unlock).
 - Round 2: Photo position popover fits its grid; right-click / long-press anywhere inside the group
   box (also between members) opens the group menu. Tests: 98 e2e.
+
+## 2026-09-26 · Phase 7.2b — Unified elements
+
+- 7.2 committed (`feat: phase 7.2`).
+- Redaction areas are elements (`RedactShape`), the watermark has a place in the order (marker);
+  old edits migrate. Export + preview: photo pass + ordered element layer (`drawElements`): a
+  redaction area hides the elements below it too. Frame now under the elements.
+- Redact tool: Select / Box / Brush on the shared overlay — groups, menus, Layers, reorder.
+- Watermark as an element in Annotate / Sticker / Redact (`watermarkElement.ts`): select, move,
+  resize (corners), rotate, group, align, reorder, delete; never copied or duplicated; app-locked
+  = on top, not selectable. Annotate shows "Edit in Redact / Watermark" for those.
+- Tests: 137 unit · 102 e2e (+ `elements.spec.ts`; redact spec on the element list).

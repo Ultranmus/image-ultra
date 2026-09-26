@@ -8,8 +8,6 @@ import {
   getOrientedSize,
   MAX_TILT_DEGREES,
   rotateAnnotations,
-  rotateRedactions,
-  flipRedactions,
   rotateGeometry,
   rotateResize,
   syncResizeToCrop,
@@ -94,7 +92,6 @@ export function useAdjust() {
         ...edit,
         geometry: rotateGeometry(image, edit.geometry, -1),
         annotations: rotateAnnotations(edit.annotations, getOrientedSize(image, edit.geometry), -1),
-        redactions: rotateRedactions(edit.redactions, getOrientedSize(image, edit.geometry), -1),
         resize: rotateResize(edit.resize),
       }));
     },
@@ -104,7 +101,6 @@ export function useAdjust() {
         ...edit,
         geometry: flipGeometry(image, edit.geometry, axis),
         annotations: flipAnnotations(edit.annotations, getOrientedSize(image, edit.geometry), axis),
-        redactions: flipRedactions(edit.redactions, getOrientedSize(image, edit.geometry), axis),
       }));
     },
 

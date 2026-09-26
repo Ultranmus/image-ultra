@@ -9,8 +9,16 @@ import type { AnyCanvas, Renderer } from './renderer';
  * copy of the image, square "cover" crops of the edited result.
  */
 export interface ThumbnailRenderer {
-  /** Draws `state` into `target` as a `size`×`size` px square (sets the canvas size). */
-  render(state: EditState, target: HTMLCanvasElement | OffscreenCanvas, size: number): void;
+  /**
+   * Draws `state` into `target` as a `size`×`size` px square (sets the canvas size). `cover`
+   * (default) fills the square; `contain` shows the whole result with transparent bars.
+   */
+  render(
+    state: EditState,
+    target: HTMLCanvasElement | OffscreenCanvas,
+    size: number,
+    options?: { fit?: 'cover' | 'contain' },
+  ): void;
   dispose(): void;
 }
 
@@ -37,10 +45,14 @@ export async function createThumbnailRenderer(
   await renderer.prepare(mini);
 
   return {
-    render(state, target, size) {
+    render(state, target, size, { fit = 'cover' } = {}) {
       const scaled = scaleEditState(state, scaleX);
       const output = getOutputSize(mini, scaled);
-      const cover = size / Math.min(output.width, output.height);
+      const cover =
+        size /
+        (fit === 'cover'
+          ? Math.min(output.width, output.height)
+          : Math.max(output.width, output.height));
       const ox = (output.width - size / cover) / 2;
       const oy = (output.height - size / cover) / 2;
       renderer.render({

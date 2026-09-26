@@ -1068,6 +1068,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
         actions.replaceMany(
           labels.annotateModes.select,
           movable.map((s) => moveShape(s, dx, dy)),
+          { coalesce: true },
         );
       } else if (multi && e.key === 'Enter') {
         return;
@@ -1092,9 +1093,13 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
         const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
         const moved = moveShape(sel, dx, dy);
-        state.update(labels.annotateModes.select, (draft) => {
-          draft.annotations = draft.annotations.map((s) => (s.id === sel.id ? moved : s));
-        });
+        state.update(
+          labels.annotateModes.select,
+          (draft) => {
+            draft.annotations = draft.annotations.map((s) => (s.id === sel.id ? moved : s));
+          },
+          { coalesce: true },
+        );
       } else if (!mod && !e.altKey && !selectOnly && !redactRef.current) {
         const mode = (Object.entries(MODE_SHORTCUTS) as [AnnotateMode, string][]).find(
           ([, key]) => key.toLowerCase() === e.key.toLowerCase(),

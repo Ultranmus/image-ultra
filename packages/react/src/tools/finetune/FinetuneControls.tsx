@@ -18,10 +18,12 @@ import { PresetStrip, type Preset } from '../../controls/PresetStrip';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { SegmentedControl } from '../../controls/SegmentedControl';
 import { IconBookmark, IconReset, IconSparkle } from '../../icons/Icon';
-import { useHistogram } from '../../hooks/useHistogram';
+import { useHistograms } from '../../hooks/useHistogram';
+import { useThumbnailRenderer } from '../../hooks/useThumbnailRenderer';
 import { CurveEditor } from './CurveEditor';
 import { LevelsEditor } from './LevelsEditor';
 import { SaveLookForm } from './SaveLookForm';
+import { undoStep } from '../../controls/undoStep';
 
 type Mode = 'adjust' | 'curves' | 'levels';
 type Key = keyof FinetuneState;
@@ -44,7 +46,7 @@ export function FinetuneControls() {
     const timer = setTimeout(() => setSavedName(null), 6000);
     return () => clearTimeout(timer);
   }, [savedName]);
-  const histogram = useHistogram(mode === 'adjust' ? null : image, edit);
+  const histogram = useHistograms(useThumbnailRenderer(mode === 'adjust' ? null : image), edit);
 
   const f = edit.finetune;
   const [min, max] = FINETUNE_RANGES[key];
@@ -158,13 +160,12 @@ export function FinetuneControls() {
             unitWidth={3}
             majorEvery={25}
             format={formatSigned}
-            onChangeStart={() => store.getState().beginChange(labels.finetune[key])}
+            {...undoStep(store, labels.finetune[key])}
             onChange={(v) =>
               store.getState().update(labels.finetune[key], (draft) => {
                 draft.finetune[key] = v / 100;
               })
             }
-            onChangeEnd={() => store.getState().endChange()}
           />
           <PresetStrip label={labels.adjustments} presets={presets} value={key} onSelect={setKey} />
         </>

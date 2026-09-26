@@ -152,7 +152,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
       Layers, bring forward / send backward across types. A redact area blurs everything drawn
       below it (Canva-style). An app-locked watermark stays on top and isn't selectable. Old saved
       edits migrate (redactions at the bottom, watermark on top).
-- [ ] **7.3** Colour tools: histogram Before/After; filter thumbnails "on my edits"; arrow-key
+- [x] **7.3** Colour tools: histogram Before/After; filter thumbnails "on my edits"; arrow-key
       presses on one control coalesce into one undo step.
 - [ ] **7.4** Mobile: 320–430px layouts, thumb-zone controls, no sideways-scrolling rows (Annotate,
       Adjust header), pinch / two-finger pan / long-press; owner tests on a real phone.

@@ -20,6 +20,7 @@ import { SegmentedControl } from '../../controls/SegmentedControl';
 import { ColorButton, SwatchPicker } from '../../controls/SwatchPicker';
 import { IconBold, IconFont, IconOpacity, IconPosition } from '../../icons/Icon';
 import { fileToAsset } from '../assets';
+import { undoStep } from '../../controls/undoStep';
 
 type Kind = 'none' | 'text' | 'logo';
 const KINDS: Kind[] = ['none', 'text', 'logo'];
@@ -232,9 +233,8 @@ export function WatermarkControls() {
                 majorEvery={25}
                 defaultValue={70}
                 format={(v) => `${v}%`}
-                onChangeStart={() => store.getState().beginChange(labels.opacity)}
+                {...undoStep(store, labels.opacity)}
                 onChange={(v) => change(labels.opacity, { opacity: v / 100 })}
-                onChangeEnd={() => store.getState().endChange()}
               />
             </Popover>
           </div>
@@ -249,9 +249,8 @@ export function WatermarkControls() {
               majorEvery={5}
               defaultValue={25}
               format={(v) => `${v}%`}
-              onChangeStart={() => store.getState().beginChange(labels.watermarkSize)}
+              {...undoStep(store, labels.watermarkSize)}
               onChange={(v) => change(labels.watermarkSize, { size: v / 100 })}
-              onChangeEnd={() => store.getState().endChange()}
             />
             <span className="iu-rulerfield__label" aria-hidden="true">
               {labels.watermarkSize}

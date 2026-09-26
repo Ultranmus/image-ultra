@@ -15,6 +15,7 @@ import {
   type AngleKind,
   type AspectChoice,
 } from './useAdjust';
+import { undoStep } from '../../controls/undoStep';
 
 const ANGLE_RANGE: Record<AngleKind, number> = {
   straighten: 45,
@@ -102,11 +103,8 @@ export function AdjustControls() {
         unitWidth={8}
         majorEvery={5}
         format={formatDegrees}
-        onChangeStart={() =>
-          store.getState().beginChange(kind === 'straighten' ? 'Straighten' : 'Perspective')
-        }
+        {...undoStep(store, kind === 'straighten' ? 'Straighten' : 'Perspective')}
         onChange={(v) => adjust.setAngle(kind, v)}
-        onChangeEnd={() => store.getState().endChange()}
       />
 
       <PresetStrip

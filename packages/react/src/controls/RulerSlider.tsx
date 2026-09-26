@@ -1,5 +1,8 @@
 import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 
+/** What started a change: a drag / double-click, or the keyboard. */
+export type ChangeSource = 'pointer' | 'keyboard';
+
 export interface RulerSliderProps {
   /** Accessible name. */
   label: string;
@@ -20,8 +23,11 @@ export interface RulerSliderProps {
   snapTo?: number[];
   format?: (value: number) => string;
   onChange: (value: number) => void;
-  /** A drag or key-press burst begins — use it to open one undo step. */
-  onChangeStart?: () => void;
+  /**
+   * A drag or key-press burst begins — use it to open one undo step. Separate key presses each
+   * start one; `undoStep()` merges them in the store.
+   */
+  onChangeStart?: (source: ChangeSource) => void;
   /** …and ends. */
   onChangeEnd?: () => void;
   disabled?: boolean;
@@ -80,7 +86,7 @@ export function RulerSlider({
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { x: event.clientX, value };
     setDragging(true);
-    onChangeStart?.();
+    onChangeStart?.('pointer');
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -120,7 +126,7 @@ export function RulerSlider({
     event.preventDefault();
     if (!keyActive.current) {
       keyActive.current = true;
-      onChangeStart?.();
+      onChangeStart?.('keyboard');
     }
     emit(next);
   };
@@ -133,7 +139,7 @@ export function RulerSlider({
 
   const reset = () => {
     if (disabled || value === defaultValue) return;
-    onChangeStart?.();
+    onChangeStart?.('pointer');
     onChange(defaultValue);
     onChangeEnd?.();
   };

@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import {
   applyLook,
-  createCurvesState,
-  createFinetuneState,
-  createLevelsState,
   FILTER_PRESETS,
   filterFromPreset,
   lookMatches,
@@ -15,6 +12,7 @@ import { PresetStrip, type Preset } from '../../controls/PresetStrip';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { useThumbnailRenderer } from '../../hooks/useThumbnailRenderer';
 import { IconBookmark } from '../../icons/Icon';
+import { undoStep } from '../../controls/undoStep';
 
 const NONE = 'none';
 /** Thumbnail edge in CSS px. */
@@ -29,18 +27,13 @@ export function FilterControls() {
   const edit = useEditorState((s) => s.edit);
   const renderer = useThumbnailRenderer(image);
 
-  // Thumbnails show each look on the current crop, without the user's other colour edits.
-  const geometry = edit.geometry;
+  // Thumbnails show what picking each one gives: a preset on top of the user's Finetune / Levels /
+  // Curves edits (at full strength); a saved look replaces them.
+  const { geometry, finetune, levels, curves } = edit;
   const base = useMemo<EditState>(
-    () => ({
-      ...edit,
-      finetune: createFinetuneState(),
-      levels: createLevelsState(),
-      curves: createCurvesState(),
-      filter: null,
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only geometry affects thumbnails
-    [geometry],
+    () => ({ ...edit, filter: null }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only these affect thumbnails
+    [geometry, finetune, levels, curves],
   );
   const states = useMemo(
     () => ({
@@ -103,13 +96,12 @@ export function FilterControls() {
         defaultValue={100}
         disabled={!edit.filter}
         format={(v) => `${v}%`}
-        onChangeStart={() => store.getState().beginChange(labels.intensity)}
+        {...undoStep(store, labels.intensity)}
         onChange={(v) =>
           store.getState().update(labels.intensity, (draft) => {
             if (draft.filter) draft.filter.intensity = v / 100;
           })
         }
-        onChangeEnd={() => store.getState().endChange()}
       />
       <PresetStrip
         variant="thumbs"

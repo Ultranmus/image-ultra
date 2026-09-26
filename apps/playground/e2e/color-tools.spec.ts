@@ -54,6 +54,53 @@ test.describe('Finetune tool', () => {
     await page.keyboard.press('Shift+ArrowRight');
     expect((await editState(page)).levels.black).toBeCloseTo(10 / 255, 4);
   });
+  test('quick arrow-key presses on one dial are one undo step; a pause starts a new one', async ({
+    page,
+  }) => {
+    await openTool(page, 'Finetune');
+    await page.getByRole('radio', { name: 'Contrast' }).click();
+    await page.getByRole('slider', { name: 'Contrast' }).focus();
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+    expect((await editState(page)).finetune.contrast).toBeCloseTo(0.15, 5);
+    expect(await historySteps(page)).toBe(1);
+    await page.waitForTimeout(800);
+    await page.keyboard.press('ArrowRight');
+    expect(await historySteps(page)).toBe(2);
+    await page.getByRole('button', { name: 'Undo', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Undo', exact: true }).first().click();
+    expect((await editState(page)).finetune.contrast).toBe(0);
+  });
+
+  test('curve point and levels key presses merge too', async ({ page }) => {
+    await openTool(page, 'Finetune');
+    await page.getByRole('radio', { name: 'Levels' }).click();
+    await page.getByRole('slider', { name: 'Black point' }).focus();
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+    expect(await historySteps(page)).toBe(1);
+    await page.getByRole('radio', { name: 'Curves' }).click();
+    const graph = page.locator('.iu-curves__graph');
+    const box = (await graph.boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    expect(await historySteps(page)).toBe(2);
+    await page.getByRole('slider', { name: 'Curve point 2' }).focus();
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowUp');
+    expect(await historySteps(page)).toBe(3);
+  });
+
+  test('histograms show the result as an outline over the original', async ({ page }) => {
+    await openTool(page, 'Finetune');
+    await page.getByRole('radio', { name: 'Levels' }).click();
+    await expect(page.locator('.iu-levels__before')).toHaveCount(1);
+    await expect(page.locator('.iu-levels__after')).toHaveCount(0);
+    await page.getByRole('slider', { name: 'White point' }).focus();
+    await page.keyboard.press('Shift+ArrowLeft');
+    await page.keyboard.press('Shift+ArrowLeft');
+    await expect(page.locator('.iu-levels__after')).toHaveCount(1);
+
+    await page.getByRole('radio', { name: 'Curves' }).click();
+    await expect(page.locator('.iu-curves__histogram')).toHaveCount(1);
+    await expect(page.locator('.iu-curves__histogram-after')).toHaveCount(1);
+  });
 });
 
 test.describe('Filter tool', () => {
@@ -70,6 +117,27 @@ test.describe('Filter tool', () => {
 
     await page.getByRole('radio', { name: 'Original' }).click();
     expect((await editState(page)).filter).toBeNull();
+  });
+
+  test('thumbnails preview each filter on top of the Finetune edits', async ({ page }) => {
+    await openTool(page, 'Filter');
+    const thumb = page.getByRole('radio', { name: 'Noir' }).locator('canvas');
+    const mean = () =>
+      thumb.evaluate((c: HTMLCanvasElement) => {
+        const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) sum += data[i]!;
+        return sum / (data.length / 4);
+      });
+    await expect.poll(mean).toBeGreaterThan(0);
+    const before = await mean();
+
+    await page.getByRole('tab', { name: 'Finetune' }).click();
+    await page.getByRole('radio', { name: 'Brightness' }).click();
+    await page.getByRole('slider', { name: 'Brightness' }).focus();
+    await page.keyboard.press('Shift+ArrowRight');
+    await page.getByRole('tab', { name: 'Filter' }).click();
+    await expect.poll(mean).toBeGreaterThan(before + 10);
   });
 
   test('a saved look shows up, re-applies, survives a reload, and can be removed', async ({

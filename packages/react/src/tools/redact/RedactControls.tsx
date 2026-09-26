@@ -9,6 +9,7 @@ import { IconBrush, IconPointer, IconSquare, IconStrokeWidth, IconTrash } from '
 import { shapeActions } from '../annotate/actions';
 import { selectionIds, selectPatch } from '../annotate/state';
 import { redactRef, useRedactState, type RedactMode } from './state';
+import { undoStep } from '../../controls/undoStep';
 
 const MODE_ICONS = { select: IconPointer, box: IconSquare, brush: IconBrush } as const;
 
@@ -110,10 +111,7 @@ export function RedactControls() {
                 majorEvery={5}
                 defaultValue={5}
                 format={(v) => `${v}%`}
-                onChangeStart={() =>
-                  brushes.length > 0 && store.getState().beginChange(labels.brushSize)
-                }
-                onChangeEnd={() => brushes.length > 0 && store.getState().endChange()}
+                {...undoStep(store, labels.brushSize, brushes.length > 0)}
                 onChange={setBrushSize}
               />
             </Popover>
@@ -180,10 +178,7 @@ export function RedactControls() {
               tickEvery={5}
               majorEvery={25}
               defaultValue={50}
-              onChangeStart={() =>
-                selected.length > 0 && store.getState().beginChange(labels.redactStrength)
-              }
-              onChangeEnd={() => selected.length > 0 && store.getState().endChange()}
+              {...undoStep(store, labels.redactStrength, selected.length > 0)}
               onChange={(v) => apply(labels.redactStrength, { strength: v / 100 })}
             />
             <span className="iu-rulerfield__label" aria-hidden="true">

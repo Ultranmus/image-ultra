@@ -25,6 +25,7 @@ import {
   type EmojiGroup,
 } from './emojiData';
 import { placeSticker, rasterizeEmoji, rasterizeUrl, urlAsset } from './place';
+import { undoStep } from '../../controls/undoStep';
 
 type Tab = 'stickers' | 'emoji';
 type Category = 'basic' | EmojiGroup;
@@ -194,8 +195,7 @@ export function StickerControls() {
                 majorEvery={25}
                 defaultValue={100}
                 format={(v) => `${v}%`}
-                onChangeStart={() => store.getState().beginChange(labels.opacity)}
-                onChangeEnd={() => store.getState().endChange()}
+                {...undoStep(store, labels.opacity)}
                 onChange={(v) =>
                   store.getState().update(labels.opacity, (draft) => {
                     const shape = draft.annotations.find((s) => s.id === selected.id);

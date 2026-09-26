@@ -17,6 +17,7 @@ import { AspectGlyph, PresetStrip, type Preset } from '../../controls/PresetStri
 import { RulerSlider } from '../../controls/RulerSlider';
 import { SegmentedControl } from '../../controls/SegmentedControl';
 import { IconLink, IconPosition, IconReset, IconUnlink } from '../../icons/Icon';
+import { undoStep } from '../../controls/undoStep';
 
 export interface SizePreset {
   id: string;
@@ -279,8 +280,7 @@ function CanvasPanel() {
             majorEvery={10}
             defaultValue={0}
             format={(v) => `${v}%`}
-            onChangeStart={() => store.getState().beginChange(labels.canvasPadding)}
-            onChangeEnd={() => store.getState().endChange()}
+            {...undoStep(store, labels.canvasPadding)}
             onChange={(v) => change(labels.canvasPadding, { padding: v / 100 })}
           />
         </div>

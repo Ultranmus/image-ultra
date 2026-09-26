@@ -128,24 +128,44 @@ export function computeAutoEnhance(data: Uint8ClampedArray): AutoEnhanceResult {
 }
 
 /**
+ * The photo alone, for analysis: geometry (crop, rotation…) applied; no elements, frame, fill,
+ * watermark or added canvas; a rectangular crop. `colour: true` keeps the colour edits (finetune,
+ * levels, curves, filter) — the "after" histogram; otherwise they're reset — "before".
+ */
+export function analysisState(state: EditState, { colour = false } = {}): EditState {
+  return {
+    ...state,
+    ...(colour
+      ? {}
+      : {
+          finetune: createFinetuneState(),
+          levels: createLevelsState(),
+          curves: createCurvesState(),
+          filter: null,
+        }),
+    annotations: [],
+    frame: null,
+    background: null,
+    watermark: null,
+    canvas: null,
+    resize: null,
+    geometry: { ...state.geometry, cropShape: 'rect' },
+  };
+}
+
+/**
  * Renders a small copy of the image with only its geometry (crop, rotation…) applied — no colour
- * edits — for analysis (Auto-enhance, histograms). Browser only.
+ * edits — for analysis (Auto-enhance). Browser only.
  */
 export async function renderAnalysisPixels(
   image: LoadedImage,
   state: EditState,
   maxSide = 256,
 ): Promise<{ data: Uint8ClampedArray; width: number; height: number }> {
-  const neutral: EditState = {
-    ...state,
-    finetune: createFinetuneState(),
-    levels: createLevelsState(),
-    curves: createCurvesState(),
-    filter: null,
-    annotations: [],
-    geometry: { ...state.geometry, cropShape: 'rect' },
-  };
-  const rendered = await renderToCanvas(image, neutral, { maxWidth: maxSide, maxHeight: maxSide });
+  const rendered = await renderToCanvas(image, analysisState(state), {
+    maxWidth: maxSide,
+    maxHeight: maxSide,
+  });
   const ctx = rendered.canvas.getContext('2d') as
     CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
   const pixels = ctx.getImageData(0, 0, rendered.width, rendered.height);

@@ -39,7 +39,10 @@ Update this file at the end of every session.
   (137 unit, 98 e2e).
 - **7.2b Unified elements — committed** (2026-09-26, `feat: phase 7.2b`; DECISIONS #88, #89): redaction
   areas and the watermark are elements with shapes (select, group, reorder anywhere). All checks green.
-- Next: **7.3 Colour tools** (plan sent to the owner, waiting for OK).
+- **7.3 Colour tools — done, not committed** (2026-09-26; DECISIONS #90): arrow-key presses merge
+  into one undo step, Curves / Levels "after" histogram outline, filter thumbnails on the user's
+  edits. All checks green (141 unit, 106 e2e). Waiting for owner review.
+- Next: **7.4 Mobile** (320–430px layouts; owner tests on a real phone).
 
 ## How to work with this owner
 

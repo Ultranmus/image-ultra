@@ -1,33 +1,68 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  analysisState,
   computeHistogram,
-  renderAnalysisPixels,
   type EditState,
   type Histogram,
-  type LoadedImage,
+  type ThumbnailRenderer,
 } from '@image-ultra/core';
 
+/** Longest side of the copy the histograms are counted on. */
+const SIZE = 200;
+/** Wait for a pause in slider drags before recounting. */
+const DEBOUNCE_MS = 120;
+
+export interface Histograms {
+  /** The photo with its geometry only (what Curves / Levels work on). */
+  before: Histogram;
+  /** …and with the colour edits (finetune, levels, curves, filter). */
+  after: Histogram;
+}
+
+function count(renderer: ThumbnailRenderer, state: EditState, canvas: HTMLCanvasElement) {
+  renderer.render(state, canvas, SIZE, { fit: 'contain' });
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  // Transparent bars around the result are ignored by `computeHistogram`.
+  return computeHistogram(ctx.getImageData(0, 0, SIZE, SIZE).data);
+}
+
 /**
- * Histogram of the image with its current geometry (before colour edits), recomputed shortly after
- * the crop/rotation changes.
+ * Before / after histograms of the photo, recounted shortly after the geometry or colour edits
+ * change. `renderer` = the shared thumbnail renderer; `null` turns the hook off.
  */
-export function useHistogram(image: LoadedImage | null, edit: EditState): Histogram | null {
-  const [histogram, setHistogram] = useState<{ key: unknown; value: Histogram } | null>(null);
-  const geometry = edit.geometry;
+export function useHistograms(
+  renderer: ThumbnailRenderer | null,
+  edit: EditState,
+): Histograms | null {
+  const [before, setBefore] = useState<{ key: unknown; value: Histogram } | null>(null);
+  const [after, setAfter] = useState<{ key: unknown; value: Histogram } | null>(null);
+  const { geometry, finetune, levels, curves, filter } = edit;
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvas = (): HTMLCanvasElement => (canvasRef.current ??= document.createElement('canvas'));
+
   useEffect(() => {
-    if (!image) return;
-    let cancelled = false;
+    if (!renderer) return;
     const timer = setTimeout(() => {
-      void renderAnalysisPixels(image, { ...edit, geometry }, 200).then(({ data }) => {
-        if (!cancelled) setHistogram({ key: geometry, value: computeHistogram(data) });
-      });
-    }, 150);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-    // Only geometry matters: colour edits don't change the input histogram.
+      const value = count(renderer, analysisState(edit), canvas());
+      if (value) setBefore({ key: renderer, value });
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // Only geometry changes the "before" histogram.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, geometry]);
-  return histogram?.value ?? null;
+  }, [renderer, geometry]);
+
+  useEffect(() => {
+    if (!renderer) return;
+    const timer = setTimeout(() => {
+      const state = analysisState(edit, { colour: true });
+      const value = count(renderer, state, canvas());
+      if (value) setAfter({ key: renderer, value });
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderer, geometry, finetune, levels, curves, filter]);
+
+  if (!renderer || before?.key !== renderer) return null;
+  return { before: before.value, after: after?.key === renderer ? after.value : before.value };
 }

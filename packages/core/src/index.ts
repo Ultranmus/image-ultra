@@ -250,6 +250,7 @@ export {
 export {
   autoEnhance,
   computeAutoEnhance,
+  analysisState,
   computeHistogram,
   percentile,
   renderAnalysisPixels,
@@ -306,6 +307,7 @@ export {
   type EditorStore,
   type EditorStoreState,
   type EditorTask,
+  type ChangeOptions,
   type EditRecipe,
   type TaskContext,
   type ViewportChangeOptions,

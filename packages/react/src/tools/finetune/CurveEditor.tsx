@@ -12,15 +12,16 @@ import {
   createCurveFunction,
   createIdentityCurve,
   isIdentityCurve,
+  type ChangeOptions,
   type CurveChannel,
   type CurvePoint,
-  type Histogram,
 } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { SegmentedControl } from '../../controls/SegmentedControl';
 import { IconButton } from '../../components/IconButton';
 import { IconReset } from '../../icons/Icon';
-import { histogramPath } from './histogramPath';
+import type { Histograms } from '../../hooks/useHistogram';
+import { histogramPaths } from './histogramPath';
 
 /** Graph height in px; the width follows the ControlBar and is measured. */
 const H = 80;
@@ -28,7 +29,7 @@ const H = 80;
 const GRAB_PX = 12;
 const MIN_GAP = 0.02;
 
-const CHANNEL_HIST: Record<CurveChannel, Exclude<keyof Histogram, 'total'>> = {
+const CHANNEL_HIST: Record<CurveChannel, 'luma' | 'red' | 'green' | 'blue'> = {
   rgb: 'luma',
   red: 'red',
   green: 'green',
@@ -36,7 +37,7 @@ const CHANNEL_HIST: Record<CurveChannel, Exclude<keyof Histogram, 'total'>> = {
 };
 
 /** Tone-curve editor for RGB or one channel. */
-export function CurveEditor({ histogram }: { histogram: Histogram | null }) {
+export function CurveEditor({ histogram }: { histogram: Histograms | null }) {
   const labels = useLabels();
   const store = useEditorStore();
   const hintId = useId();
@@ -58,10 +59,14 @@ export function CurveEditor({ histogram }: { histogram: Histogram | null }) {
     return d;
   }, [points, W]);
 
-  const setPoints = (next: CurvePoint[]) =>
-    store.getState().update(labels.modeCurves, (draft) => {
-      draft.curves[channel] = next;
-    });
+  const setPoints = (next: CurvePoint[], options?: ChangeOptions) =>
+    store.getState().update(
+      labels.modeCurves,
+      (draft) => {
+        draft.curves[channel] = next;
+      },
+      options,
+    );
 
   const toCurve = (event: { clientX: number; clientY: number }) => {
     const rect = svgRef.current!.getBoundingClientRect();
@@ -143,10 +148,19 @@ export function CurveEditor({ histogram }: { histogram: Histogram | null }) {
     const move = moves[event.key];
     if (!move) return;
     event.preventDefault();
-    setPoints(movePoint(points, index, move[0], Math.min(1, Math.max(0, move[1]))));
+    setPoints(movePoint(points, index, move[0], Math.min(1, Math.max(0, move[1]))), {
+      coalesce: true,
+    });
   };
 
-  const bins = histogram?.[CHANNEL_HIST[channel]];
+  const hist =
+    histogram &&
+    histogramPaths(
+      histogram.before[CHANNEL_HIST[channel]],
+      histogram.after[CHANNEL_HIST[channel]],
+      W,
+      H,
+    );
 
   return (
     <div className="iu-curves" data-channel={channel}>
@@ -181,7 +195,8 @@ export function CurveEditor({ histogram }: { histogram: Histogram | null }) {
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
       >
-        {bins && <path className="iu-curves__histogram" d={histogramPath(bins, W, H)} />}
+        {hist && <path className="iu-curves__histogram" d={hist.before} />}
+        {hist?.after && <path className="iu-curves__histogram-after" d={hist.after} />}
         {[0.25, 0.5, 0.75].map((t) => (
           <g key={t} className="iu-curves__grid">
             <line x1={t * W} x2={t * W} y1={0} y2={H} />

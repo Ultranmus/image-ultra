@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createEditorStore, selectCanRedo, selectCanUndo, selectIsDirty } from './editorStore';
 
 describe('editor store edits', () => {
@@ -53,6 +53,68 @@ describe('editor store edits', () => {
     s().cancelChange();
     expect(s().edit.finetune.contrast).toBe(0);
     expect(s().history.past).toHaveLength(1);
+  });
+
+  describe('coalesced changes (arrow-key presses)', () => {
+    afterEach(() => vi.useRealTimers());
+    const press = (store: ReturnType<typeof createEditorStore>, label: string, v: number) => {
+      store.getState().beginChange(label, { coalesce: true });
+      store.getState().update(label, (d) => {
+        d.finetune.brightness = v;
+      });
+      store.getState().endChange();
+    };
+
+    it('merges quick presses with the same label into one step', () => {
+      vi.useFakeTimers();
+      const store = createEditorStore();
+      press(store, 'Brightness', 0.1);
+      vi.advanceTimersByTime(300);
+      press(store, 'Brightness', 0.2);
+      vi.advanceTimersByTime(300);
+      store.getState().update('Brightness', (d) => void (d.finetune.brightness = 0.3), {
+        coalesce: true,
+      });
+      expect(store.getState().history.past.map((e) => e.label)).toEqual(['Brightness']);
+      store.getState().undo();
+      expect(store.getState().edit.finetune.brightness).toBe(0);
+    });
+
+    it('starts a new step after a pause, another label, or a step in between', () => {
+      vi.useFakeTimers();
+      const store = createEditorStore();
+      press(store, 'Brightness', 0.1);
+      vi.advanceTimersByTime(700);
+      press(store, 'Brightness', 0.2);
+      press(store, 'Contrast', 0.3);
+      store.getState().update('Rotate', (d) => void (d.geometry.rotation = 90));
+      press(store, 'Contrast', 0.4);
+      expect(store.getState().history.past).toHaveLength(5);
+      store.getState().undo();
+      press(store, 'Contrast', 0.5); // after an undo: not merged into the undone step
+      expect(store.getState().history.past).toHaveLength(5);
+      expect(store.getState().history.future).toHaveLength(0);
+    });
+
+    it('cancel keeps the earlier press', () => {
+      vi.useFakeTimers();
+      const store = createEditorStore();
+      press(store, 'Brightness', 0.1);
+      store.getState().beginChange('Brightness', { coalesce: true });
+      store.getState().update('Brightness', (d) => void (d.finetune.brightness = 0.2));
+      store.getState().cancelChange();
+      expect(store.getState().edit.finetune.brightness).toBe(0.1);
+      expect(store.getState().history.past).toHaveLength(1);
+    });
+
+    it('never merges plain (pointer) changes', () => {
+      const store = createEditorStore();
+      store.getState().beginChange('Brightness');
+      store.getState().update('Brightness', (d) => void (d.finetune.brightness = 0.1));
+      store.getState().endChange();
+      press(store, 'Brightness', 0.2);
+      expect(store.getState().history.past).toHaveLength(2);
+    });
   });
 
   it('reset is undoable', () => {

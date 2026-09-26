@@ -248,18 +248,19 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### From Phase 4 — Finetune + Filters
 
-- [ ] **Histogram shows "before" only** (Curves/Levels) — _Phase 7_
+- [x] **Histogram shows "before" only** (Curves/Levels) — _fixed 2026-09-26 (7.3): "after" outline_
   - Now: histogram is computed from the image with geometry only, before colour edits.
   - Fix: add a Before/After toggle (or show both, "after" as an outline) using
     `renderAnalysisPixels` with the current colour state, debounced.
-- [ ] **Filter thumbnails ignore the user's adjustments** — _Phase 7_
+- [x] **Filter thumbnails ignore the user's adjustments** — _fixed 2026-09-26 (7.3): always on_
   - Now: each thumbnail previews the filter on the plain (cropped) photo.
   - Fix: optional "preview on my edits" mode — render `{...edit, filter}` per thumbnail;
     watch cost (28 renders per change → debounce ~150ms).
 - [ ] **Preset names are English only** (filter presets + `SIZE_PRESETS`) — _Phase 7 (i18n)_
   - Fix: labels keyed by preset id (`labels.filterNames[id]`, `labels.sizePresetNames[id]`) with
     English defaults; `sizePresets` / `filterPresets` props for custom lists.
-- [ ] **Every arrow-key press is its own undo step** (dials, curve points, levels, crop box) —
+- [x] **Every arrow-key press is its own undo step** (dials, curve points, levels, crop box) — _fixed
+      2026-09-26 (7.3, DECISIONS #90; also Annotate nudges)_ —
       _Phase 7 (a11y)_
   - Fix: coalesce key presses on the same control within ~600ms into one step (keep the change
     open with a timer instead of `endChange` on each keyup).

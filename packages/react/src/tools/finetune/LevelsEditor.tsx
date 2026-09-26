@@ -2,13 +2,14 @@ import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import {
   createLevelsState,
   isNeutralLevels,
-  type Histogram,
+  type ChangeOptions,
   type LevelsState,
 } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { IconReset } from '../../icons/Icon';
-import { histogramPath } from './histogramPath';
+import type { Histograms } from '../../hooks/useHistogram';
+import { histogramPaths } from './histogramPath';
 
 type Handle = 'black' | 'mid' | 'white';
 const GAP = 0.02;
@@ -27,17 +28,21 @@ export function midFromPosition(levels: LevelsState, p: number): number {
 }
 
 /** Histogram with black / mid-tone / white handles (classic "Levels"). */
-export function LevelsEditor({ histogram }: { histogram: Histogram | null }) {
+export function LevelsEditor({ histogram }: { histogram: Histograms | null }) {
   const labels = useLabels();
   const store = useEditorStore();
   const levels = useEditorState((s) => s.edit.levels);
   const track = useRef<HTMLDivElement>(null);
   const drag = useRef<{ handle: Handle; pointerId: number } | null>(null);
 
-  const setLevels = (next: LevelsState) =>
-    store.getState().update(labels.modeLevels, (draft) => {
-      draft.levels = next;
-    });
+  const setLevels = (next: LevelsState, options?: ChangeOptions) =>
+    store.getState().update(
+      labels.modeLevels,
+      (draft) => {
+        draft.levels = next;
+      },
+      options,
+    );
 
   const place = (handle: Handle, p: number, current: LevelsState): LevelsState => {
     if (handle === 'black')
@@ -81,7 +86,7 @@ export function LevelsEditor({ histogram }: { histogram: Histogram | null }) {
     if (!dir) return;
     event.preventDefault();
     const current = handle === 'mid' ? midHandlePosition(levels) : levels[handle];
-    setLevels(place(handle, current + dir * step, levels));
+    setLevels(place(handle, current + dir * step, levels), { coalesce: true });
   };
 
   const handles: { id: Handle; label: string; at: number; text: string }[] = [
@@ -105,6 +110,8 @@ export function LevelsEditor({ histogram }: { histogram: Histogram | null }) {
     },
   ];
 
+  const hist = histogram && histogramPaths(histogram.before.luma, histogram.after.luma, 256, 32);
+
   return (
     <div className="iu-levels">
       <div className="iu-levels__main">
@@ -114,7 +121,8 @@ export function LevelsEditor({ histogram }: { histogram: Histogram | null }) {
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          {histogram && <path d={histogramPath(histogram.luma, 256, 32)} />}
+          {hist && <path className="iu-levels__before" d={hist.before} />}
+          {hist?.after && <path className="iu-levels__after" d={hist.after} />}
           <rect className="iu-levels__clip" x={0} y={0} width={levels.black * 256} height={32} />
           <rect
             className="iu-levels__clip"

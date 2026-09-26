@@ -32,6 +32,15 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- Immer recipes return nothing or a replacement
 export type EditRecipe = (draft: Draft<EditState>) => void | EditState;
 
+export interface ChangeOptions {
+  /**
+   * Merge with the previous step when it had the same label, was also coalesced, and ended less
+   * than `coalesceMs` ago with nothing recorded since — e.g. repeated arrow-key presses on one
+   * control become one undo step.
+   */
+  coalesce?: boolean;
+}
+
 /** A long-running job (export, AI…) the UI can show progress for and cancel. */
 export interface EditorTask {
   id: string;
@@ -72,7 +81,13 @@ export interface EditorState {
   initialEdit: EditState;
   history: History<EditState>;
   /** An open continuous change (slider drag) that becomes one history step on `endChange`. */
-  pendingChange: { base: EditState; label: string } | null;
+  pendingChange: {
+    base: EditState;
+    label: string;
+    coalesce: boolean;
+    /** Set when the change re-opened the previous step: what `cancelChange` goes back to. */
+    reopened?: { edit: EditState; history: History<EditState> };
+  } | null;
   tasks: EditorTask[];
   /**
    * Transient UI state owned by tools (e.g. Annotate's current drawing tool and selection),
@@ -110,9 +125,9 @@ export interface EditorActions {
   setAnimationMs(ms: number): void;
 
   /** Applies one undoable change. During `beginChange`/`endChange` it applies live instead. */
-  update(label: string, recipe: EditRecipe): void;
+  update(label: string, recipe: EditRecipe, options?: ChangeOptions): void;
   /** Start a continuous change (e.g. slider drag). All `update` calls merge into one undo step. */
-  beginChange(label: string): void;
+  beginChange(label: string, options?: ChangeOptions): void;
   /** Finish the continuous change and record it (if anything changed). */
   endChange(): void;
   /** Abort the continuous change and restore the state from `beginChange`. */
@@ -145,6 +160,8 @@ export interface CreateEditorStoreOptions {
   viewport?: ViewportOptions;
   /** Maximum undo steps kept. Default 250. */
   historyLimit?: number;
+  /** How long after a coalesced step the next one still merges with it. Default 600 ms. */
+  coalesceMs?: number;
 }
 
 const EMPTY_VIEWPORT: Viewport = { scale: 1, x: 0, y: 0 };
@@ -157,6 +174,9 @@ export const selectIsDirty = (s: EditorState): boolean => s.edit !== s.initialEd
 export function createEditorStore(options: CreateEditorStoreOptions = {}): EditorStore {
   const viewportOptions = options.viewport ?? {};
   const historyLimit = options.historyLimit ?? DEFAULT_HISTORY_LIMIT;
+  const coalesceMs = options.coalesceMs ?? 600;
+  /** The last coalesced step, and the history it produced (any later step replaces the object). */
+  let lastCoalesced: { label: string; history: History<EditState>; at: number } | null = null;
   let loadController: AbortController | null = null;
   let animationFrame: number | null = null;
   const taskControllers = new Map<string, AbortController>();
@@ -336,39 +356,65 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
         set({ animationMs: Math.max(0, ms) });
       },
 
-      update(label, recipe) {
+      update(label, recipe, changeOptions) {
         const { edit: current, pendingChange, history } = get();
         const next = produce(current, recipe);
         if (next === current) return;
-        if (pendingChange) {
+        if (!pendingChange && changeOptions?.coalesce) {
+          get().beginChange(label, changeOptions);
+          commitEdit(next);
+          get().endChange();
+        } else if (pendingChange) {
           commitEdit(next);
         } else {
           commitEdit(next, { history: pushHistory(history, current, label, historyLimit) });
         }
       },
 
-      beginChange(label) {
+      beginChange(label, changeOptions) {
         endPending();
-        set({ pendingChange: { base: get().edit, label } });
+        const coalesce = changeOptions?.coalesce ?? false;
+        const { history, edit } = get();
+        const last = history.past.at(-1);
+        if (
+          coalesce &&
+          last &&
+          lastCoalesced?.label === label &&
+          lastCoalesced.history === history &&
+          Date.now() - lastCoalesced.at < coalesceMs
+        ) {
+          // Re-open the previous step: its "before" becomes this change's base.
+          set({
+            pendingChange: { base: last.state, label, coalesce, reopened: { edit, history } },
+            history: { past: history.past.slice(0, -1), future: history.future },
+          });
+          return;
+        }
+        set({ pendingChange: { base: edit, label, coalesce } });
       },
 
       endChange() {
         const { pendingChange, edit, history } = get();
         if (!pendingChange) return;
         if (edit === pendingChange.base) {
+          // A re-opened step may have removed its entry; nothing changed overall, so that's right.
           set({ pendingChange: null });
+          lastCoalesced = null;
           return;
         }
-        set({
-          pendingChange: null,
-          history: pushHistory(history, pendingChange.base, pendingChange.label, historyLimit),
-        });
+        const next = pushHistory(history, pendingChange.base, pendingChange.label, historyLimit);
+        set({ pendingChange: null, history: next });
+        lastCoalesced = pendingChange.coalesce
+          ? { label: pendingChange.label, history: next, at: Date.now() }
+          : null;
       },
 
       cancelChange() {
         const { pendingChange } = get();
         if (!pendingChange) return;
-        commitEdit(pendingChange.base, { pendingChange: null });
+        const { reopened } = pendingChange;
+        if (reopened) commitEdit(reopened.edit, { pendingChange: null, history: reopened.history });
+        else commitEdit(pendingChange.base, { pendingChange: null });
       },
 
       undo() {

@@ -6,6 +6,7 @@ import {
   measureTextHeight,
   moveShape,
   type AlignEdge,
+  type ChangeOptions,
   type Box,
   type EditorStore,
   type EditState,
@@ -189,18 +190,22 @@ export function shapeActions(store: EditorStore, labels: Labels) {
     },
 
     /** Replaces shapes by id (a group move / resize / rotate step). */
-    replaceMany(label: string, shapes: readonly Shape[]) {
+    replaceMany(label: string, shapes: readonly Shape[], options?: ChangeOptions) {
       const byId = new Map(shapes.map((s) => [s.id, s]));
       const mark = byId.get(WATERMARK_ELEMENT_ID);
       const { image } = store.getState();
-      store.getState().update(label, (draft) => {
-        draft.annotations = draft.annotations.map((s) =>
-          s.type === 'watermark' ? s : (byId.get(s.id) ?? s),
-        );
-        // The watermark's box → its custom position, size and angle.
-        if (mark && mark.type === 'image' && image && draft.watermark)
-          Object.assign(draft.watermark, watermarkFromBox(image, draft, mark));
-      });
+      store.getState().update(
+        label,
+        (draft) => {
+          draft.annotations = draft.annotations.map((s) =>
+            s.type === 'watermark' ? s : (byId.get(s.id) ?? s),
+          );
+          // The watermark's box → its custom position, size and angle.
+          if (mark && mark.type === 'image' && image && draft.watermark)
+            Object.assign(draft.watermark, watermarkFromBox(image, draft, mark));
+        },
+        options,
+      );
     },
 
     /**

@@ -15,6 +15,7 @@ import { PresetStrip, type Preset } from '../../controls/PresetStrip';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { ColorButton, SwatchPicker } from '../../controls/SwatchPicker';
 import { useThumbnailRenderer } from '../../hooks/useThumbnailRenderer';
+import { undoStep } from '../../controls/undoStep';
 
 const NONE = 'none';
 type FrameChoice = FrameStyle | typeof NONE;
@@ -97,9 +98,8 @@ export function FrameControls() {
                 majorEvery={5}
                 defaultValue={4}
                 format={(v) => `${v}%`}
-                onChangeStart={() => store.getState().beginChange(labels.frameSize)}
+                {...undoStep(store, labels.frameSize)}
                 onChange={(v) => change(labels.frameSize, { size: v / 100 })}
-                onChangeEnd={() => store.getState().endChange()}
               />
               <span className="iu-rulerfield__label" aria-hidden="true">
                 {labels.frameSize}

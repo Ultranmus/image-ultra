@@ -275,6 +275,14 @@
     opacity: 0.12;
   }
 
+  /* "After" (with the colour edits) as an outline over the "before" area. */
+  .iu-curves__histogram-after {
+    fill: none;
+    stroke: var(--iu-curve-color);
+    stroke-width: 1;
+    opacity: 0.45;
+  }
+
   .iu-curves__grid line {
     stroke: var(--iu-border);
     stroke-width: 1;
@@ -325,9 +333,17 @@
     background: var(--iu-surface-2);
   }
 
-  .iu-levels__histogram path {
+  .iu-levels__before {
     fill: var(--iu-text-subtle);
     opacity: 0.5;
+  }
+
+  .iu-levels__after {
+    fill: none;
+    stroke: var(--iu-text);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.6;
   }
 
   .iu-levels__clip {

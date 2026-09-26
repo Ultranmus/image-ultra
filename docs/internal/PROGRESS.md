@@ -466,3 +466,15 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   resize (corners), rotate, group, align, reorder, delete; never copied or duplicated; app-locked
   = on top, not selectable. Annotate shows "Edit in Redact / Watermark" for those.
 - Tests: 137 unit · 102 e2e (+ `elements.spec.ts`; redact spec on the element list).
+
+## 2026-09-26 · Phase 7.3 — Colour tools
+
+- Fix committed first: duplicate React key `align` (Align menu is `arrange` now).
+- Undo: quick arrow-key presses on one control are one step (DECISIONS #90) — all ruler dials,
+  curve points, levels handles, crop box, Annotate / group nudges. Core `ChangeOptions.coalesce`,
+  React `undoStep()` helper; `RulerSlider.onChangeStart(source)`.
+- Curves / Levels: "after" histogram outline over the "before" area (`useHistograms`, shared
+  thumbnail renderer, `ThumbnailRenderer.render(..., { fit: 'contain' })`, core `analysisState`).
+- Filter thumbnails preview presets on top of the user's colour edits.
+- Tests: 141 unit (+ coalescing) · 106 e2e (+ key-press merging, histogram outline, thumbnails).
+

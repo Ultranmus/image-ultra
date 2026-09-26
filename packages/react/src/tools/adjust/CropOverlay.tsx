@@ -275,7 +275,7 @@ export function CropOverlay() {
     event.preventDefault();
     if (!keyActive.current) {
       keyActive.current = true;
-      state.beginChange('Move crop');
+      state.beginChange('Move crop', { coalesce: true });
     }
     applyCrop(
       moveCrop(

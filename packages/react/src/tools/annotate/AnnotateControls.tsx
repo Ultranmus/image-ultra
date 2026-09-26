@@ -57,6 +57,7 @@ import {
 import { shapeActions } from './actions';
 import { AlignMenu, GroupInspector } from './GroupControls';
 import { insertImageFile } from './insertImage';
+import { undoStep } from '../../controls/undoStep';
 
 const MODE_ICONS: Record<AnnotateMode, (p: IconProps) => React.JSX.Element> = {
   select: IconPointer,
@@ -128,10 +129,7 @@ export function AnnotateControls() {
   };
 
   /** Continuous change (ruler drag) on the selected shape. */
-  const live = (label: string) => ({
-    onChangeStart: () => store.getState().beginChange(label),
-    onChangeEnd: () => store.getState().endChange(),
-  });
+  const live = (label: string) => undoStep(store, label);
 
   const color =
     selected?.type === 'text'
@@ -452,8 +450,7 @@ export function AnnotateControls() {
           majorEvery={25}
           defaultValue={100}
           format={(v) => `${v}%`}
-          onChangeStart={() => selected && store.getState().beginChange(labels.opacity)}
-          onChangeEnd={() => selected && store.getState().endChange()}
+          {...undoStep(store, labels.opacity, !!selected)}
           onChange={(v) =>
             apply(labels.opacity, { opacity: v / 100 }, (s) => {
               s.opacity = v / 100;

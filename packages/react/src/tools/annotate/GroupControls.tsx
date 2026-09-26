@@ -22,6 +22,7 @@ import {
 import { shapeActions } from './actions';
 import { WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { referenceSize, strokeWidthFor, type SizeStep } from './state';
+import { undoStep } from '../../controls/undoStep';
 
 const EDGES: [AlignEdge, (p: IconProps) => React.JSX.Element][] = [
   ['left', IconAlignEdgeLeft],
@@ -200,8 +201,7 @@ export function GroupInspector({ members }: { members: Shape[] }) {
         majorEvery={25}
         defaultValue={100}
         format={(v) => `${v}%`}
-        onChangeStart={() => store.getState().beginChange(labels.opacity)}
-        onChangeEnd={() => store.getState().endChange()}
+        {...undoStep(store, labels.opacity)}
         onChange={(v) =>
           patchAll(labels.opacity, (s) => {
             s.opacity = v / 100;

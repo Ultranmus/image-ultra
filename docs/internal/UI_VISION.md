@@ -101,12 +101,15 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   graph (tinted histogram, thirds grid, dashed identity, points = sliders; click adds, double-click
   or Delete removes). Levels = 32px histogram with clipped areas dimmed, three triangle handles,
   values row ("Black point 0 · Mid-tones 1.00 · White point 255").
+  Both histograms show the photo before colour edits as the filled area and, once anything changed,
+  the result ("after") as a thin outline on the same scale.
 - **Save look** is inline (name field + ✓/✕ replace the header buttons) — never a modal. After
   saving, an inline notice "Saved “Name” · View in Filters" (role=status, 6s) links to the Filter tool.
 - **Inline notice pattern** (`.iu-notice` + `.iu-link`): short confirmations live in the ControlBar
   header's middle slot, never as toasts or dialogs.
 - **Filter** ControlBar: Intensity RulerSlider (disabled when "Original"), then a thumbnail
-  PresetStrip (52px live previews of each look on the current crop, label below, selected = accent
+  PresetStrip (52px live previews of each look on the current crop — presets on top of the user's
+  Finetune / Levels / Curves edits, saved looks as they are — label below, selected = accent
   ring): Original, then the user's looks (bookmark badge; hover ✕ / Delete key removes), a divider,
   then the 28 presets. Own looks come first so a just-saved look is visible without scrolling.
 - **Annotate** ControlBar: row 1 = drawing tools as icon radios (Select V, Pen P, Line L, Arrow A,
@@ -240,7 +243,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - Crop: image moves under a fixed crop box when dragging inside; handles resize box; on release, box re-centres and image animates to fit (320ms). Rule-of-thirds grid appears only while interacting.
 - Ratio change animates the box, never snaps instantly.
 - Zoom: wheel/trackpad pinch around cursor; touch pinch; double-click toggles fit ↔ 100%. Space+drag pans on desktop.
-- Sliders commit one history entry per drag (coalesced), not per pixel.
+- Sliders commit one history entry per drag (coalesced), not per pixel. Quick arrow-key presses on
+  one control (< 600 ms apart) are one entry too: dials, curve points, levels, crop box, nudges.
 - Selection handles: 10px visual, 32px hit area.
 - Hold `\` (or the compare button) → show original. Release → back.
 - Keyboard: every tool reachable with Tab; shortcuts listed in `?` overlay.

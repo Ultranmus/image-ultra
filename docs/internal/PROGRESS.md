@@ -385,3 +385,4 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - Watermark (owner): Font menu for text watermarks (same menu and `fonts` list as Annotate text).
 - Adjust (owner): the crop shade now covers only the photo outside the crop (SVG clip to the photo's
   outline from `getImageQuad`), so the empty stage keeps the normal stage colour in both themes.
+- Compare (owner): the round divider handle is solid (surface colour) with ‹ › arrows — the line no longer shows through.

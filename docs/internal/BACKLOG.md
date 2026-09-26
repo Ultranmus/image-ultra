@@ -159,6 +159,9 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       covered the whole stage. Fix: shade only the photo outside the crop; the empty stage keeps
       the normal stage colour, like every other tool.
 
+- [x] **Compare: the divider line shows through the round handle** (owner) — the handle was
+      semi-transparent. Now solid (surface colour) with ‹ › arrows _(fixed 2026-09-26)_.
+
 ### Planned later
 
 - [ ] **Extend the canvas** (e.g. "make it square" with the Fill showing on the sides, for social

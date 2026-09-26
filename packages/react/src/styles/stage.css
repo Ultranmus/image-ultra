@@ -112,9 +112,13 @@
     left: 50%;
     width: 28px;
     height: 28px;
+    /* Solid, so the divider line doesn't show through; arrows say "drag sideways". */
+    display: grid;
+    place-items: center;
     border: 2px solid var(--iu-crop-frame);
     border-radius: var(--iu-radius-full);
-    background: var(--iu-overlay);
+    background: var(--iu-surface-1);
+    color: var(--iu-text);
     box-shadow: var(--iu-shadow-popover);
     transform: translate(-50%, -50%);
   }

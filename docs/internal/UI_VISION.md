@@ -128,8 +128,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
   the dividers hide; below 480px zoom is just the % button (tap = fit ↔ 100%, pinch to zoom) and
   Done shows only its icon; below 360px TopBar buttons are 34px
   (2px gaps) so it fits at 320px. Buttons always keep a gap: hover/active backgrounds never touch.
-- **Split compare:** thin white divider (`--iu-crop-frame`) across the stage with a round 28px grab
-  handle (role=slider, ←/→ move it), "Before" / "After" pills at the top on each side
+- **Split compare:** thin white divider (`--iu-crop-frame`) across the stage with a round 28px solid grab
+  handle (surface colour, ‹ › arrows) (role=slider, ←/→ move it), "Before" / "After" pills at the top on each side
   (`--iu-overlay` background). Before = same crop/rotation, no colour or annotations.
 - **Redact** ControlBar: row 1 = Box / Brush icon radios (+ brush size popover in Brush mode) —
   style SegmentedControl Pixelate · Blur · Solid (default Pixelate) — Delete (when selected) and

@@ -84,7 +84,16 @@ export function CompareDivider({ split }: { split: number }) {
           dragging.current = false;
         }}
       >
-        <span className="iu-compare__handle" aria-hidden="true" />
+        <span className="iu-compare__handle" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor">
+            <path
+              d="M10 7l-5 5 5 5M14 7l5 5-5 5"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </div>
     </div>
   );

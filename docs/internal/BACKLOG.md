@@ -333,7 +333,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       _Phase 7 (a11y)_
   - Fix: coalesce key presses on the same control within ~600ms into one step (keep the change
     open with a timer instead of `endChange` on each keyup).
-- [ ] **20MP performance not formally measured** — _Phase 7 (perf)_
+- [x] **20MP performance not formally measured** — _measured 2026-09-27 (7.7a, `pnpm bench`,
+      PERF.md)_ — _Phase 7 (perf)_
   - Fix: benchmark slider drags on a 20–24MP image (GPU + Canvas2D fallback) and record frame
     times; consider a downscaled preview texture while dragging.
 - [ ] **Detail effects differ slightly between GPU and CPU fallback** (mean < 3/255) — _nice to have_
@@ -355,6 +356,14 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### From Phase 2 — Core engine
 
+- [ ] **Canvas2D fallback: colour drags at 3–9 fps** (found 2026-09-27 by 7.7a; Exposure / Sharpen
+      3 fps, Curves 8–9 fps at 2× pixels, any photo size) — _Phase 7.7b_
+  - Fix: render the preview at 1× or ½ resolution while a change is open (`beginChange` …
+    `endChange`), full resolution on release.
+- [ ] **WebP export is slow** (found 2026-09-27 by 7.7a: 4 s at 24MP, 9.5 s at 48MP; JPEG 0.3 s) —
+      the browser's WebP encoder, same on both renderers — _later (Worker export)_
+  - Fix: encode in a Web Worker (`OffscreenCanvas.convertToBlob`) so the page stays responsive;
+    show progress on Done.
 - [ ] **Images above the GPU texture limit are downscaled** (16384px desktop, 4096–8192 mobile) —
       _Phase 7 (perf)_
   - Fix: tiled textures / tiled export.

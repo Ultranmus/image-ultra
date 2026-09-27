@@ -571,3 +571,13 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   (crop wheel zoom, arrow-key nudge) held stale labels. `useLatest` hook; e2e (fails without it).
 - **7.6c:** owner decided the package ships English only and apps add their own languages
   (DECISIONS #99); Localization guide added to the Phase 8 docs plan. Phase 7.6 done.
+
+## 2026-09-27 · Phase 7.7 — Performance
+
+- 7.7 plan approved (a benchmark, b preview size, c memory, d tiled export).
+- **7.7a benchmark:** `/bench` page + `pnpm bench` (Playwright, WebGL2 and Canvas2D runs; DECISIONS
+  #100); first results in the new `PERF.md`. WebGL2 on the M4 meets every target at 12–48MP
+  (first paint ≤ 0.2 s, drags at 60 fps, 24MP JPEG 0.3 s). Found: the Canvas2D fallback drags colour
+  at 3–9 fps, and WebP export takes 4 s at 24MP (both in BACKLOG). The preview's cost follows the
+  screen size, not the photo size — so 7.7b is proposed to lead with a lower-resolution preview
+  while dragging (owner to confirm).

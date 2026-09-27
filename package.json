@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
-    "e2e": "turbo run e2e"
+    "e2e": "turbo run e2e",
+    "bench": "pnpm build && pnpm --filter playground bench"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start --port 3100",
     "typecheck": "tsc --noEmit",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "bench": "playwright test -c playwright.bench.config.ts"
   },
   "dependencies": {
     "@image-ultra/react": "workspace:*",

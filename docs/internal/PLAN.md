@@ -182,7 +182,36 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         review) · pseudo-locale. English only ships. (The switch with English · pseudo was added in
         7.6a, owner asked to test from the UI.)
 - [ ] **7.7** Perf: 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled
-      export above the GPU texture limit (preview stays downscaled).
+      export above the GPU texture limit (preview stays downscaled). Approved 2026-09-27 (owner: "go"), commit after each step:
+  - [x] **7.7a** Benchmark first (measure, don't guess): a playground page `/bench` + a Playwright
+        script (`pnpm bench`, not part of `pnpm e2e`) using generated 12 / 24 / 48MP test photos
+        (made at run time, not committed). Records: load → first paint, frame times while dragging
+        Exposure / Sharpen / Curves / Rotate / crop (WebGL2 **and** Canvas2D fallback), export time
+        per format, and JS heap / GPU memory estimate. Results table in `docs/internal/PERF.md`.
+        Targets: first paint < 1s, drag ≥ 50fps median on WebGL2 and ≥ 20fps on Canvas2D, export of
+        24MP JPEG < 3s — on the owner's Mac; the phone numbers are recorded, not gated.
+        **Result (PERF.md):** WebGL2 meets every target at 12–48MP; the Canvas2D fallback drags
+        colour at 3–9 fps (any photo size); WebP export 4s at 24MP (browser encoder).
+  - [ ] **7.7b** _Proposed change after 7.7a (needs owner OK): lead with "fewer pixels while
+        dragging" for the Canvas2D fallback (3 fps → target 20 fps); the screen-sized copy only if the
+        owner's phone run of `/bench` shows GPU drags below 50 fps._ Preview-sized image: the preview samples a copy of the photo sized to the screen
+        (about 2× the stage, "mipmap"), not the full 24MP texture. The full texture is used only when
+        zoomed in past ~50%. Why: the preview cost follows the canvas size, but sampling a huge texture
+        is slow and grainy when zoomed out; the Canvas2D fallback draws the full bitmap every frame.
+        If 7.7a shows drags are still slow: a lower-resolution frame **only while dragging**, sharp
+        again on release. Same for the histogram, redaction preview and "before" compare.
+  - [ ] **7.7c** Memory cleanup: an audit that every `ImageBitmap`, texture, framebuffer and
+        object URL is freed — photo swap, reset, tool change, unmount, StrictMode remount, fill /
+        sticker / logo caches (Stage's fill-image cache is never closed today). e2e: load 10 photos in a
+        row → heap stays flat (within ~1 photo). Undo history keeps JSON only (already true — check).
+  - [ ] **7.7d** Tiled export: photos or outputs bigger than the GPU texture limit (16384px desktop,
+        4096–8192 phones) export at **full size** — the output is rendered in tiles, each reading only
+        its part of the source (with a margin for blur / sharpen so seams never show; grain and
+        vignette use output coordinates, so they line up). Tiles go onto one 2D canvas, then encode.
+        Limit: the browser's biggest canvas (~268MP Chrome/Firefox, ~16MP iOS Safari) — above it the
+        export is scaled down and `ExportResult` says so (`downscaled: true`). e2e: a 20000px-wide
+        photo exports at full size with no seams (pixel check across a tile edge vs. a small render).
+  - Not in 7.7: Web Worker / OffscreenCanvas export and WebGPU (Phase 9 runtime may bring them).
 
 ### Phase 8 — Release
 

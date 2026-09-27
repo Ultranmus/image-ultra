@@ -33,7 +33,25 @@ test('Canvas2D preview draws fewer pixels while dragging, sharp again on release
   expect(before.photo).toBe(before.full);
 
   await page.evaluate(() => {
-    const store = (window as unknown as { __iu: TestHook }).__iu.editor.current!.store;
+    const editor = (window as unknown as { __iu: TestHook }).__iu.editor.current!;
+    // A redaction area, so its layer is drawn (an unused layer is 1×1).
+    editor.update('Redact', (s) => {
+      s.annotations.push({
+        type: 'redact',
+        kind: 'box',
+        id: 'r',
+        style: 'pixelate',
+        strength: 0.1,
+        color: '#000',
+        rotation: 0,
+        opacity: 1,
+        x: 10,
+        y: 10,
+        width: 200,
+        height: 200,
+      });
+    });
+    const store = editor.store;
     store.getState().beginChange('Exposure');
     store.getState().update('Exposure', (s) => {
       s.finetune.exposure = 0.5;
@@ -49,4 +67,5 @@ test('Canvas2D preview draws fewer pixels while dragging, sharp again on release
   );
   const released = await canvasWidths(page);
   expect(released.photo).toBe(before.full);
+  expect(released.redactions).toBe(before.full);
 });

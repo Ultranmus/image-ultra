@@ -105,6 +105,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     const fillImage = (state: EditorState): ImageBitmap | undefined => {
       const bg = state.edit.background;
       const asset = bg?.kind === 'image' ? state.edit.assets[bg.assetId] : undefined;
+      keepOnly(fillImages, asset?.src);
       if (!asset) return undefined;
       if (!fillImages.has(asset.src)) {
         fillImages.set(asset.src, null);
@@ -171,6 +172,14 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         paintRedactions(redactCanvas, canvas, state, ratio);
         paintBackground(backgroundCanvas, [canvas, redactCanvas], state, fillImage(state), ratio);
         if (state.compare !== null) drawBefore(state, image);
+        else if (beforeRenderer) {
+          // Compare closed: free its copy of the photo on the GPU and its drawing buffer (7.7c).
+          beforeRenderer.dispose();
+          beforeRenderer = null;
+          beforeFor = null;
+          beforeState = null;
+          releaseCanvas(beforeCanvas);
+        }
       } catch (error) {
         fail(error);
       }
@@ -253,6 +262,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         const wm = edit.watermark;
         const asset = wm.kind === 'image' && wm.assetId ? edit.assets[wm.assetId] : undefined;
         let logo: ImageBitmap | undefined;
+        keepOnly(logos, asset?.src);
         if (asset) {
           // Decoded once; redraw when it arrives.
           if (!logos.has(asset.src)) {
@@ -609,14 +619,17 @@ function paintBackground(
   dpr: number,
 ) {
   const main = sources[0]!;
+  const { image: photo, edit, viewport: vp, cropView } = state;
+  if (!photo || !edit.background || cropView) {
+    releaseCanvas(target);
+    return;
+  }
   if (target.width !== main.width) target.width = main.width;
   if (target.height !== main.height) target.height = main.height;
   const ctx = target.getContext('2d');
   if (!ctx) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, target.width, target.height);
-  const { image: photo, edit, viewport: vp, cropView } = state;
-  if (!photo || !edit.background || cropView) return;
   const out = getOutputSize(photo, edit);
   let result: HTMLCanvasElement | OffscreenCanvas = main;
   let resultRect: { x: number; y: number; width: number; height: number } | undefined;
@@ -666,14 +679,17 @@ function paintRedactions(
   dpr: number,
 ) {
   const { image, edit, cropView, viewport: vp } = state;
+  const redacts = redactElements(edit.annotations);
+  if (!image || redacts.length === 0) {
+    releaseCanvas(target);
+    return;
+  }
   if (target.width !== source.width) target.width = source.width;
   if (target.height !== source.height) target.height = source.height;
   const ctx = target.getContext('2d');
   if (!ctx) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, target.width, target.height);
-  const redacts = redactElements(edit.annotations);
-  if (!image || redacts.length === 0) return;
   ctx.save();
   if (!cropView && edit.geometry.cropShape === 'ellipse') {
     ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
@@ -687,6 +703,20 @@ function paintRedactions(
     reference: redactReference(getOrientedSize(image, edit.geometry)),
   });
   ctx.restore();
+}
+
+/**
+ * An unused layer shrinks to 1×1 (and so shows nothing): a full-size stage canvas holds ~20 MB
+ * on a Retina screen even when empty (7.7c).
+ */
+function releaseCanvas(canvas: HTMLCanvasElement): void {
+  if (canvas.width !== 1) canvas.width = 1;
+  if (canvas.height !== 1) canvas.height = 1;
+}
+
+/** Drops every decoded image but the one in use, so it can be freed (7.7c). */
+function keepOnly(images: Map<string, ImageBitmap | null>, src: string | undefined): void {
+  for (const key of images.keys()) if (key !== src) images.delete(key);
 }
 
 /** Canvas pixels the Canvas2D fallback draws while a change is open (~0.35 MP ≈ 20 fps). */

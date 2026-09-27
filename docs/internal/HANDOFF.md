@@ -68,7 +68,8 @@ Update this file at the end of every session.
   WebGL2 meets all targets; Canvas2D colour drags 3–9 fps; WebP export slow.
 - **7.7b — done** (DECISIONS #101): Canvas2D draws fewer pixels while dragging (3 → 20–60 fps).
   Waiting: owner's phone `/bench` run → decides the GPU screen-sized copy (BACKLOG).
-- Next: **7.7c memory cleanup** (JS heap can't see bitmaps / textures — count them instead).
+- **7.7c — done** (DECISIONS #102): `e2e/memory.spec.ts` counts images + textures; four leaks fixed.
+- Next: **7.7d tiled export** (photos / outputs above the GPU texture limit export at full size).
 
 ## How to work with this owner
 

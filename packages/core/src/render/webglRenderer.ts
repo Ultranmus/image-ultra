@@ -46,7 +46,8 @@ export class WebGLRenderer implements Renderer {
   private gpu: GpuResources | null;
   /** Image → bitmap to upload (a downscaled copy when the image exceeds the texture limit). */
   private uploads = new WeakMap<ImageBitmap, ImageBitmap>();
-  private ownedBitmaps: ImageBitmap[] = [];
+  /** Downscaled copy for an image above the texture limit (only the latest image's is kept). */
+  private owned: { source: ImageBitmap; copy: ImageBitmap } | null = null;
   private readonly maxTextureSize: number;
 
   private constructor(
@@ -114,7 +115,9 @@ export class WebGLRenderer implements Renderer {
       resizeHeight: Math.floor(height * ratio),
       resizeQuality: 'high',
     });
-    this.ownedBitmaps.push(scaled);
+    // One image at a time: the previous photo's copy (up to 1 GB) is freed now, not on dispose.
+    this.releaseOwned();
+    this.owned = { source: image.bitmap, copy: scaled };
     this.uploads.set(image.bitmap, scaled);
   }
 
@@ -230,9 +233,15 @@ export class WebGLRenderer implements Renderer {
       for (const p of [gpu.main, gpu.blur, gpu.finish]) gl.deleteProgram(p.program);
     }
     this.gpu = null;
-    for (const bitmap of this.ownedBitmaps) bitmap.close();
-    this.ownedBitmaps = [];
+    this.releaseOwned();
     if (this.ownsCanvas) gl.getExtension('WEBGL_lose_context')?.loseContext();
+  }
+
+  private releaseOwned(): void {
+    if (!this.owned) return;
+    this.uploads.delete(this.owned.source);
+    this.owned.copy.close();
+    this.owned = null;
   }
 
   /* ── Passes ────────────────────────────────────────────────────────── */

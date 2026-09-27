@@ -85,3 +85,17 @@ Canvas2D fallback only (WebGL2 unchanged). Colour drags: Exposure 3 → 20–30 
 Exposure stays the slowest: the CPU colour maths takes several `Math.pow` per pixel (linear light).
 A faster CPU path (lookup tables) would risk the GPU / CPU pixel match — not done; 20 fps meets the
 target. Zoom isn't a "change", so it keeps full resolution (30 fps).
+
+## Memory (7.7c) · `e2e/memory.spec.ts`
+
+The JS heap can't see decoded images or GPU textures, so the test counts them itself (wrapping
+`createImageBitmap` / `close` and the WebGL texture calls; garbage-collected images count as
+freed). 10 photos of 3MP, each with a sticker, the Filter thumbnails, compare on/off and an export:
+
+|             | after 1 photo                 | after 10 photos                    | editor closed   |
+| ----------- | ----------------------------- | ---------------------------------- | --------------- |
+| Before 7.7c | 2 images · 4 textures (24 MB) | **11 images** · 4 textures (25 MB) | —               |
+| After 7.7c  | 2 images · 2 textures (12 MB) | 2 images · 2 textures (12.5 MB)    | 0 images · 0 MB |
+
+Also freed now (not in the counts): the full-size drawing buffers of unused layers (compare,
+redactions, Fill) — ~20 MB each on a Retina stage.

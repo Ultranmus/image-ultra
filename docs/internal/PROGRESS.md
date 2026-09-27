@@ -587,3 +587,9 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   stays slowest (per-pixel `Math.pow`; a LUT would risk GPU/CPU parity — not done). New
   `e2e/perf.spec.ts` (WebGL off; checked to fail without the fix). GPU screen-sized copy waits for
   the owner's phone `/bench` run (BACKLOG). All checks green (145 unit, 148 e2e).
+- 7.7b committed. **7.7c memory:** new `e2e/memory.spec.ts` + `e2e/support/memory.ts` count live
+  images and GPU textures (the JS heap can't see them). Found and fixed (DECISIONS #102): assets
+  stayed decoded forever (+1 image per photo); compare kept a second GPU copy of the photo after
+  closing (12 MB here, 92 MB at 24MP); unused layers held full-size canvases; oversized-photo copies
+  piled up in the WebGL renderer. Now flat over 10 photos; closing the editor frees everything.
+  Test checked to fail without the fixes. All checks green (145 unit, 149 e2e).

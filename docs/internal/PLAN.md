@@ -197,10 +197,13 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         colour drags 3 → 20–60 fps (PERF.md, DECISIONS #101). _Waiting for data:_ a screen-sized
         copy of the photo for GPUs, only if the owner's phone run of `/bench` shows drags < 50 fps
         (BACKLOG).
-  - [ ] **7.7c** Memory cleanup: an audit that every `ImageBitmap`, texture, framebuffer and
-        object URL is freed — photo swap, reset, tool change, unmount, StrictMode remount, fill /
-        sticker / logo caches (Stage's fill-image cache is never closed today). e2e: load 10 photos in a
-        row → heap stays flat (within ~1 photo). Undo history keeps JSON only (already true — check).
+  - [x] **7.7c** Memory cleanup (DECISIONS #102): `e2e/memory.spec.ts` counts live images and GPU
+        textures over 10 photos (sticker, Filter thumbnails, compare, export each) — flat now, and
+        closing the editor frees them. Fixed: stickers / logos / Fill images stayed decoded for the
+        whole page (+1 per photo); compare kept a second GPU copy of the photo after closing
+        (92 MB at 24MP); unused redaction / Fill / compare layers held full-size canvases; the
+        WebGL renderer kept every downscaled copy of oversized photos until unmount. Undo history
+        holds JSON only (checked).
   - [ ] **7.7d** Tiled export: photos or outputs bigger than the GPU texture limit (16384px desktop,
         4096–8192 phones) export at **full size** — the output is rendered in tiles, each reading only
         its part of the source (with a margin for blur / sharpen so seams never show; grain and

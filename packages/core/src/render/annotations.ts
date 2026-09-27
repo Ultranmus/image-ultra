@@ -193,18 +193,44 @@ export function textIndexAt(shape: TextShape, point: Point): number {
 
 /* ── Assets & fonts ────────────────────────────────────────────────────── */
 
-const assetCache = new Map<string, Promise<ImageBitmap | null>>();
+/**
+ * Decoded assets by source. An entry holds its image only weakly once decoded: it stays while
+ * something draws it (the stage, an export) and is freed by the garbage collector after that
+ * (Phase 7.7c — a strong cache kept every sticker / logo ever used for the whole page). Not closed
+ * here: another editor on the page may still hold the same image.
+ */
+const assetCache = new Map<string, Promise<ImageBitmap | null> | WeakRef<ImageBitmap>>();
+const assetGone =
+  typeof FinalizationRegistry === 'undefined'
+    ? null
+    : new FinalizationRegistry<string>((src) => {
+        const entry = assetCache.get(src);
+        if (entry instanceof WeakRef && !entry.deref()) assetCache.delete(src);
+      });
 
-/** Decodes an asset's image once (cached by source); `null` if it can't be loaded. */
+/** Decodes an asset's image (shared by source while in use); `null` if it can't be loaded. */
 export function loadAssetBitmap(src: string): Promise<ImageBitmap | null> {
-  let pending = assetCache.get(src);
-  if (!pending) {
-    pending = loadImage(src).then(
-      (img) => img.bitmap,
-      () => null,
-    );
-    assetCache.set(src, pending);
+  const entry = assetCache.get(src);
+  if (entry instanceof WeakRef) {
+    const bitmap = entry.deref();
+    if (bitmap) return Promise.resolve(bitmap);
+  } else if (entry) {
+    return entry;
   }
+  const pending = loadImage(src).then(
+    (img) => {
+      if (assetCache.get(src) === pending) {
+        assetCache.set(src, new WeakRef(img.bitmap));
+        assetGone?.register(img.bitmap, src);
+      }
+      return img.bitmap;
+    },
+    () => {
+      if (assetCache.get(src) === pending) assetCache.delete(src);
+      return null;
+    },
+  );
+  assetCache.set(src, pending);
   return pending;
 }
 

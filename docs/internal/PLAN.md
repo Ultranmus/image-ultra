@@ -167,7 +167,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         snapshots; owner VoiceOver spot check.
   - [x] **7.5d** Motion & touch: shimmer and every animation off with reduced motion (e2e checks),
         forced-colors outlines, **segmented switches + chips 36px on touch devices** (owner's choice).
-- [ ] **7.6** i18n & RTL — approved 2026-09-27 (owner: "go"), commit after each step:
+- [x] **7.6** i18n & RTL — approved 2026-09-27 (owner: "go"), commit after each step:
   - [x] **7.6a** Every string through the typed labels: history step names, filter / size-preset /
         sticker / font / shape names (keyed by id; core takes names from the app), `filterPresets` +
         `sizePresets` props; **count labels may be `(count) => string`** (plurals, owner's choice);
@@ -178,7 +178,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         export); axe + keyboard + layout checks in RTL. **Owner added (2026-09-27):** Hindi and Arabic
         in the playground Language switch (drafted translations, need native review), and the
         playground settings toolbar uses dropdowns for every option except the accent colours.
-  - [ ] **7.6c** (language part done in 7.6b — English · Hindi · Arabic · Pseudo) Playground language switch: English · Arabic (RTL demo, drafted — needs native
+  - [x] **7.6c** (language part done in 7.6b — English · Hindi · Arabic · Pseudo; owner: the package ships English only, apps add languages — DECISIONS #99) Playground language switch: English · Arabic (RTL demo, drafted — needs native
         review) · pseudo-locale. English only ships. (The switch with English · pseudo was added in
         7.6a, owner asked to test from the UI.)
 - [ ] **7.7** Perf: 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled
@@ -186,7 +186,8 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
 
 ### Phase 8 — Release
 
-- [ ] Docs site in playground (guides, API reference, theming playground)
+- [ ] Docs site in playground (guides, API reference, theming playground) — incl. a **Localization**
+      guide: `labels` / full `Labels` typing / plurals / `dir` / app content names (DECISIONS #99)
 - [ ] Examples: Next App Router, Vite, Remix/React Router
 - [ ] Changesets, npm publish, README, LICENSE
 

@@ -289,9 +289,9 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       that moment. Fix: `useLatest(labels)` read at event time; e2e switches language then zooms +
       nudges. (Steps made _before_ a switch keep the language they were made in — history stores
       text.) — _fixed 2026-09-27_
-- [ ] **Hindi and Arabic playground labels are drafts** (7.6b) — written by Claude, need a native
-      speaker's review before an app copies them (`apps/playground/app/locales/`) — _before Phase 8
-      docs_
+- [ ] **Hindi and Arabic playground labels are drafts** (7.6b) — written by Claude; they're test
+      cases and examples only (the package ships English — DECISIONS #99). Say so wherever the docs
+      link them — _Phase 8 docs_
 - [ ] **Emoji names and search are English** (owner chose backlog, 2026-09-27) — the emoji data file
       is English. Fix: an `emojiLocale` option that loads a localized emoji data file (emojibase
       has ~20 languages) — _later_

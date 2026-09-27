@@ -569,3 +569,5 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   All checks green (142 + 3 unit, 146 e2e).
 - Owner: "Zoom" in History stayed English after switching language — two once-registered listeners
   (crop wheel zoom, arrow-key nudge) held stale labels. `useLatest` hook; e2e (fails without it).
+- **7.6c:** owner decided the package ships English only and apps add their own languages
+  (DECISIONS #99); Localization guide added to the Phase 8 docs plan. Phase 7.6 done.

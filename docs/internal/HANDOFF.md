@@ -58,8 +58,9 @@ Update this file at the end of every session.
   functions, `filterPresets` / `sizePresets` props, pseudo-locale e2e (`/?locale=pseudo`).
 - **7.6b RTL — done** (DECISIONS #98): `dir` prop, logical CSS, rows mirror, sliders/photo stay LTR,
   RTL canvas text; owner's additions: playground dropdown toolbar, Hindi + Arabic, Direction.
-- Next: 7.6c is mostly done (languages are in); what's left is a short review with the owner.
-  Then **7.7 Perf**.
+- **7.6c — done** (DECISIONS #99): the package ships English only; apps add languages via `labels`
+  - `dir`. Phase 7.6 is complete.
+- Next: **7.7 Perf** — plan it for the owner's approval first.
 - **e2e runs against `next start` of the last production build when no dev server is on 3100 —
   run `pnpm build` after package changes** (a stale build made passing tests fail once).
 

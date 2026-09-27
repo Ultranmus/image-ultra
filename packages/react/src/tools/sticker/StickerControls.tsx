@@ -100,7 +100,8 @@ export function StickerControls() {
       ...BUILTIN_STICKERS.map((sticker) => (
         <Tile
           key={sticker.id}
-          label={sticker.label}
+          label={labels.stickerNames[sticker.id] ?? sticker.label}
+          builtin
           onPick={() => void place(() => rasterizeUrl(stickerDataUrl(sticker), 512, 'sticker'))}
         >
           <img src={stickerDataUrl(sticker)} alt="" />
@@ -271,11 +272,14 @@ export function StickerControls() {
 function Tile({
   label,
   emoji = false,
+  builtin = false,
   onPick,
   children,
 }: {
   label: string;
   emoji?: boolean;
+  /** One of our own stickers (its name comes from the labels). */
+  builtin?: boolean;
   onPick: () => void;
   children: ReactNode;
 }) {
@@ -287,6 +291,7 @@ function Tile({
         .join(' ')}
       aria-label={label}
       data-tooltip={label}
+      data-builtin={builtin ? '' : undefined}
       onClick={onPick}
     >
       {children}

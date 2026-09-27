@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { defaultShapeName, type Shape } from '@image-ultra/core';
+import type { Shape } from '@image-ultra/core';
+import { shapeName } from './shapeName';
 import { useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { shapeActions } from './actions';
@@ -205,7 +206,7 @@ export function LayersPanel({
           {ordered.map((shape, index) => {
             const isMark = shape.id === WATERMARK_ELEMENT_ID;
             const Icon = isMark ? IconWatermark : TYPE_ICONS[shape.type];
-            const name = isMark ? labels.tools.watermark : (shape.name ?? defaultShapeName(shape));
+            const name = isMark ? labels.tools.watermark : shapeName(shape, labels);
             const isSelected = selectedIds.includes(shape.id);
             return (
               <li
@@ -225,7 +226,7 @@ export function LayersPanel({
                 {renaming === shape.id ? (
                   <RenameField
                     initial={shape.name ?? ''}
-                    placeholder={defaultShapeName(shape)}
+                    placeholder={shapeName({ ...shape, name: '' }, labels)}
                     label={labels.renameLayer}
                     onDone={(value) => {
                       setRenaming(null);

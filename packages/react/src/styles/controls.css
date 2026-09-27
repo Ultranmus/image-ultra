@@ -788,7 +788,11 @@
     min-width: 300px;
     /* Scroll inside the room Radix reports below the TopBar. */
     max-height: calc(var(--radix-popover-content-available-height, 480px) - var(--iu-space-6));
+    /* Room for the scrollbar, so it never sits on the key caps (overlay scrollbars too). */
+    padding-inline-end: var(--iu-space-2);
     overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
   }
 
   .iu-shortcuts__heading {

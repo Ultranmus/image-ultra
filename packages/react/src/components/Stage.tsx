@@ -336,6 +336,12 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     const onWheel = (event: WheelEvent) => {
       const state = store.getState();
       if (state.status !== 'ready') return;
+      // Over something that scrolls on its own (the Layers list, a long text box): let it scroll.
+      // A pinch there does nothing (rather than zooming the whole page).
+      if (scrollsItself(event.target, element)) {
+        if (event.ctrlKey) event.preventDefault();
+        return;
+      }
       event.preventDefault();
       if (state.cropView) return; // the crop view is framed by the crop, not zoomable
       // Pinch gestures arrive as ctrl+wheel with small deltas; mouse wheels in lines or big steps.
@@ -756,4 +762,21 @@ function midpoint(a: Point, b: Point): Point {
 
 function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+/**
+ * Is there an element between `target` and the stage that scrolls (the Layers list…)? Then the
+ * wheel belongs to it — even at its end, so scrolling a list never turns into a zoom.
+ */
+function scrollsItself(target: EventTarget | null, stage: HTMLElement): boolean {
+  for (
+    let el = target instanceof Element ? target : null;
+    el && el !== stage;
+    el = el.parentElement
+  ) {
+    const { overflowY } = getComputedStyle(el);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight)
+      return true;
+  }
+  return false;
 }

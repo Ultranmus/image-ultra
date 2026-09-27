@@ -167,9 +167,18 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         snapshots; owner VoiceOver spot check.
   - [x] **7.5d** Motion & touch: shimmer and every animation off with reduced motion (e2e checks),
         forced-colors outlines, **segmented switches + chips 36px on touch devices** (owner's choice).
-- [ ] **7.6** i18n & RTL: every UI string in the typed labels (incl. preset names), RTL layout via
-      logical CSS properties (sliders/curves stay LTR), playground translation example. English
-      only ships.
+- [ ] **7.6** i18n & RTL — approved 2026-09-27 (owner: "go"), commit after each step:
+  - [x] **7.6a** Every string through the typed labels: history step names, filter / size-preset /
+        sticker / font / shape names (keyed by id; core takes names from the app), `filterPresets` +
+        `sizePresets` props; **count labels may be `(count) => string`** (plurals, owner's choice);
+        pseudo-locale e2e that fails on any unlabelled visible text or accessible name.
+  - [ ] **7.6b** RTL: `dir` prop (default: the page's), logical CSS properties, mirrored layout;
+        photo / sliders / curves / levels / histograms / compare stay LTR; arrow keys follow the
+        direction in rows; undo/redo icons swap; RTL text in text shapes + watermark (preview +
+        export); axe + keyboard + layout checks in RTL.
+  - [ ] **7.6c** Playground language switch: English · Arabic (RTL demo, drafted — needs native
+        review) · pseudo-locale. English only ships. (The switch with English · pseudo was added in
+        7.6a, owner asked to test from the UI.)
 - [ ] **7.7** Perf: 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled
       export above the GPU texture limit (preview stays downscaled).
 

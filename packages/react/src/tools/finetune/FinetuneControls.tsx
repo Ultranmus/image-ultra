@@ -68,7 +68,7 @@ export function FinetuneControls() {
     setAutoBusy(true);
     try {
       const result = await state.runTask('Auto enhance', () => autoEnhance(current, state.edit));
-      store.getState().update('Auto enhance', (draft) => {
+      store.getState().update(labels.steps.autoEnhance, (draft) => {
         Object.assign(draft.finetune, result.finetune);
         draft.levels = result.levels;
       });
@@ -78,7 +78,7 @@ export function FinetuneControls() {
   };
 
   const reset = () =>
-    store.getState().update('Reset finetune', (draft) => {
+    store.getState().update(labels.steps.resetFinetune, (draft) => {
       draft.finetune = createFinetuneState();
       draft.levels = createLevelsState();
       draft.curves = createCurvesState();

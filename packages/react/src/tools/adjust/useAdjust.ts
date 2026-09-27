@@ -15,7 +15,7 @@ import {
   type GeometryState,
   type LoadedImage,
 } from '@image-ultra/core';
-import { useEditorStore } from '../../context';
+import { useEditorStore, useLabels } from '../../context';
 
 /** The dial can edit one of these. */
 export type AngleKind = 'straighten' | 'tiltVertical' | 'tiltHorizontal';
@@ -78,6 +78,7 @@ export function getAspectChoice(
 /** All Adjust-tool edits. Each call is one undo step (angles: one step per drag). */
 export function useAdjust() {
   const store = useEditorStore();
+  const { steps } = useLabels();
 
   const apply = (label: string, change: (image: LoadedImage, edit: EditState) => EditState) => {
     const { image, edit, update } = store.getState();
@@ -88,7 +89,7 @@ export function useAdjust() {
 
   return {
     rotateLeft() {
-      apply('Rotate', (image, edit) => ({
+      apply(steps.rotate, (image, edit) => ({
         ...edit,
         geometry: rotateGeometry(image, edit.geometry, -1),
         annotations: rotateAnnotations(edit.annotations, getOrientedSize(image, edit.geometry), -1),
@@ -97,7 +98,7 @@ export function useAdjust() {
     },
 
     flip(axis: 'x' | 'y') {
-      apply('Flip', (image, edit) => ({
+      apply(steps.flip, (image, edit) => ({
         ...edit,
         geometry: flipGeometry(image, edit.geometry, axis),
         annotations: flipAnnotations(edit.annotations, getOrientedSize(image, edit.geometry), axis),
@@ -128,7 +129,7 @@ export function useAdjust() {
     },
 
     setAspect(choice: AspectChoice) {
-      apply('Aspect ratio', (image, edit) => {
+      apply(steps.aspectRatio, (image, edit) => {
         const g = edit.geometry;
         if (choice === 'free') {
           return { ...edit, geometry: { ...g, cropAspect: null, cropShape: 'rect' } };
@@ -156,7 +157,7 @@ export function useAdjust() {
 
     /** Resets rotation, flips, angles and crop. Resize is left alone (it has its own tool). */
     reset() {
-      apply('Reset adjustments', (image, edit) => ({
+      apply(steps.resetAdjust, (image, edit) => ({
         ...edit,
         geometry: createGeometryState(),
         resize: edit.resize

@@ -76,7 +76,7 @@ export function TopBar({
           label={labels.reset}
           icon={<IconReset />}
           disabled={!ready || !isDirty}
-          onClick={() => store.getState().reset()}
+          onClick={() => store.getState().reset(labels.reset)}
         />
       </div>
 

@@ -276,6 +276,18 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Segmented switches are 28px tall** (below the 40px touch size of buttons; WCAG 2.2 minimum
       is 24px, so they pass) — consider 36–40px on touch devices — _done 2026-09-27 (7.5d): 36px on touch screens (`--iu-size-choice`), 28px with a mouse_
 
+### Found during 7.6
+
+- [x] **Layers list didn't scroll with the wheel — it zoomed the photo** (owner) — the stage's
+      wheel-zoom took every wheel event on top of it. Fix: a wheel over anything that scrolls on its
+      own (Layers list, long text box) scrolls it; a pinch there does nothing — _fixed 2026-09-27_
+- [x] **Shortcuts scrollbar covered the key caps** (owner, macOS overlay scrollbars) — Fix: 8px room
+      at the scrolling edge (+ `scrollbar-gutter: stable`, thin), same for the Layers list; e2e
+      checks the key caps end 8px before the edge — _fixed 2026-09-27_
+- [ ] **Emoji names and search are English** (owner chose backlog, 2026-09-27) — the emoji data file
+      is English. Fix: an `emojiLocale` option that loads a localized emoji data file (emojibase
+      has ~20 languages) — _later_
+
 ### From Phase 5 — Annotate
 
 - [x] **Multi-select** (Shift-click, marquee) and group move/align — _done in 7.1 (2026-09-26)_
@@ -305,7 +317,7 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
   - Now: each thumbnail previews the filter on the plain (cropped) photo.
   - Fix: optional "preview on my edits" mode — render `{...edit, filter}` per thumbnail;
     watch cost (28 renders per change → debounce ~150ms).
-- [ ] **Preset names are English only** (filter presets + `SIZE_PRESETS`) — _Phase 7 (i18n)_
+- [x] **Preset names are English only** (filter presets + `SIZE_PRESETS`) — _done 2026-09-27 (7.6a): `labels.filterNames` / `sizePresetNames`, `filterPresets` / `sizePresets` props_
   - Fix: labels keyed by preset id (`labels.filterNames[id]`, `labels.sizePresetNames[id]`) with
     English defaults; `sizePresets` / `filterPresets` props for custom lists.
 - [x] **Every arrow-key press is its own undo step** (dials, curve points, levels, crop box) — _fixed

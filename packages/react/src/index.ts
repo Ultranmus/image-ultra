@@ -7,7 +7,7 @@ export { useImageEditor } from './hooks/useImageEditor';
 export { MaskBrushOverlay, type MaskBrushOverlayProps } from './components/MaskBrushOverlay';
 export { defineTool, type ToolDefinition } from './tools/defineTool';
 export { BUILT_IN_TOOLS, type ToolInput } from './tools/builtins';
-export { SIZE_PRESETS, type SizePreset } from './tools/resize/ResizeControls';
+export { SIZE_PRESETS, type SizePreset } from './tools/resize/presets';
 export type { IconProps } from './icons/Icon';
 
 // Building blocks for custom tools, styled like the built-ins.
@@ -44,7 +44,13 @@ export {
 export type { WatermarkInput } from './tools/watermark/input';
 export { ColorStrip, type ColorStripProps } from './controls/ColorStrip';
 export { DEFAULT_FONTS } from './fonts';
-export { defaultLabels, type LabelOverrides, type Labels } from './i18n';
+export {
+  defaultLabels,
+  formatCount,
+  type CountLabel,
+  type LabelOverrides,
+  type Labels,
+} from './i18n';
 export type { ThemeMode, ThemeOverrides } from './theme';
 
 // Re-export the core API most apps need, so one package is enough.

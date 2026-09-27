@@ -50,7 +50,13 @@ Update this file at the end of every session.
   lost, unclipped rings, keyboard-only flow). **7.5c screen readers — done** (DECISIONS #95;
   `e2e/screen-reader.spec.ts`: announcements, names, aria snapshots). Waiting: owner's VoiceOver spot
   check (BACKLOG). **7.5d motion & touch — done** (DECISIONS #96; `e2e/motion.spec.ts`). 7.5 is done
-  apart from the owner's VoiceOver check. Next: **7.6 i18n & RTL** (plan it first).
+  apart from the owner's VoiceOver check.
+
+## Phase 7.6 — i18n & RTL (in progress; plan approved in PLAN.md, commit after each step)
+
+- **7.6a strings — done** (DECISIONS #97): every string through the labels, count labels may be
+  functions, `filterPresets` / `sizePresets` props, pseudo-locale e2e (`/?locale=pseudo`).
+- Next: **7.6b RTL**, then 7.6c playground language switch (English · Arabic · pseudo).
 - **e2e runs against `next start` of the last production build when no dev server is on 3100 —
   run `pnpm build` after package changes** (a stale build made passing tests fail once).
 

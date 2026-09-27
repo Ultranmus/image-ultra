@@ -9,7 +9,13 @@ import {
   type LoadedImage,
   type WatermarkPosition,
 } from '@image-ultra/core';
-import { useEditorState, useEditorStore, useLabels, useToolState } from '../../context';
+import {
+  useEditorState,
+  useEditorStore,
+  useLabels,
+  useSizePresets,
+  useToolState,
+} from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { NumberField } from '../../controls/NumberField';
 import { Popover } from '../../controls/Popover';
@@ -18,29 +24,7 @@ import { RulerSlider } from '../../controls/RulerSlider';
 import { SegmentedControl } from '../../controls/SegmentedControl';
 import { IconLink, IconPosition, IconReset, IconUnlink } from '../../icons/Icon';
 import { undoStep } from '../../controls/undoStep';
-
-export interface SizePreset {
-  id: string;
-  /** Chip text. */
-  label: string;
-  width: number;
-  height: number;
-}
-
-/**
- * Common social/web sizes. Picking one crops to its aspect ratio (as large as possible) and
- * resizes to exactly this size.
- */
-export const SIZE_PRESETS: readonly SizePreset[] = [
-  { id: 'ig-square', label: 'Instagram 1:1', width: 1080, height: 1080 },
-  { id: 'ig-portrait', label: 'Instagram 4:5', width: 1080, height: 1350 },
-  { id: 'story', label: 'Story 9:16', width: 1080, height: 1920 },
-  { id: 'youtube', label: 'YouTube thumbnail', width: 1280, height: 720 },
-  { id: 'og', label: 'Link preview (OG)', width: 1200, height: 630 },
-  { id: 'x-post', label: 'X post', width: 1600, height: 900 },
-  { id: 'linkedin', label: 'LinkedIn post', width: 1200, height: 627 },
-  { id: 'fb-cover', label: 'Facebook cover', width: 820, height: 312 },
-];
+import type { SizePreset } from './presets';
 
 type Choice = 'original' | 'half' | string;
 
@@ -90,6 +74,7 @@ export function ResizeControls() {
 
 function SizePanel() {
   const labels = useLabels();
+  const sizePresets = useSizePresets();
   const store = useEditorStore();
   const image = useEditorState((s) => s.image);
   const edit = useEditorState((s) => s.edit);
@@ -109,13 +94,13 @@ function SizePanel() {
 
   const onWidth = (width: number) =>
     setSize(
-      'Resize',
+      labels.steps.resize,
       width,
       locked ? Math.max(1, Math.round((width * crop.height) / crop.width)) : output.height,
     );
   const onHeight = (height: number) =>
     setSize(
-      'Resize',
+      labels.steps.resize,
       locked ? Math.max(1, Math.round((height * crop.width) / crop.height)) : output.width,
       height,
     );
@@ -131,27 +116,34 @@ function SizePanel() {
       label: '50%',
       description: `${Math.round(crop.width / 2)} × ${Math.round(crop.height / 2)}`,
     },
-    ...SIZE_PRESETS.map((p) => ({
+    ...sizePresets.map((p) => ({
       value: p.id,
-      label: p.label,
+      label: labels.sizePresetNames[p.id] ?? p.label,
       description: `${p.width} × ${p.height}`,
       glyph: <AspectGlyph aspect={p.width / p.height} />,
     })),
   ];
 
-  const selected = currentChoice(edit, crop);
+  const selected = currentChoice(edit, crop, sizePresets);
 
   const onPreset = (choice: Choice) => {
-    if (choice === 'original') return setSize('Resize', crop.width, crop.height);
+    if (choice === 'original') return setSize(labels.steps.resize, crop.width, crop.height);
     if (choice === 'half') {
       return setSize(
-        'Resize',
+        labels.steps.resize,
         Math.max(1, Math.round(crop.width / 2)),
         Math.max(1, Math.round(crop.height / 2)),
       );
     }
-    const preset = SIZE_PRESETS.find((p) => p.id === choice);
-    if (preset) applySizePreset(store.getState().update, image, edit, preset);
+    const preset = sizePresets.find((p) => p.id === choice);
+    if (preset)
+      applySizePreset(
+        store.getState().update,
+        image,
+        edit,
+        preset,
+        labels.sizePresetNames[preset.id] ?? preset.label,
+      );
   };
 
   return (
@@ -162,7 +154,7 @@ function SizePanel() {
           value={output.width}
           min={1}
           max={MAX_OUTPUT_SIDE}
-          unit="px"
+          unit={labels.unitPx}
           onChange={onWidth}
         />
         <IconButton
@@ -176,7 +168,7 @@ function SizePanel() {
           value={output.height}
           min={1}
           max={MAX_OUTPUT_SIDE}
-          unit="px"
+          unit={labels.unitPx}
           onChange={onHeight}
         />
         <p className="iu-resize__meta" data-warning={upscaled ? '' : undefined} aria-live="polite">
@@ -325,12 +317,16 @@ function CanvasPanel() {
   );
 }
 
-function currentChoice(edit: EditState, crop: { width: number; height: number }): Choice | null {
+function currentChoice(
+  edit: EditState,
+  crop: { width: number; height: number },
+  sizePresets: readonly SizePreset[],
+): Choice | null {
   const r = edit.resize;
   if (!r) return 'original';
   if (r.width === Math.round(crop.width / 2) && r.height === Math.round(crop.height / 2))
     return 'half';
-  return SIZE_PRESETS.find((p) => p.width === r.width && p.height === r.height)?.id ?? null;
+  return sizePresets.find((p) => p.width === r.width && p.height === r.height)?.id ?? null;
 }
 
 /** Crops to the preset's aspect ratio and resizes to its exact size — one undo step. */
@@ -339,11 +335,13 @@ function applySizePreset(
   image: LoadedImage,
   edit: EditState,
   preset: SizePreset,
+  /** The preset's name: the history step. */
+  name: string,
 ) {
   const aspect = preset.width / preset.height;
   const crop = cropForAspect(image, edit.geometry, aspect);
   // A size preset crops to its shape, so any added canvas space is dropped.
-  update(preset.label, () => ({
+  update(name, () => ({
     ...edit,
     geometry: { ...edit.geometry, crop, cropAspect: aspect, cropShape: 'rect' },
     canvas: null,

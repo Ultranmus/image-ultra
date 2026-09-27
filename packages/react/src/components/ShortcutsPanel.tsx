@@ -4,7 +4,7 @@ import { MODE_SHORTCUTS, type AnnotateMode } from '../tools/annotate/state';
 /** All keyboard shortcuts, in two groups. Keys show ⌘ on Apple devices and Ctrl elsewhere. */
 export function ShortcutsPanel() {
   const labels = useLabels();
-  const mod = isApple() ? '⌘' : 'Ctrl';
+  const mod = isApple() ? '⌘' : labels.keys.ctrl;
   const general: [string, string[]][] = [
     [labels.undo, [mod, 'Z']],
     [labels.redo, [mod, '⇧', 'Z']],
@@ -13,7 +13,7 @@ export function ShortcutsPanel() {
     [labels.zoomFit, ['0']],
     [labels.zoomActual, ['1']],
     [labels.showOriginal, ['\\']],
-    [labels.panPhoto, ['Space', 'Drag']],
+    [labels.panPhoto, [labels.keys.space, labels.keys.drag]],
     [labels.shortcutsShow, ['?']],
   ];
   const annotate: [string, string[]][] = [
@@ -21,16 +21,16 @@ export function ShortcutsPanel() {
       ([mode, key]): [string, string[]] => [labels.annotateModes[mode], [key]],
     ),
     [labels.selectAll, [mod, 'A']],
-    [labels.addToSelection, ['⇧', 'Click']],
+    [labels.addToSelection, ['⇧', labels.keys.click]],
     [labels.copy, [mod, 'C']],
     [labels.cut, [mod, 'X']],
     [labels.paste, [mod, 'V']],
     [labels.duplicate, [mod, 'D']],
     [labels.deleteShape, ['⌫']],
     [labels.nudge, ['←', '→', '↑', '↓']],
-    [labels.nextElement, ['Tab', '⇧ Tab']],
+    [labels.nextElement, [labels.keys.tab, `⇧ ${labels.keys.tab}`]],
     [labels.finishOrEdit, ['↵']],
-    [labels.deselect, ['Esc']],
+    [labels.deselect, [labels.keys.esc]],
     [labels.shapeMenu, ['⇧', 'F10']],
   ];
   return (

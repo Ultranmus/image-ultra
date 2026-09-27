@@ -288,6 +288,9 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - ❌ Text-only buttons for tools, or icon-only without label in ToolRail.
 - ❌ Browser-default `<select>`, `<input type=range>`, `alert()`, `confirm()`.
 - ❌ Hardcoded colours/sizes in components. Tokens only (`THEMING.md`).
+- ❌ Hardcoded UI text. Every string, name and history step comes from the typed labels
+  (`i18n.ts`); `e2e/i18n.spec.ts` walks the editor in a pseudo-locale (`/?locale=pseudo`, every
+  label wrapped in ⟦ ⟧) and fails on any text or accessible name without the brackets.
 - ❌ Layout shift when switching tools. ControlBar has a fixed height per breakpoint.
 
 ## 9. Accessibility baseline

@@ -137,8 +137,8 @@ export interface EditorActions {
   /** Jump through history: negative = back, positive = forward (one change, one `onChange`). */
   jump(steps: number): void;
   setCompare(value: number | null): void;
-  /** Back to `initialEdit`, as an undoable step. */
-  reset(): void;
+  /** Back to `initialEdit`, as an undoable step. `label`: the step's name (UI language). */
+  reset(label?: string): void;
   /** Replace the whole edit state, e.g. from saved JSON. Clears history. */
   replaceEdit(state: EditState): void;
 
@@ -439,10 +439,10 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}): Edito
         set({ compare: value === null ? null : Math.min(1, Math.max(0, value)) });
       },
 
-      reset() {
+      reset(label = 'Reset') {
         endPending();
         const { initialEdit } = get();
-        get().update('Reset', () => initialEdit);
+        get().update(label, () => initialEdit);
       },
 
       replaceEdit(state) {

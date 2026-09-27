@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef } from 'react';
 import {
   applyLook,
-  FILTER_PRESETS,
   filterFromPreset,
   lookMatches,
   type EditState,
   type ThumbnailRenderer,
 } from '@image-ultra/core';
-import { useEditorState, useEditorStore, useLabels, useLooks } from '../../context';
+import {
+  useEditorState,
+  useEditorStore,
+  useFilterPresets,
+  useLabels,
+  useLooks,
+} from '../../context';
 import { PresetStrip, type Preset } from '../../controls/PresetStrip';
 import { RulerSlider } from '../../controls/RulerSlider';
 import { useThumbnailRenderer } from '../../hooks/useThumbnailRenderer';
@@ -23,6 +28,7 @@ export function FilterControls() {
   const labels = useLabels();
   const store = useEditorStore();
   const [looks, setLooks] = useLooks();
+  const filterPresets = useFilterPresets();
   const image = useEditorState((s) => s.image);
   const edit = useEditorState((s) => s.edit);
   const renderer = useThumbnailRenderer(image);
@@ -39,11 +45,11 @@ export function FilterControls() {
     () => ({
       [NONE]: base,
       ...Object.fromEntries(
-        FILTER_PRESETS.map((p) => [p.id, { ...base, filter: filterFromPreset(p) }]),
+        filterPresets.map((p) => [p.id, { ...base, filter: filterFromPreset(p) }]),
       ),
       ...Object.fromEntries(looks.map((l) => [l.id, applyLook(base, l)])),
     }),
-    [base, looks],
+    [base, looks, filterPresets],
   ) as Record<string, EditState>;
 
   const lookMatch = looks.find((l) => lookMatches(edit, l));
@@ -55,11 +61,16 @@ export function FilterControls() {
       store.getState().update(look.name, () => applyLook(store.getState().edit, look));
       return;
     }
-    const preset = FILTER_PRESETS.find((p) => p.id === id);
+    const preset = filterPresets.find((p) => p.id === id);
     const intensity = store.getState().edit.filter?.intensity ?? 1;
-    store.getState().update(preset?.name ?? labels.filterNone, (draft) => {
-      draft.filter = preset ? filterFromPreset(preset, intensity) : null;
-    });
+    store
+      .getState()
+      .update(
+        preset ? (labels.filterNames[preset.id] ?? preset.name) : labels.filterNone,
+        (draft) => {
+          draft.filter = preset ? filterFromPreset(preset, intensity) : null;
+        },
+      );
   };
 
   const thumb = (id: string) => <Thumbnail renderer={renderer} state={states[id]!} />;
@@ -74,9 +85,9 @@ export function FilterControls() {
       description: labels.myLooks,
       removable: true,
     })),
-    ...FILTER_PRESETS.map((p, i) => ({
+    ...filterPresets.map((p, i) => ({
       value: p.id,
-      label: p.name,
+      label: labels.filterNames[p.id] ?? p.name,
       glyph: thumb(p.id),
       separatorBefore: i === 0,
     })),

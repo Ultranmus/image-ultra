@@ -542,3 +542,20 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   animation); forced-colors outlines for focus + selected (system colours); `--iu-size-choice`
   28 → 36px on touch screens. `e2e/motion.spec.ts` (4 tests; checked they'd fail without the
   fixes). All checks green (141 unit, 137 e2e). **7.5 done** except the owner's VoiceOver check.
+
+## 2026-09-27 · Phase 7.6 — i18n & RTL
+
+- 7.5 committed (a–d). 7.6 plan approved: a strings, b RTL, c playground languages; count labels
+  may be functions (plurals); emoji localization → BACKLOG; Arabic as the RTL demo.
+- **7.6a strings:** pseudo-locale in the playground (`/?locale=pseudo`) + `e2e/i18n.spec.ts` found
+  28 filter names, 8 size names, "px", default shape names, key names; code search added sticker
+  and font names and 11 history step names (incl. core's "Reset"). All moved to typed labels
+  (DECISIONS #97); `CountLabel` + `formatCount`; generic `mergeLabels`; `filterPresets` /
+  `sizePresets` props. First react unit tests (`i18n.test.ts`). All checks green (141 + 3 unit,
+  138 e2e).
+- Owner asked how to test 7.6a from the UI: the playground header got a **Language** switch now
+  (english · pseudo; Arabic + RTL join in 7.6b/c). e2e 139.
+- Owner testing 7.6a found two older bugs: the wheel over the Layers list zoomed the photo (stage
+  wheel handler now leaves the wheel to anything that scrolls itself) and the Shortcuts scrollbar
+  covered the key caps (overlay scrollbars; 8px room + gutter, Layers list too). e2e for both,
+  checked to fail without the fixes.

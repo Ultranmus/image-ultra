@@ -248,3 +248,51 @@ test.describe('Keyboard & focus', () => {
     await expect(page.getByTestId('log')).toContainText('Saved');
   });
 });
+
+test.describe('Scrolling panels', () => {
+  test('the wheel scrolls the Layers list instead of zooming the photo', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await openEditor(page);
+    await page.getByRole('tab', { name: 'Annotate' }).click();
+    for (let i = 0; i < 14; i++) {
+      await page.getByRole('radio', { name: /Rectangle/ }).click();
+      await dragOnStage(
+        page,
+        [0.2 + (i % 7) * 0.08, 0.35 + Math.floor(i / 7) * 0.12],
+        [0.25 + (i % 7) * 0.08, 0.42 + Math.floor(i / 7) * 0.12],
+      );
+    }
+    await page.locator('.iu-topbar').getByRole('button', { name: 'Layers' }).click();
+    const list = page.locator('.iu-layers__list');
+    expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    const scale = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __iu: TestHook }).__iu.editor.current!.store.getState().viewport
+            .scale,
+      );
+    const before = await scale();
+    const box = (await list.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 300);
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(await scale()).toBe(before);
+  });
+
+  test('the Shortcuts scrollbar never covers the key names', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 520 });
+    await openEditor(page);
+    await page.locator('.iu-topbar').getByRole('button', { name: 'Keyboard shortcuts' }).click();
+    await page.waitForTimeout(300); // the popover scales in
+    const covered = await page.locator('.iu-shortcuts').evaluate((panel) => {
+      if (panel.scrollHeight <= panel.clientHeight) return 'does not scroll';
+      // macOS draws overlay scrollbars on top of the content (~8px wide), so the key caps must
+      // end at least 8px before where the scrollbar area starts.
+      const edge = panel.getBoundingClientRect().right - 8;
+      return [...panel.querySelectorAll('kbd')]
+        .filter((k) => k.getBoundingClientRect().right > edge + 0.5)
+        .map((k) => k.textContent);
+    });
+    expect(covered).toEqual([]);
+  });
+});

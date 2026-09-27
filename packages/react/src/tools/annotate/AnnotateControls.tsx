@@ -7,6 +7,7 @@ import {
   useLabels,
   useWatermarkLocked,
 } from '../../context';
+import { formatCount } from '../../i18n';
 import { elementsOf, WATERMARK_ELEMENT_ID } from './watermarkElement';
 import { IconButton } from '../../components/IconButton';
 import { Popover } from '../../controls/Popover';
@@ -546,7 +547,7 @@ export function AnnotateControls() {
           <div className="iu-toolgroup iu-toolgroup--end iu-annotate__actions">
             {multi && (
               <span className="iu-controlbar__count" aria-live="polite">
-                {labels.selectedCount.replace('{count}', String(members.length))}
+                {formatCount(labels.selectedCount, members.length)}
               </span>
             )}
             {picked?.id !== WATERMARK_ELEMENT_ID && (

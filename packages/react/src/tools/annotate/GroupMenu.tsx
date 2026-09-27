@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { getCanvasRect, type AlignEdge } from '@image-ultra/core';
 import { copySelection, pasteSelection, useClipboardKind } from '../../clipboard';
 import { useEditorStore, useLabels, usePortalContainer } from '../../context';
+import { formatCount } from '../../i18n';
 import { IconChevronRight } from '../../icons/Icon';
 import { shapeActions } from './actions';
 import { referenceSize } from './state';
@@ -71,7 +72,7 @@ export function GroupMenu({
           onPointerDown={(event) => event.stopPropagation()}
         >
           <Menu.Label className="iu-contextmenu__label">
-            {labels.selectedCount.replace('{count}', String(ids.length))}
+            {formatCount(labels.selectedCount, ids.length)}
           </Menu.Label>
           <Menu.Item className="iu-menu__item" onSelect={() => copySelection(store, labels)}>
             {labels.copy}

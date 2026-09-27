@@ -1,4 +1,7 @@
 import type { EmojiGroup } from './tools/sticker/emojiData';
+import { FILTER_PRESETS } from '@image-ultra/core';
+import { BUILTIN_STICKERS } from './tools/sticker/builtins';
+import { SIZE_PRESETS } from './tools/resize/presets';
 import type {
   CurveChannel,
   FinetuneState,
@@ -8,8 +11,47 @@ import type {
   WatermarkPosition,
 } from '@image-ultra/core';
 
+/** A label with a number in it: a template with `{count}`, or a function for plural rules. */
+export type CountLabel = string | ((count: number) => string);
+
+/** Fills a `CountLabel` for `count`. */
+export function formatCount(label: CountLabel, count: number): string {
+  return typeof label === 'function' ? label(count) : label.replace('{count}', String(count));
+}
+
 /** Every user-facing string. Pass a partial object to `labels` to translate or rename. */
 export interface Labels {
+  /** Built-in filter names, by preset id (`FILTER_PRESETS`). */
+  filterNames: Record<string, string>;
+  /** Built-in Resize size names, by id (`SIZE_PRESETS`). */
+  sizePresetNames: Record<string, string>;
+  /** Built-in sticker names, by id. */
+  stickerNames: Record<string, string>;
+  /** The default text fonts (when the app passes no `fonts`). */
+  fontNames: Record<'sans' | 'serif' | 'mono' | 'rounded' | 'hand', string>;
+  /** Layer names for elements the user hasn't named. `{text}` = a text box's first words. */
+  shapeNames: Record<
+    'rectangle' | 'ellipse' | 'line' | 'arrow' | 'drawing' | 'polygon' | 'text' | 'image',
+    string
+  >;
+  /** Undo-history step names (History panel, "Undone: …"). */
+  steps: Record<
+    | 'crop'
+    | 'moveCrop'
+    | 'resizeCrop'
+    | 'rotate'
+    | 'flip'
+    | 'aspectRatio'
+    | 'resetAdjust'
+    | 'autoEnhance'
+    | 'resetFinetune'
+    | 'resize',
+    string
+  >;
+  /** Key names in the shortcuts panel (⌘ ⇧ ⌫ ↵ are symbols and stay). */
+  keys: Record<'ctrl' | 'space' | 'drag' | 'click' | 'tab' | 'esc', string>;
+  /** Pixel unit after a number field. */
+  unitPx: string;
   cancel: string;
   reset: string;
   undo: string;
@@ -158,8 +200,11 @@ export interface Labels {
   /** Shift-click hint in the shortcuts panel. */
   addToSelection: string;
   panPhoto: string;
-  /** `{count}` = number of selected shapes. */
-  selectedCount: string;
+  /**
+   * `{count}` = number of selected shapes. A function gets the number, for languages whose wording
+   * changes with it (plurals): `(n) => …`.
+   */
+  selectedCount: CountLabel;
   resizeSelection: string;
   arrange: string;
   alignEdges: Record<'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom', string>;
@@ -269,7 +314,38 @@ export interface Labels {
   removeLook: string;
 }
 
+const namesById = (list: readonly { id: string; name?: string; label?: string }[]) =>
+  Object.fromEntries(list.map((item) => [item.id, item.name ?? item.label ?? item.id]));
+
 export const defaultLabels: Labels = {
+  filterNames: namesById(FILTER_PRESETS),
+  sizePresetNames: namesById(SIZE_PRESETS),
+  stickerNames: namesById(BUILTIN_STICKERS),
+  fontNames: { sans: 'Sans', serif: 'Serif', mono: 'Mono', rounded: 'Rounded', hand: 'Hand' },
+  shapeNames: {
+    rectangle: 'Rectangle',
+    ellipse: 'Ellipse',
+    line: 'Line',
+    arrow: 'Arrow',
+    drawing: 'Drawing',
+    polygon: 'Polygon',
+    text: 'Text: {text}',
+    image: 'Image',
+  },
+  steps: {
+    crop: 'Crop',
+    moveCrop: 'Move crop',
+    resizeCrop: 'Resize crop',
+    rotate: 'Rotate',
+    flip: 'Flip',
+    aspectRatio: 'Aspect ratio',
+    resetAdjust: 'Reset adjustments',
+    autoEnhance: 'Auto enhance',
+    resetFinetune: 'Reset finetune',
+    resize: 'Resize',
+  },
+  keys: { ctrl: 'Ctrl', space: 'Space', drag: 'Drag', click: 'Click', tab: 'Tab', esc: 'Esc' },
+  unitPx: 'px',
   cancel: 'Cancel',
   reset: 'Reset',
   undo: 'Undo',
@@ -574,19 +650,10 @@ export const defaultLabels: Labels = {
   removeLook: 'Remove look',
 };
 
-type NestedKey =
-  | 'tools'
-  | 'finetune'
-  | 'curveChannels'
-  | 'annotateModes'
-  | 'redactStyles'
-  | 'frameStyles'
-  | 'watermarkKinds'
-  | 'stickerTabs'
-  | 'emojiGroups'
-  | 'watermarkPositions'
-  | 'fillKinds'
-  | 'alignEdges';
+/** Labels that are groups (tool names, filter names…): overrides merge into them key by key. */
+type NestedKey = {
+  [K in keyof Labels]: Labels[K] extends string | ((...args: never[]) => string) ? never : K;
+}[keyof Labels];
 
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
   [K in NestedKey]?: Partial<Labels[K]>;
@@ -594,20 +661,11 @@ export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
 
 export function mergeLabels(overrides: LabelOverrides | undefined): Labels {
   if (!overrides) return defaultLabels;
-  return {
-    ...defaultLabels,
-    ...overrides,
-    tools: { ...defaultLabels.tools, ...overrides.tools },
-    finetune: { ...defaultLabels.finetune, ...overrides.finetune },
-    curveChannels: { ...defaultLabels.curveChannels, ...overrides.curveChannels },
-    annotateModes: { ...defaultLabels.annotateModes, ...overrides.annotateModes },
-    redactStyles: { ...defaultLabels.redactStyles, ...overrides.redactStyles },
-    frameStyles: { ...defaultLabels.frameStyles, ...overrides.frameStyles },
-    watermarkKinds: { ...defaultLabels.watermarkKinds, ...overrides.watermarkKinds },
-    stickerTabs: { ...defaultLabels.stickerTabs, ...overrides.stickerTabs },
-    emojiGroups: { ...defaultLabels.emojiGroups, ...overrides.emojiGroups },
-    watermarkPositions: { ...defaultLabels.watermarkPositions, ...overrides.watermarkPositions },
-    fillKinds: { ...defaultLabels.fillKinds, ...overrides.fillKinds },
-    alignEdges: { ...defaultLabels.alignEdges, ...overrides.alignEdges },
-  };
+  const merged: Record<string, unknown> = { ...defaultLabels, ...overrides };
+  for (const [key, value] of Object.entries(defaultLabels)) {
+    const override = (overrides as Record<string, unknown>)[key];
+    if (value && typeof value === 'object' && override && typeof override === 'object')
+      merged[key] = { ...value, ...override };
+  }
+  return merged as unknown as Labels;
 }

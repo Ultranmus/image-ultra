@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   ImageEditor,
   renderImage,
@@ -11,12 +11,18 @@ import {
   type ThemeMode,
 } from '@image-ultra/react';
 import { DevPanel } from './DevPanel';
+import { pseudoLabels } from './pseudoLabels';
 
 // `undefined` = the built-in plum brand accent (tuned per theme); the rest test `themeOverrides`.
 const ACCENTS = [undefined, '#ff5a1f', '#10b981', '#0ea5e9', '#f43f5e'] as const;
 const THEMES: ThemeMode[] = ['dark', 'light', 'auto'];
 type Frame = 'full' | 'tablet' | 'phone';
 // Demo of the `stickers` prop: the app's own stickers come first in the Sticker tool.
+const LANGUAGES = ['english', 'pseudo'] as const;
+type Language = (typeof LANGUAGES)[number];
+/** The URL doesn't change while the page is open. */
+const noSubscribe = () => () => {};
+
 const PLAYGROUND_STICKERS = [{ id: 'logo', label: 'Playground logo', src: '/icon.svg' }];
 const FRAME_WIDTH: Record<Frame, string> = { full: '100%', tablet: '820px', phone: '390px' };
 
@@ -35,6 +41,15 @@ export default function PlaygroundPage() {
   const [metadata, setMetadata] = useState<'strip' | 'keep' | 'keep + GPS'>('strip');
   // Phones: the settings sit behind a button so the editor gets the screen.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Language switch; `/?locale=pseudo` starts in the pseudo-locale (every label wrapped in ⟦ ⟧,
+  // which shows any text that can't be translated). Arabic and right-to-left come in 7.6b / 7.6c.
+  const urlPseudo = useSyncExternalStore(
+    noSubscribe,
+    () => new URLSearchParams(window.location.search).get('locale') === 'pseudo',
+    () => false,
+  );
+  const [pickedLanguage, setLanguage] = useState<Language | null>(null);
+  const language: Language = pickedLanguage ?? (urlPseudo ? 'pseudo' : 'english');
 
   // Test hook for Playwright (e2e) — not part of the package API.
   useEffect(() => {
@@ -103,6 +118,8 @@ export default function PlaygroundPage() {
             }}
           />
 
+          <Segmented label="Language" options={LANGUAGES} value={language} onChange={setLanguage} />
+
           <Segmented
             label="Metadata"
             options={['strip', 'keep', 'keep + GPS'] as const}
@@ -126,6 +143,7 @@ export default function PlaygroundPage() {
               src={src}
               initialState={initialState}
               theme={theme}
+              {...(language === 'pseudo' && { labels: pseudoLabels })}
               themeOverrides={accent ? { accent } : {}}
               exportOptions={{
                 mimeType: format,

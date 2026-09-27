@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  defaultShapeName,
-  getOutputSize,
-  type EditorStore,
-  type EditorStoreState,
-} from '@image-ultra/core';
-import type { Labels } from '../i18n';
+import { getOutputSize, type EditorStore, type EditorStoreState } from '@image-ultra/core';
+import { formatCount, type Labels } from '../i18n';
+import { shapeName } from '../tools/annotate/shapeName';
 import { selectionIds, type AnnotateState } from '../tools/annotate/state';
 import { elementsOf } from '../tools/annotate/watermarkElement';
 
@@ -112,11 +108,10 @@ export function useStoreAnnouncements(
         const was = prevUi ? idsOf(prevUi) : [];
         if (ids.join() !== was.join()) {
           if (ids.length === 0) say(l.announceNothingSelected);
-          else if (ids.length > 1) say(l.selectedCount.replace('{count}', String(ids.length)));
+          else if (ids.length > 1) say(formatCount(l.selectedCount, ids.length));
           else {
             const shape = elementsOf(s.image, s.edit, locked).find((e) => e.id === ids[0]);
-            if (shape)
-              say(l.announceSelected.replace('{name}', shape.name ?? defaultShapeName(shape)));
+            if (shape) say(l.announceSelected.replace('{name}', shapeName(shape, l)));
           }
         }
       }

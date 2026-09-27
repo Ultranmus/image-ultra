@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext } from 'react';
 import { useStore } from 'zustand';
-import type { EditorStore, EditorStoreState, Look } from '@image-ultra/core';
+import type { EditorStore, EditorStoreState, FilterPreset, Look } from '@image-ultra/core';
+import type { SizePreset } from './tools/resize/presets';
 import type { Labels } from './i18n';
 
 export interface EditorContextValue {
@@ -19,6 +20,10 @@ export interface EditorContextValue {
   stickers: readonly StickerOption[];
   /** Base URL of the 3D sticker library, or `null` when turned off. */
   stickerLibraryUrl: string | null;
+  /** Filter looks in the Filter tool (see `ImageEditorProps.filterPresets`). */
+  filterPresets: readonly FilterPreset[];
+  /** Output sizes in Resize (see `ImageEditorProps.sizePresets`). */
+  sizePresets: readonly SizePreset[];
 }
 
 export interface StickerOption {
@@ -100,6 +105,14 @@ export function useWatermarkLocked(): boolean {
 
 export function useStickers(): readonly StickerOption[] {
   return useEditorContext().stickers;
+}
+
+export function useFilterPresets(): readonly FilterPreset[] {
+  return useEditorContext().filterPresets;
+}
+
+export function useSizePresets(): readonly SizePreset[] {
+  return useEditorContext().sizePresets;
 }
 
 export function useStickerLibraryUrl(): string | null {

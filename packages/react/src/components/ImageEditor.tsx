@@ -23,7 +23,10 @@ import {
   type ImageSource,
   type Look,
   type ToolId,
+  FILTER_PRESETS,
+  type FilterPreset,
 } from '@image-ultra/core';
+import { SIZE_PRESETS, type SizePreset } from '../tools/resize/presets';
 import { useCompareHold } from '../hooks/useCompareHold';
 import { useLooksState } from '../hooks/useLooksState';
 import { resolveTools, type ToolInput } from '../tools/builtins';
@@ -38,7 +41,7 @@ import { applyWatermarkInput, type WatermarkInput } from '../tools/watermark/inp
 import { setWatermarkLocked } from '../tools/annotate/watermarkElement';
 import { DEFAULT_STICKER_LIBRARY_URL } from '../tools/sticker/emojiData';
 import { ELEMENT_TOOLS } from '../tools/annotate/layers';
-import { DEFAULT_FONTS } from '../fonts';
+import { defaultFonts } from '../fonts';
 import {
   clipboardMarker,
   copySelection,
@@ -95,6 +98,16 @@ export interface ImageEditorProps {
   persistLooks?: boolean | string;
   /** Fonts offered for text annotations (default: system font stacks). */
   fonts?: FontOption[];
+  /**
+   * Looks in the Filter tool (default: `FILTER_PRESETS`). A built-in id shows its name from
+   * `labels.filterNames`; your own presets show their `name`.
+   */
+  filterPresets?: readonly FilterPreset[];
+  /**
+   * Output sizes in Resize (default: `SIZE_PRESETS`). A built-in id shows its name from
+   * `labels.sizePresetNames`; your own sizes show their `label`.
+   */
+  sizePresets?: readonly SizePreset[];
   /**
    * A watermark to start with — text, or a logo via `logo` (image URL). With `lockWatermark` the
    * user can't change or remove it, and every export applies it.
@@ -153,7 +166,9 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     looks: controlledLooks,
     onLooksChange,
     persistLooks = true,
-    fonts = DEFAULT_FONTS as FontOption[],
+    fonts: fontsProp,
+    filterPresets = FILTER_PRESETS,
+    sizePresets = SIZE_PRESETS,
     watermark: watermarkInput,
     lockWatermark = false,
     stickers = NO_STICKERS,
@@ -174,6 +189,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     createEditorStore({ defaultTool: defaultTool ?? resolvedTools[0]?.id ?? 'adjust' }),
   );
   const labels = useMemo(() => mergeLabels(labelOverrides), [labelOverrides]);
+  const fonts = useMemo(() => fontsProp ?? defaultFonts(labels), [fontsProp, labels]);
   const [looks, setLooks] = useLooksState(controlledLooks, onLooksChange, persistLooks);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const [rootElement, setRootElement] = useState<HTMLElement | null>(null);
@@ -189,10 +205,23 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
       watermarkLocked,
       stickers,
       stickerLibraryUrl: stickerLibrary || null,
+      filterPresets,
+      sizePresets,
     }),
     // setLooks is recreated each render but only reads refs/state setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [store, labels, looks, portalContainer, fonts, watermarkLocked, stickers, stickerLibrary],
+    [
+      store,
+      labels,
+      looks,
+      portalContainer,
+      fonts,
+      watermarkLocked,
+      stickers,
+      stickerLibrary,
+      filterPresets,
+      sizePresets,
+    ],
   );
   const [saving, setSaving] = useState(false);
   const [announcements, announce] = useAnnouncer();
@@ -324,7 +353,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     update: (label, recipe) => store.getState().update(label, recipe),
     undo: () => store.getState().undo(),
     redo: () => store.getState().redo(),
-    reset: () => store.getState().reset(),
+    reset: () => store.getState().reset(labels.reset),
     exportImage: (options) => exportCurrent(options),
     save,
   }));

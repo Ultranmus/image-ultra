@@ -1089,6 +1089,10 @@
     margin: 0;
     padding: var(--iu-space-1);
     overflow-y: auto;
+    /* Room for the scrollbar (overlay ones too) so it never covers the row buttons. */
+    padding-inline-end: var(--iu-space-2);
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
     list-style: none;
   }
 

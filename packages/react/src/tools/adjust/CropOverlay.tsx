@@ -103,7 +103,7 @@ export function CropOverlay() {
         current,
       );
       const next = zoomCrop(s.image, g, current, anchor, factor, MIN_ZOOM_CROP);
-      s.update('Crop', (draft) => {
+      s.update(labels.steps.crop, (draft) => {
         draft.geometry.crop = next;
         draft.resize = syncResizeToCrop(draft.resize, next);
       });
@@ -135,7 +135,7 @@ export function CropOverlay() {
   const showGrid = drag !== null || pendingLabel !== null;
 
   const applyCrop = (rect: Rect) => {
-    store.getState().update('Crop', (draft) => {
+    store.getState().update(labels.steps.crop, (draft) => {
       draft.geometry.crop = rect;
       draft.resize = syncResizeToCrop(draft.resize, rect);
     });
@@ -177,7 +177,7 @@ export function CropOverlay() {
     };
     freeze(kind !== 'move');
     setDrag(kind);
-    store.getState().beginChange(kind === 'move' ? 'Move crop' : 'Resize crop');
+    store.getState().beginChange(kind === 'move' ? labels.steps.moveCrop : labels.steps.resizeCrop);
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -275,7 +275,7 @@ export function CropOverlay() {
     event.preventDefault();
     if (!keyActive.current) {
       keyActive.current = true;
-      state.beginChange('Move crop', { coalesce: true });
+      state.beginChange(labels.steps.moveCrop, { coalesce: true });
     }
     applyCrop(
       moveCrop(

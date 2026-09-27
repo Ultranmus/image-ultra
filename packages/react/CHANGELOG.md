@@ -1,5 +1,15 @@
 # @image-ultra/react
 
+## 0.1.1
+
+### Patch Changes
+
+- b92f8d5: Your app's global CSS no longer reaches inside the editor. A reset like create-next-app's default
+  `* { padding: 0; margin: 0 }` or Tailwind v3's preflight used to strip the editor's padding and
+  spacing (squashed buttons, a clipped Done). Restyle with the `--iu-*` variables as before, or with a
+  two-class selector (`.my-editor .iu-chip`) or a cascade layer declared after `image-ultra`.
+- @image-ultra/core@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

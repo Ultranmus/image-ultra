@@ -665,3 +665,8 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   unlayered `* { padding: 0; margin: 0 }` squashed every button → unlayered `all: revert-layer`
   guard (DECISIONS #112, owner approved) + `e2e/host-css.spec.ts` (fails without the guard; flaky
   until reduced motion + 1px position tolerance). Patch changeset for 0.1.1.
+- Owner's review of 0.1.0 on npm + the site (DECISIONS #113): README (install per package manager,
+  link text "Image Editor", stylesheet block, full Next.js files, screenshot on top); docs demo bar
+  (Desktop / Tablet / Phone, Full screen with close; overlay fallback) + 2 docs e2e (38 docs tests,
+  axe clean); `check:snippets` covers READMEs → 3 README examples fixed. Examples stay on
+  `workspace:*` (see HANDOFF).

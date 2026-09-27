@@ -57,3 +57,56 @@ test('the theme playground restyles the editor and writes the code', async ({ pa
   await page.getByText('CSS', { exact: true }).click();
   await expect(page.getByTestId('theme-code')).toContainText('--iu-accent: #0e7490;');
 });
+
+test('the live editor previews at tablet / phone width and opens full screen', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  const demo = page.locator('.home .demo');
+  const frame = demo.locator('.demo__frame');
+  await expect(demo.getByRole('button', { name: 'Done' })).toBeEnabled({ timeout: 30_000 });
+
+  await demo.getByRole('button', { name: 'Phone' }).click();
+  await expect(demo.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(async () => (await frame.boundingBox())!.width).toBe(390);
+  await demo.getByRole('button', { name: 'Tablet' }).click();
+  await expect.poll(async () => (await frame.boundingBox())!.width).toBe(820);
+
+  await demo.getByRole('button', { name: 'Full screen' }).click();
+  await expect.poll(async () => (await demo.boundingBox())!.height).toBe(800);
+  await expect.poll(async () => (await frame.boundingBox())!.width).toBe(1280);
+  await demo.getByRole('button', { name: 'Close full screen' }).click();
+  await expect(demo.getByRole('button', { name: 'Full screen' })).toBeVisible();
+  await expect.poll(async () => (await demo.boundingBox())!.height).toBeLessThan(800);
+  // Back to the size picked before.
+  await expect(demo.getByRole('button', { name: 'Tablet' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  // Phones get no preview sizes, only full screen.
+  await page.setViewportSize({ width: 390, height: 800 });
+  await expect(demo.getByRole('button', { name: 'Phone' })).toBeHidden();
+  await expect(demo.getByRole('button', { name: 'Full screen' })).toBeVisible();
+});
+
+test('without the Fullscreen API (iPhone Safari) full screen is an overlay; Esc closes it', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    // @ts-expect-error — removing it on purpose, like iPhone Safari
+    delete Element.prototype.requestFullscreen;
+  });
+  await page.setViewportSize({ width: 390, height: 760 });
+  await page.goto('/');
+  const demo = page.locator('.home .demo');
+  await expect(demo.getByRole('button', { name: 'Done' })).toBeEnabled({ timeout: 30_000 });
+  await demo.getByRole('button', { name: 'Full screen' }).click();
+  expect(await demo.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 760 });
+  // The page behind doesn't scroll.
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe(
+    'hidden',
+  );
+  await page.keyboard.press('Escape');
+  await expect(demo.getByRole('button', { name: 'Full screen' })).toBeVisible();
+  expect((await demo.boundingBox())!.height).toBeLessThan(760);
+});

@@ -3,7 +3,7 @@
 The framework-independent engine behind [`@image-ultra/react`](https://www.npmjs.com/package/@image-ultra/react):
 the edit state, image loading, WebGL2 / Canvas2D rendering, export and the editor store.
 
-Docs and API reference: [imageultra.ashvattech.com](https://imageultra.ashvattech.com/reference)
+Docs and API reference: [Image Editor docs](https://imageultra.ashvattech.com/reference)
 
 **Most apps only need `@image-ultra/react`**, which re-exports the parts of this package you're
 likely to use. Install `@image-ultra/core` directly to render saved edits without React (for
@@ -23,7 +23,7 @@ npm install @image-ultra/core
 ```ts
 import { renderImage } from '@image-ultra/core';
 
-// `savedEdits` is an EditState, or its JSON from an earlier save (it's validated).
+declare const savedEdits: unknown; // an EditState, or its JSON from an earlier save (validated)
 const result = await renderImage('/photo.jpg', savedEdits, {
   mimeType: 'image/jpeg',
   quality: 0.9,

@@ -6,7 +6,9 @@ Crop, rotate, straighten and fix perspective; adjust light and colour with curve
 apply filters; draw shapes, arrows and text; redact; add stickers, frames, fills and watermarks;
 resize and export. Every edit is non-destructive JSON you can save and reopen.
 
-**Docs and live demo: [imageultra.ashvattech.com](https://imageultra.ashvattech.com)**
+[![The image-ultra editor with the Filter tool open](https://imageultra.ashvattech.com/readme/editor.jpg)](https://imageultra.ashvattech.com)
+
+**Live demo and docs: [Image Editor](https://imageultra.ashvattech.com)**
 
 | Package                                |                                                             |
 | -------------------------------------- | ----------------------------------------------------------- |

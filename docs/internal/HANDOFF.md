@@ -127,3 +127,9 @@ Update this file at the end of every session.
   "Version packages" PR for 0.1.1 → rerun the fresh Next + Vite install check against 0.1.1
   (scaffolds in the session scratchpad are throwaway; recreate with `pnpm create next-app` /
   `pnpm create vite --template react-ts`, keep create-next-app's globals.css) → CHANGELOG → Phase 8 done.
+- **Examples use the repo, not npm** (owner asked, 2026-09-27): `apps/examples/*` stay on
+  `workspace:*` so CI tests the code in the pull request before it's published; the from-npm check
+  is the release step (fresh `create-next-app` / `create vite` + the published version). Suggested,
+  not built yet: a post-release CI job that does that install check automatically.
+- Release PRs from the changesets bot need the owner's "Approve and run" for CI each time (runs show
+  `action_required`).

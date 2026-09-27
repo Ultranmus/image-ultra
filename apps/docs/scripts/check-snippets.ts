@@ -1,7 +1,9 @@
 /**
- * Type-checks the code examples in the guides against the real packages (`pnpm check:snippets`).
- * A ```ts / ```tsx block counts as a complete example when it starts with `import` or
- * `'use client'`; shorter fragments (a single JSX line) are left alone.
+ * Type-checks the code examples in the guides and the READMEs against the real packages
+ * (`pnpm check:snippets`). A ```ts / ```tsx block counts as a complete example when it starts
+ * with `import` or `'use client'` (after `// app/page.tsx`-style file-name comments); shorter
+ * fragments (a single JSX line) and examples importing a sibling file (`./PhotoEditor`) are left
+ * alone.
  * TypeScript, run directly by Node 24.
  */
 import { execFileSync } from 'node:child_process';
@@ -9,6 +11,8 @@ import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync }
 import { join, relative } from 'node:path';
 
 const docs = join(import.meta.dirname, '..');
+const repo = join(docs, '..', '..');
+const READMES = ['README.md', 'packages/react/README.md', 'packages/core/README.md'];
 const out = join(docs, '.snippets');
 
 function mdxFiles(dir: string): string[] {
@@ -23,11 +27,12 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
 const sources: Record<string, string> = {};
 let count = 0;
-for (const file of mdxFiles(join(docs, 'app'))) {
+for (const file of [...mdxFiles(join(docs, 'app')), ...READMES.map((f) => join(repo, f))]) {
   const text = readFileSync(file, 'utf8');
   for (const match of text.matchAll(/```(tsx?)\n([\s\S]*?)```/g)) {
     const [, lang, code] = match as unknown as [string, string, string];
-    if (!/^\s*(import |'use client')/.test(code)) continue;
+    if (!/^\s*(\/\/[^\n]*\n\s*)*(import |'use client')/.test(code)) continue;
+    if (/from '\.\.?\//.test(code)) continue;
     const name = `snippet-${++count}.${lang}`;
     // Each example is its own module.
     writeFileSync(join(out, name), `${code}\nexport {};\n`);

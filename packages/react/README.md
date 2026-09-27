@@ -4,7 +4,9 @@ A free, fully typed image editor component for React and Next.js. Crop, rotate, 
 annotate, redact, add stickers, frames and watermarks, then save the result. Every edit is
 non-destructive and serializable, so you can store it as JSON and open it again later.
 
-**Docs and live demo: [imageultra.ashvattech.com](https://imageultra.ashvattech.com)**
+[![The image-ultra editor with the Filter tool open](https://imageultra.ashvattech.com/readme/editor.jpg)](https://imageultra.ashvattech.com)
+
+**Live demo and docs: [Image Editor](https://imageultra.ashvattech.com)**
 
 - **Typed end to end**: TypeScript strict, no `any` in the public API.
 - **Non-destructive**: edits are a JSON `EditState`; the source photo is never changed.
@@ -20,10 +22,25 @@ MIT licensed.
 
 ```sh
 npm install @image-ultra/react
-# or: pnpm add @image-ultra/react / yarn add @image-ultra/react
+```
+
+With pnpm or Yarn:
+
+```sh
+pnpm add @image-ultra/react
+```
+
+```sh
+yarn add @image-ultra/react
 ```
 
 React 18.2 or 19 is required.
+
+**Import the stylesheet once** — the editor has no styles without it:
+
+```ts
+import '@image-ultra/react/styles.css';
+```
 
 ## Quick start
 
@@ -52,10 +69,42 @@ Import the stylesheet once, anywhere in your app.
 
 ### Next.js (App Router)
 
-The package is marked `'use client'`, so you can render `<ImageEditor>` from a Server Component
-page. Import `@image-ultra/react/styles.css` in your root layout. Handlers like `onSave` are
-functions, which Server Components can't pass on: put the editor with its handlers in a component
-of your own that starts with `'use client'` (like `PhotoEditor` above).
+Import the stylesheet in your root layout:
+
+```tsx
+// app/layout.tsx
+import '@image-ultra/react/styles.css';
+```
+
+Handlers like `onSave` are functions, which a Server Component can't pass on, so put the editor
+in a component of your own that starts with `'use client'`:
+
+```tsx
+// app/edit/PhotoEditor.tsx
+'use client';
+
+import { ImageEditor } from '@image-ultra/react';
+
+export function PhotoEditor() {
+  return (
+    <div style={{ height: '100dvh' }}>
+      <ImageEditor src="/photo.jpg" onSave={(result) => console.log(result.blob)} />
+    </div>
+  );
+}
+```
+
+```tsx
+// app/edit/page.tsx — a Server Component
+import { PhotoEditor } from './PhotoEditor';
+
+export default function Page() {
+  return <PhotoEditor />;
+}
+```
+
+Without handlers, a Server Component can render `<ImageEditor src="/photo.jpg" />` directly — the
+package is marked `'use client'`.
 
 ## Save and restore edits
 
@@ -83,6 +132,8 @@ Apply saved edits to a photo with no UI, for example to regenerate an image at a
 ```ts
 import { renderImage } from '@image-ultra/react';
 
+declare const savedEdits: unknown; // an EditState, or its JSON from an earlier save
+
 const { blob } = await renderImage('/photo.jpg', savedEdits, { mimeType: 'image/webp' });
 ```
 
@@ -91,11 +142,18 @@ const { blob } = await renderImage('/photo.jpg', savedEdits, { mimeType: 'image/
 ```tsx
 import { ImageEditor, useImageEditor } from '@image-ultra/react';
 
-const editor = useImageEditor();
-
-<ImageEditor ref={editor} src={src} />
-<button onClick={() => editor.current?.undo()}>Undo</button>
-<button onClick={() => editor.current?.save()}>Save</button>
+export function PhotoEditor({ src }: { src: string }) {
+  const editor = useImageEditor();
+  return (
+    <>
+      <button onClick={() => editor.current?.undo()}>Undo</button>
+      <button onClick={() => editor.current?.save()}>Save</button>
+      <div style={{ height: 600 }}>
+        <ImageEditor ref={editor} src={src} />
+      </div>
+    </>
+  );
+}
 ```
 
 The handle has `getState`, `setState`, `update`, `undo`, `redo`, `reset`, `exportImage`, `save`
@@ -128,7 +186,7 @@ English is built in. Pass `labels` to translate or rename any text; pass the ful
 to have TypeScript catch missing strings. Counts can be functions for plural rules.
 
 ```tsx
-import type { LabelOverrides } from '@image-ultra/react';
+import { ImageEditor, type LabelOverrides } from '@image-ultra/react';
 
 const labels: LabelOverrides = { done: 'Fertig', cancel: 'Abbrechen' };
 

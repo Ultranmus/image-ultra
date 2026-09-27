@@ -67,3 +67,21 @@ size. JS heap = `performance.memory` (images and GPU textures are not in the JS 
   a Web Worker would keep the page responsive (BACKLOG).
 - **Memory:** JS heap stays ~6 MB — images live outside it (the 24MP texture alone is 92 MB of GPU
   memory). 7.7c needs a different measure (count and free bitmaps / textures).
+
+## 2026-09-27 · after 7.7b (Canvas2D draws fewer pixels while dragging) · same Mac
+
+Canvas2D fallback only (WebGL2 unchanged). Colour drags: Exposure 3 → 20–30 fps, Sharpen 3 →
+30–60 fps, Curves 8–9 → 60 fps. The drag frame is softer (≤ 0.35 MP) and sharp on release.
+
+|                             | 12MP                        | 24MP                        | 48MP                        |
+| --------------------------- | --------------------------- | --------------------------- | --------------------------- |
+| Drag: Exposure              | 20 fps (50 / p95 50.1 ms)   | 20 fps (50 / p95 66.7 ms)   | 30 fps (33.4 / p95 50.1 ms) |
+| Drag: Sharpen               | 30 fps (33.2 / p95 33.4 ms) | 30 fps (33.3 / p95 33.4 ms) | 60 fps (16.7 / p95 33.4 ms) |
+| Drag: Curves (histogram on) | 60 fps (16.7 / p95 33.4 ms) | 60 fps (16.7 / p95 33.4 ms) | 60 fps (16.7 / p95 33.3 ms) |
+| Drag: Straighten            | 60 fps                      | 60 fps                      | 60 fps                      |
+| Drag: Crop move             | 60 fps                      | 60 fps                      | 60 fps                      |
+| Drag: Zoom 25% ↔ 200%       | 30 fps                      | 30 fps                      | 30 fps                      |
+
+Exposure stays the slowest: the CPU colour maths takes several `Math.pow` per pixel (linear light).
+A faster CPU path (lookup tables) would risk the GPU / CPU pixel match — not done; 20 fps meets the
+target. Zoom isn't a "change", so it keeps full resolution (30 fps).

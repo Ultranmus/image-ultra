@@ -356,10 +356,14 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### From Phase 2 — Core engine
 
-- [ ] **Canvas2D fallback: colour drags at 3–9 fps** (found 2026-09-27 by 7.7a; Exposure / Sharpen
+- [x] **Canvas2D fallback: colour drags at 3–9 fps** _(fixed 2026-09-27, 7.7b: 20–60 fps)_ (found 2026-09-27 by 7.7a; Exposure / Sharpen
       3 fps, Curves 8–9 fps at 2× pixels, any photo size) — _Phase 7.7b_
   - Fix: render the preview at 1× or ½ resolution while a change is open (`beginChange` …
     `endChange`), full resolution on release.
+- [ ] **Phone GPU speed not measured** (7.7b) — owner: open `/bench` on the phone (12 / 24MP) —
+      _Phase 7.7_
+  - Fix if drags < 50 fps: preview samples a screen-sized copy of the photo (~2× the stage) while
+    zoomed out, the full texture only past ~50% zoom.
 - [ ] **WebP export is slow** (found 2026-09-27 by 7.7a: 4 s at 24MP, 9.5 s at 48MP; JPEG 0.3 s) —
       the browser's WebP encoder, same on both renderers — _later (Worker export)_
   - Fix: encode in a Web Worker (`OffscreenCanvas.convertToBlob`) so the page stays responsive;

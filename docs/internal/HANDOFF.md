@@ -66,10 +66,9 @@ Update this file at the end of every session.
 - **7.7a benchmark — done** (DECISIONS #100): `pnpm bench` → `docs/internal/PERF.md`
   (`BENCH_SIZES=12MP pnpm bench` for a quick run; the Canvas2D pass takes ~12 min in full).
   WebGL2 meets all targets; Canvas2D colour drags 3–9 fps; WebP export slow.
-- Next: **7.7b** — waiting for the owner to OK the changed order (lower resolution while
-  dragging first, for Canvas2D) and, ideally, a `/bench` run on their phone.
-- **e2e runs against `next start` of the last production build when no dev server is on 3100 —
-  run `pnpm build` after package changes** (a stale build made passing tests fail once).
+- **7.7b — done** (DECISIONS #101): Canvas2D draws fewer pixels while dragging (3 → 20–60 fps).
+  Waiting: owner's phone `/bench` run → decides the GPU screen-sized copy (BACKLOG).
+- Next: **7.7c memory cleanup** (JS heap can't see bitmaps / textures — count them instead).
 
 ## How to work with this owner
 

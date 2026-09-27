@@ -146,7 +146,12 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         beforeFor = state.edit;
         beforeState = getBeforeState(state.edit);
       }
-      renderPreview(beforeRenderer, container, { ...state, edit: beforeState! });
+      renderPreview(
+        beforeRenderer,
+        container,
+        { ...state, edit: beforeState! },
+        window.devicePixelRatio || 1,
+      );
     };
     const draw = () => {
       frame = 0;
@@ -160,10 +165,11 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
           }, fail);
           return;
         }
-        renderPreview(renderer, container, state);
+        const ratio = previewRatio(renderer, state);
+        renderPreview(renderer, container, state, ratio);
         // Same task as the GPU frame: its canvas can still be read (no preserveDrawingBuffer).
-        paintRedactions(redactCanvas, canvas, state);
-        paintBackground(backgroundCanvas, [canvas, redactCanvas], state, fillImage(state));
+        paintRedactions(redactCanvas, canvas, state, ratio);
+        paintBackground(backgroundCanvas, [canvas, redactCanvas], state, fillImage(state), ratio);
         if (state.compare !== null) drawBefore(state, image);
       } catch (error) {
         fail(error);
@@ -180,6 +186,8 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         state.stageSize !== prev.stageSize ||
         state.edit !== prev.edit ||
         state.cropView !== prev.cropView ||
+        // Sharp again when a drag ends (the Canvas2D preview draws fewer pixels during one).
+        (state.pendingChange === null) !== (prev.pendingChange === null) ||
         (state.compare === null) !== (prev.compare === null)
       ) {
         schedule();
@@ -598,6 +606,7 @@ function paintBackground(
   sources: HTMLCanvasElement[],
   state: EditorState,
   image: ImageBitmap | undefined,
+  dpr: number,
 ) {
   const main = sources[0]!;
   if (target.width !== main.width) target.width = main.width;
@@ -608,7 +617,6 @@ function paintBackground(
   ctx.clearRect(0, 0, target.width, target.height);
   const { image: photo, edit, viewport: vp, cropView } = state;
   if (!photo || !edit.background || cropView) return;
-  const dpr = window.devicePixelRatio || 1;
   const out = getOutputSize(photo, edit);
   let result: HTMLCanvasElement | OffscreenCanvas = main;
   let resultRect: { x: number; y: number; width: number; height: number } | undefined;
@@ -651,7 +659,12 @@ function orientedToCanvas(state: EditorState, dpr: number): Affine {
  * Redactions for the preview, drawn from the GPU frame onto their own layer (same function as
  * the export, so they look the same). Clipped to a round crop like the annotations.
  */
-function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, state: EditorState) {
+function paintRedactions(
+  target: HTMLCanvasElement,
+  source: HTMLCanvasElement,
+  state: EditorState,
+  dpr: number,
+) {
   const { image, edit, cropView, viewport: vp } = state;
   if (target.width !== source.width) target.width = source.width;
   if (target.height !== source.height) target.height = source.height;
@@ -661,7 +674,6 @@ function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, s
   ctx.clearRect(0, 0, target.width, target.height);
   const redacts = redactElements(edit.annotations);
   if (!image || redacts.length === 0) return;
-  const dpr = window.devicePixelRatio || 1;
   ctx.save();
   if (!cropView && edit.geometry.cropShape === 'ellipse') {
     ctx.setTransform(...compose(scale(dpr), translate(vp.x, vp.y), scale(vp.scale)));
@@ -677,11 +689,33 @@ function paintRedactions(target: HTMLCanvasElement, source: HTMLCanvasElement, s
   ctx.restore();
 }
 
-/** Renders into the stage canvas: the edited result, or the whole image while cropping. */
-function renderPreview(renderer: Renderer, container: HTMLElement, state: EditorState): void {
+/** Canvas pixels the Canvas2D fallback draws while a change is open (~0.35 MP ≈ 20 fps). */
+const DRAG_PIXEL_BUDGET = 350_000;
+
+/**
+ * Canvas pixels per CSS pixel for the preview. The Canvas2D fallback does its colour work on the
+ * CPU for every canvas pixel (3 fps on a Retina stage, PERF.md), so while a change is open (a
+ * slider or crop drag) it draws at most `DRAG_PIXEL_BUDGET` pixels, and sharp again on release.
+ */
+function previewRatio(renderer: Renderer, state: EditorState): number {
+  const dpr = window.devicePixelRatio || 1;
+  if (renderer.kind !== 'canvas2d' || !state.pendingChange) return dpr;
+  const area = Math.max(1, state.stageSize.width * state.stageSize.height);
+  return Math.min(dpr, Math.sqrt(DRAG_PIXEL_BUDGET / area));
+}
+
+/**
+ * Renders into the stage canvas: the edited result, or the whole image while cropping.
+ * `dpr`: canvas pixels per CSS pixel (lower than the screen's while dragging on Canvas2D).
+ */
+function renderPreview(
+  renderer: Renderer,
+  container: HTMLElement,
+  state: EditorState,
+  dpr: number,
+): void {
   const { image, edit, viewport: vp, stageSize, cropView } = state;
   if (!image) return;
-  const dpr = window.devicePixelRatio || 1;
   const styles = getComputedStyle(container);
   const common = {
     image,

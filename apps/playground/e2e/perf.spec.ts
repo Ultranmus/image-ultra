@@ -1,0 +1,52 @@
+import { expect, test, type Page } from '@playwright/test';
+import { openEditor, type TestHook } from './support/editor';
+
+// The Canvas2D fallback: a browser without WebGL (Phase 7.7b, PERF.md).
+test.use({ launchOptions: { args: ['--disable-webgl'] } });
+
+/** Backing-store widths of the photo and redaction canvases, and the full-quality width. */
+function canvasWidths(page: Page) {
+  return page.evaluate(async () => {
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+    const [photo, redactions] = [
+      document.querySelector<HTMLCanvasElement>('.iu-stage__canvas:not(.iu-stage__background)')!,
+      document.querySelector<HTMLCanvasElement>('.iu-stage__redactions')!,
+    ];
+    return {
+      photo: photo.width,
+      redactions: redactions.width,
+      full: Math.round(photo.getBoundingClientRect().width * devicePixelRatio),
+    };
+  });
+}
+
+test('Canvas2D preview draws fewer pixels while dragging, sharp again on release', async ({
+  page,
+}) => {
+  await openEditor(page);
+  expect(await page.evaluate(() => !document.createElement('canvas').getContext('webgl2'))).toBe(
+    true,
+  );
+
+  const before = await canvasWidths(page);
+  expect(before.photo).toBe(before.full);
+
+  await page.evaluate(() => {
+    const store = (window as unknown as { __iu: TestHook }).__iu.editor.current!.store;
+    store.getState().beginChange('Exposure');
+    store.getState().update('Exposure', (s) => {
+      s.finetune.exposure = 0.5;
+    });
+  });
+  const dragging = await canvasWidths(page);
+  expect(dragging.photo).toBeLessThan(before.full);
+  // Redaction layer follows the photo canvas (it's drawn from it).
+  expect(dragging.redactions).toBe(dragging.photo);
+
+  await page.evaluate(() =>
+    (window as unknown as { __iu: TestHook }).__iu.editor.current!.store.getState().endChange(),
+  );
+  const released = await canvasWidths(page);
+  expect(released.photo).toBe(before.full);
+});

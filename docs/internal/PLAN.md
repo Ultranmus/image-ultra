@@ -192,14 +192,11 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         24MP JPEG < 3s — on the owner's Mac; the phone numbers are recorded, not gated.
         **Result (PERF.md):** WebGL2 meets every target at 12–48MP; the Canvas2D fallback drags
         colour at 3–9 fps (any photo size); WebP export 4s at 24MP (browser encoder).
-  - [ ] **7.7b** _Proposed change after 7.7a (needs owner OK): lead with "fewer pixels while
-        dragging" for the Canvas2D fallback (3 fps → target 20 fps); the screen-sized copy only if the
-        owner's phone run of `/bench` shows GPU drags below 50 fps._ Preview-sized image: the preview samples a copy of the photo sized to the screen
-        (about 2× the stage, "mipmap"), not the full 24MP texture. The full texture is used only when
-        zoomed in past ~50%. Why: the preview cost follows the canvas size, but sampling a huge texture
-        is slow and grainy when zoomed out; the Canvas2D fallback draws the full bitmap every frame.
-        If 7.7a shows drags are still slow: a lower-resolution frame **only while dragging**, sharp
-        again on release. Same for the histogram, redaction preview and "before" compare.
+  - [x] **7.7b** Faster preview (order changed after 7.7a, owner OK 2026-09-27): **the Canvas2D
+        fallback draws ≤ 0.35 MP while a change is open** (slider / crop drag), sharp on release —
+        colour drags 3 → 20–60 fps (PERF.md, DECISIONS #101). _Waiting for data:_ a screen-sized
+        copy of the photo for GPUs, only if the owner's phone run of `/bench` shows drags < 50 fps
+        (BACKLOG).
   - [ ] **7.7c** Memory cleanup: an audit that every `ImageBitmap`, texture, framebuffer and
         object URL is freed — photo swap, reset, tool change, unmount, StrictMode remount, fill /
         sticker / logo caches (Stage's fill-image cache is never closed today). e2e: load 10 photos in a

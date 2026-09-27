@@ -581,3 +581,9 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   at 3–9 fps, and WebP export takes 4 s at 24MP (both in BACKLOG). The preview's cost follows the
   screen size, not the photo size — so 7.7b is proposed to lead with a lower-resolution preview
   while dragging (owner to confirm).
+- 7.7a committed. Owner OK'd leading 7.7b with the drag fix.
+- **7.7b:** the Canvas2D preview draws ≤ 0.35 MP while a change is open, sharp on release
+  (DECISIONS #101): Exposure 3 → 20–30 fps, Sharpen 3 → 30–60, Curves 8 → 60 (PERF.md). Exposure
+  stays slowest (per-pixel `Math.pow`; a LUT would risk GPU/CPU parity — not done). New
+  `e2e/perf.spec.ts` (WebGL off; checked to fail without the fix). GPU screen-sized copy waits for
+  the owner's phone `/bench` run (BACKLOG). All checks green (145 unit, 148 e2e).

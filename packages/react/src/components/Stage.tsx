@@ -62,6 +62,9 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
   const store = useEditorStore();
   const labels = useLabels();
   const status = useEditorState((s) => s.status);
+  // The photo's accessible name: its size as it will be saved.
+  const outputWidth = useEditorState((s) => (s.image ? getOutputSize(s.image, s.edit).width : 0));
+  const outputHeight = useEditorState((s) => (s.image ? getOutputSize(s.image, s.edit).height : 0));
   const error = useEditorState((s) => s.error);
   const isFitted = useEditorState((s) => s.isFitted);
   const cropping = useEditorState((s) => s.cropView !== null);
@@ -456,6 +459,14 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       ref={containerRef}
       className="iu-stage"
       tabIndex={-1}
+      role="group"
+      aria-label={
+        outputWidth
+          ? labels.photoLabel
+              .replace('{width}', String(outputWidth))
+              .replace('{height}', String(outputHeight))
+          : labels.loading
+      }
       data-pannable={status === 'ready' && !isFitted && !cropping ? '' : undefined}
       data-dragging={isDragging ? '' : undefined}
       data-drop-target={isDropTarget ? '' : undefined}
@@ -533,7 +544,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
             <span className="iu-empty__icon" data-error={status === 'error' ? '' : undefined}>
               {status === 'error' ? <IconAlert size={28} /> : <IconImage size={28} />}
             </span>
-            <p className="iu-empty__title">
+            <p className="iu-empty__title" role={status === 'error' ? 'alert' : undefined}>
               {status === 'error' ? errorMessage(error, labels) : labels.emptyTitle}
             </p>
             <p className="iu-empty__hint">{labels.emptyHint}</p>

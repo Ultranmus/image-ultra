@@ -231,8 +231,7 @@ test.describe('Keyboard & focus', () => {
       'aria-selected',
       'true',
     );
-    await page.keyboard.press('Tab'); // off the rail…
-    await tabTo(page, 'Annotate'); // …to the photo layer
+    await tabTo(page, 'Photo and its elements');
     await expect(page.locator('.iu-annotate-layer')).toBeFocused();
     await page.keyboard.press('t');
     await page.keyboard.press('Enter');

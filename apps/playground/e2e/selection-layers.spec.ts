@@ -53,7 +53,7 @@ test.describe('Multi-select', () => {
     await clickStage(page, 0.35, 0.35);
     await clickStage(page, 0.55, 0.55, ['Shift']);
     await expect(page.locator('.iu-annotate__member')).toHaveCount(2);
-    await expect(page.getByText('2 selected')).toBeVisible();
+    await expect(page.locator('.iu-controlbar').getByText('2 selected')).toBeVisible();
 
     const before = await shapes(page);
     const steps = await historySteps(page);

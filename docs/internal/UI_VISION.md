@@ -295,7 +295,14 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - WCAG AA contrast in both themes (checked for text + focus ring).
 - All controls have accessible names; sliders expose `aria-valuenow/min/max/valuetext`.
 - Visible focus ring (`--iu-focus-ring`) on keyboard focus only (`:focus-visible`).
-- Stage announces tool changes and key results via a polite live region.
+- **Announcements** (7.5c, DECISIONS #95) through one polite live region (+ an assertive one for
+  failures): the tool name on switch; "Undone: …", "Redone: …", "History: …"; "Zoom 150%" only for a
+  zoom the user asked for (a re-fit says nothing); "Crop 1600 × 1600" in Adjust; "Rectangle
+  selected" / "3 selected" / "Nothing selected"; "Saving…", "Saved", "Couldn't save the image."
+  Zoom and crop wait until they settle (500ms). A load error on the stage is an alert.
+- **Names:** the stage is a group "Photo, 2400 × 1600" (the size it will be saved at); in Annotate /
+  Sticker / Redact the photo layer is "Photo and its elements", described by how to use it (Tab,
+  Enter, ?). Curve points read "input 128, output 140"; the compare divider reads a percentage.
 - **Checked automatically** (7.5a, DECISIONS #93): `e2e/a11y.spec.ts` runs axe (WCAG 2.2 A + AA) on every
   tool, mode, selection and popover, in dark + light, at desktop + 390px — zero problems allowed.
 - A hidden `<input type="file">` opened by a visible button is `aria-hidden` (the button is the

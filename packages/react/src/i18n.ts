@@ -30,6 +30,26 @@ export interface Labels {
   compareDivider: string;
   history: string;
   historyOriginal: string;
+  /** Screen-reader announcements (7.5c). `{step}` = a history step label. */
+  announceUndo: string;
+  announceRedo: string;
+  announceHistory: string;
+  /** `{percent}` */
+  announceZoom: string;
+  /** `{width}`, `{height}` */
+  announceCrop: string;
+  /** `{name}` = the element's name */
+  announceSelected: string;
+  announceNothingSelected: string;
+  announceSaved: string;
+  saveFailed: string;
+  /** The photo on the stage: `{width}`, `{height}` = the result's size. */
+  photoLabel: string;
+  /** The photo in Annotate / Sticker / Redact (a Tab stop), and how to use it. */
+  elementsLabel: string;
+  elementsHint: string;
+  /** Curve point value: `{in}`, `{out}` (0–255). */
+  curvePointValue: string;
   shortcuts: string;
   shortcutsGeneral: string;
   shortcutsShow: string;
@@ -268,6 +288,20 @@ export const defaultLabels: Labels = {
   compareDivider: 'Before / after divider',
   history: 'History',
   historyOriginal: 'Original',
+  announceUndo: 'Undone: {step}',
+  announceRedo: 'Redone: {step}',
+  announceHistory: 'History: {step}',
+  announceZoom: 'Zoom {percent}%',
+  announceCrop: 'Crop {width} × {height}',
+  announceSelected: '{name} selected',
+  announceNothingSelected: 'Nothing selected',
+  announceSaved: 'Saved',
+  saveFailed: 'Couldn’t save the image.',
+  photoLabel: 'Photo, {width} × {height}',
+  elementsLabel: 'Photo and its elements',
+  elementsHint:
+    'Tab and Shift+Tab select the next and previous element. With a drawing tool, Enter adds a shape. Press ? for all shortcuts.',
+  curvePointValue: 'input {in}, output {out}',
   shortcuts: 'Keyboard shortcuts',
   shortcutsGeneral: 'General',
   shortcutsShow: 'Show keyboard shortcuts',

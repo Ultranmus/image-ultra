@@ -531,3 +531,10 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   save). All checks green (141 unit, 129 e2e); one rare flake logged in BACKLOG.
 - Owner review of 7.5b: focus rings clipped on toolbar rows (edge-fade mask). Mask now only while
   a row overflows; the ring check counts masks. All checks green.
+- **7.5c screen readers:** `useAnnouncer` + `useStoreAnnouncements` (undo / redo / history, zoom,
+  crop size, selection, saving / saved / failed, tool name); stage named "Photo, W × H", photo layer
+  "Photo and its elements" + usage hint, load error is an alert, curve points "input …, output …",
+  compare divider value, named tool tablist. First version announced every re-fit as a zoom (fixed:
+  only into / out of "fit") and **threw on Resize's string tool state, which broke Canvas mode** —
+  caught by the existing e2e (DECISIONS #95). `e2e/screen-reader.spec.ts` (4 tests incl. aria
+  snapshots of TopBar, rail, Finetune). All checks green (141 unit, 133 e2e).

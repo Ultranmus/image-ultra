@@ -53,6 +53,7 @@ import { Stage } from './Stage';
 import { ToolRail } from './ToolRail';
 import { TooltipLayer } from './TooltipLayer';
 import { TopBar } from './TopBar';
+import { useAnnouncer, useStoreAnnouncements } from '../hooks/useAnnouncer';
 
 const MOTION_MS = 320;
 const NO_STICKERS: StickerOption[] = [];
@@ -194,6 +195,8 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     [store, labels, looks, portalContainer, fonts, watermarkLocked, stickers, stickerLibrary],
   );
   const [saving, setSaving] = useState(false);
+  const [announcements, announce] = useAnnouncer();
+  useStoreAnnouncements(store, labels, announce, watermarkLocked);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const compareHold = useCompareHold(store);
 
@@ -299,11 +302,14 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   const save = async (): Promise<ExportResult | null> => {
     if (saving || store.getState().status !== 'ready') return null;
     setSaving(true);
+    announce(labels.saving);
     try {
       const result = await exportCurrent(latest.current.exportOptions);
       await latest.current.onSave?.(result);
+      announce(labels.announceSaved);
       return result;
     } catch (error) {
+      announce(labels.saveFailed, true);
       reportError(error);
       return null;
     } finally {
@@ -417,6 +423,14 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
   const activeToolId = useStore(store, (s) => s.activeTool);
   const activeTool = resolvedTools.find((t) => t.id === activeToolId) ?? resolvedTools[0];
 
+  // Say the tool's name when it changes (not when the editor opens).
+  const announcedTool = useRef(activeToolId);
+  useEffect(() => {
+    if (announcedTool.current === activeToolId || !activeTool) return;
+    announcedTool.current = activeToolId;
+    announce(toolLabel(activeTool, labels));
+  }, [activeToolId, activeTool, labels, announce]);
+
   return (
     <EditorContext.Provider value={context}>
       <div
@@ -463,9 +477,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
         {/* Popovers render here so they inherit the theme variables. */}
         <div ref={setPortalContainer} className="iu-portal" />
         <TooltipLayer root={rootElement} container={portalContainer} />
-        <div className="iu-sr-only" aria-live="polite">
-          {activeTool ? toolLabel(activeTool, labels) : ''}
-        </div>
+        {announcements}
       </div>
     </EditorContext.Provider>
   );

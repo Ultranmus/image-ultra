@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -156,6 +157,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
   const store = useEditorStore();
   const labels = useLabels();
   const [storedUi, setUi] = useAnnotateState();
+  const hintId = useId();
   const [layersOpen, setLayersOpen] = useLayersOpen();
   const ui =
     selectOnly && storedUi.mode !== 'select' ? { ...storedUi, mode: 'select' as const } : storedUi;
@@ -1268,7 +1270,8 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       // A Tab stop: Tab / Shift+Tab here step through the elements (see the key handler).
       tabIndex={0}
       role="group"
-      aria-label={labels.tools.annotate}
+      aria-label={labels.elementsLabel}
+      aria-describedby={hintId}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -1281,6 +1284,9 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
     >
+      <span id={hintId} className="iu-sr-only">
+        {labels.elementsHint}
+      </span>
       <svg className="iu-annotate-layer__svg" width={stage.width} height={stage.height}>
         {hover && (
           <polygon

@@ -162,7 +162,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
   - [x] **7.5b** Keyboard & focus: tab order, popover focus in/out, focus never lost when a button
         disappears (Crop, Watermark, mask brush overlays), unclipped focus rings, keyboard-only e2e
         flow; **Tab / Shift+Tab steps through elements in Select mode** (owner's choice).
-  - [ ] **7.5c** Screen readers: live announcements (undo/redo step, zoom, selection count, saving /
+  - [x] **7.5c** Screen readers: live announcements (undo/redo step, zoom, selection count, saving /
         saved, errors), slider value text, curve points, crop size, photo name + `?` hint; aria
         snapshots; owner VoiceOver spot check.
   - [ ] **7.5d** Motion & touch: shimmer and every animation off with reduced motion (e2e checks),

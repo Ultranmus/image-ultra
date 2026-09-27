@@ -64,6 +64,7 @@ export function CompareDivider({ split }: { split: number }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(split * 100)}
+        aria-valuetext={`${Math.round(split * 100)}%`}
         aria-orientation="horizontal"
         onKeyDown={onKeyDown}
         onPointerDown={(event) => {

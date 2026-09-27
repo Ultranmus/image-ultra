@@ -267,6 +267,9 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Focus rings clipped in toolbar rows** (owner, screenshot: Annotate's Select button) — the
       edge-fade mask cut off the ring outside the row's box. Fix: the mask only applies while the
       row overflows; e2e ring check now treats masks as clipping — _fixed 2026-09-27_
+- [ ] **Owner VoiceOver spot check** (7.5c) — ⌘F5 on the Mac, open the playground: Tab through the
+      TopBar and rail, switch tools, undo, select a shape with Tab on the photo. Listen for anything
+      missing, doubled or confusing — _7.5 review_
 - [ ] **A rare e2e flake** (7.5b): 1 of 4 full runs failed one `toBeLessThan` check (not in
       keyboard / mobile specs — 102/102 on repeat); two clean full runs after. Find it with
       `--repeat-each` per spec if it shows up again — _7.7_

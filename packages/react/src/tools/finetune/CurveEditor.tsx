@@ -220,7 +220,9 @@ export function CurveEditor({ histogram }: { histogram: Histograms | null }) {
             aria-valuemin={0}
             aria-valuemax={255}
             aria-valuenow={Math.round(y * 255)}
-            aria-valuetext={`${Math.round(x * 255)} → ${Math.round(y * 255)}`}
+            aria-valuetext={labels.curvePointValue
+              .replace('{in}', String(Math.round(x * 255)))
+              .replace('{out}', String(Math.round(y * 255)))}
             onFocus={() => setActive(i)}
             onKeyDown={(e) => onPointKey(e, i)}
             onDoubleClick={() => removePoint(i)}

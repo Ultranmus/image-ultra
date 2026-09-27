@@ -37,7 +37,12 @@ export function ToolRail({ tools, idPrefix }: ToolRailProps) {
 
   return (
     <nav className="iu-rail" aria-label={labels.toolbarLabel}>
-      <div className="iu-rail__list" role="tablist" onKeyDown={onKeyDown}>
+      <div
+        className="iu-rail__list"
+        role="tablist"
+        aria-label={labels.toolbarLabel}
+        onKeyDown={onKeyDown}
+      >
         {tools.map((tool) => {
           const Icon = tool.icon;
           const selected = tool.id === activeTool;

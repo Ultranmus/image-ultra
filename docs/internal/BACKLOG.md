@@ -273,8 +273,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [ ] **A rare e2e flake** (7.5b): 1 of 4 full runs failed one `toBeLessThan` check (not in
       keyboard / mobile specs — 102/102 on repeat); two clean full runs after. Find it with
       `--repeat-each` per spec if it shows up again — _7.7_
-- [ ] **Segmented switches are 28px tall** (below the 40px touch size of buttons; WCAG 2.2 minimum
-      is 24px, so they pass) — consider 36–40px on touch devices — _7.5 (a11y)_
+- [x] **Segmented switches are 28px tall** (below the 40px touch size of buttons; WCAG 2.2 minimum
+      is 24px, so they pass) — consider 36–40px on touch devices — _done 2026-09-27 (7.5d): 36px on touch screens (`--iu-size-choice`), 28px with a mouse_
 
 ### From Phase 5 — Annotate
 

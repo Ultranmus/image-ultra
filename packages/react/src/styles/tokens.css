@@ -84,6 +84,8 @@
     --iu-size-emoji: 26px;
     /* Sticker / emoji tiles in the Sticker strip. */
     --iu-size-sticker-tile: 44px;
+    /* Segmented switches and chips; 36px on touch screens (below). */
+    --iu-size-choice: 28px;
 
     /* Layers */
     --iu-z-overlay: 10;
@@ -156,6 +158,13 @@
       --iu-duration-fast: 0ms;
       --iu-duration-base: 0ms;
       --iu-duration-slow: 0ms;
+    }
+  }
+
+  /* Touch screens: switches and chips are easier to hit with a thumb (owner, 7.5d). */
+  @media (pointer: coarse) {
+    .iu-root {
+      --iu-size-choice: 36px;
     }
   }
 }

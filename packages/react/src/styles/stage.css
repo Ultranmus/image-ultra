@@ -150,6 +150,13 @@
     animation: iu-shimmer 1.4s linear infinite;
   }
 
+  /* Reduce motion: a still placeholder instead of the shimmer. */
+  @media (prefers-reduced-motion: reduce) {
+    .iu-skeleton {
+      animation: none;
+    }
+  }
+
   .iu-empty {
     display: flex;
     flex-direction: column;

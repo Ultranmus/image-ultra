@@ -78,6 +78,7 @@ Rule: text/icons in accent colour use `--iu-accent-text`, never `--iu-accent` / 
 | `--iu-size-zoom-compact`                   | `44px` (zoom % button below 480px)                                                             |
 | `--iu-size-emoji`                          | `26px` (emoji glyphs in the Sticker strip)                                                     |
 | `--iu-size-sticker-tile`                   | `44px` (sticker / emoji tiles)                                                                 |
+| `--iu-size-choice`                         | `28px`; `36px` on touch screens (`pointer: coarse`) — segmented switches and chips             |
 | `--iu-z-overlay/popover/toast`             | `10 / 20 / 30` (tooltips use the toast layer, above popovers and menus)                        |
 
 ## `ThemeOverrides` (public, typed)
@@ -104,3 +105,10 @@ interface ThemeOverrides {
 Crop tokens are the same in both themes because they sit on the photo, not on UI chrome.
 
 Keep this table and the CSS file (`packages/react/src/styles/tokens.css`) in sync.
+
+## Windows high contrast (forced colors)
+
+In `forced-colors: active` the browser drops box-shadows and background tints, so focus and
+"selected" states switch to outlines in **system colours** (`Highlight` for selected, `CanvasText`
+for focus). These are CSS keywords the OS resolves — not raw colours — and they're the one place
+component CSS names a colour directly (end of `tools.css`, 7.5d, DECISIONS #96).

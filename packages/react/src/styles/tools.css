@@ -1416,3 +1416,29 @@
     }
   }
 }
+
+/* ── Windows high contrast (forced colors) ──────────────────────────────────────────────────────
+   Box-shadow rings and tinted backgrounds are dropped in this mode, so focus and "selected" use
+   outlines in system colours (keywords, not hex — the OS picks them). Last in the
+   last stylesheet, so it wins over the `outline: none` of the normal focus styles. */
+@layer image-ultra {
+  @media (forced-colors: active) {
+    .iu-root [data-active],
+    .iu-root [aria-checked='true'],
+    .iu-root [aria-pressed='true'],
+    .iu-root [aria-selected='true'] {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+
+    .iu-root :focus-visible {
+      outline: 2px solid CanvasText;
+      outline-offset: 2px;
+    }
+
+    /* The photo layer fills the stage: keep its ring inside. */
+    .iu-root .iu-annotate-layer:focus-visible {
+      outline-offset: -2px;
+    }
+  }
+}

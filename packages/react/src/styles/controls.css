@@ -209,7 +209,7 @@
   }
 
   .iu-segmented__item {
-    height: 28px;
+    height: var(--iu-size-choice);
     padding: 0 var(--iu-space-3);
     border: 0;
     border-radius: calc(var(--iu-radius-md) - 2px);
@@ -295,7 +295,7 @@
     flex: none;
     align-items: center;
     gap: 6px;
-    height: 28px;
+    height: var(--iu-size-choice);
     padding: 0 var(--iu-space-3);
     border: 1px solid var(--iu-border);
     border-radius: var(--iu-radius-full);

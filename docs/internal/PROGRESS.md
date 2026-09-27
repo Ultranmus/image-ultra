@@ -538,3 +538,7 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   only into / out of "fit") and **threw on Resize's string tool state, which broke Canvas mode** —
   caught by the existing e2e (DECISIONS #95). `e2e/screen-reader.spec.ts` (4 tests incl. aria
   snapshots of TopBar, rail, Finetune). All checks green (141 unit, 133 e2e).
+- **7.5d motion & touch:** still loading placeholder under reduced motion (the one fixed-duration
+  animation); forced-colors outlines for focus + selected (system colours); `--iu-size-choice`
+  28 → 36px on touch screens. `e2e/motion.spec.ts` (4 tests; checked they'd fail without the
+  fixes). All checks green (141 unit, 137 e2e). **7.5 done** except the owner's VoiceOver check.

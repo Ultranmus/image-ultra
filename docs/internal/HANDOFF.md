@@ -49,7 +49,8 @@ Update this file at the end of every session.
   done** (DECISIONS #94; `e2e/keyboard.spec.ts`: Tab through elements, Enter adds a shape, focus never
   lost, unclipped rings, keyboard-only flow). **7.5c screen readers — done** (DECISIONS #95;
   `e2e/screen-reader.spec.ts`: announcements, names, aria snapshots). Waiting: owner's VoiceOver spot
-  check (BACKLOG). Next: 7.5d motion + 36px touch switches.
+  check (BACKLOG). **7.5d motion & touch — done** (DECISIONS #96; `e2e/motion.spec.ts`). 7.5 is done
+  apart from the owner's VoiceOver check. Next: **7.6 i18n & RTL** (plan it first).
 - **e2e runs against `next start` of the last production build when no dev server is on 3100 —
   run `pnpm build` after package changes** (a stale build made passing tests fail once).
 

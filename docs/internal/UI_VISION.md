@@ -278,7 +278,7 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - **Icons:** our own set. 24px grid, 1.75px stroke, round caps/joins, no fills except selected state variants. Rendered at 20px in ToolRail, 18px in controls.
 - **Radii:** 8 (controls), 12 (panels/popovers), 999 (pills, swatches).
 - **Spacing:** 4px scale (4, 8, 12, 16, 20, 24, 32).
-- **Motion:** 120ms (hover/press), 200ms (panel/tool switch), 320ms (stage/crop re-fit). Easing `cubic-bezier(0.2, 0, 0, 1)`. Respect `prefers-reduced-motion` → durations ≈ 0, no slides.
+- **Motion:** 120ms (hover/press), 200ms (panel/tool switch), 320ms (stage/crop re-fit). Easing `cubic-bezier(0.2, 0, 0, 1)`. Respect `prefers-reduced-motion` → durations 0, no slides, animated zooms instant, a still loading placeholder (no shimmer); e2e checks nothing is running. Windows high contrast: focus and selected states become system-colour outlines. Touch screens: switches and chips are 36px (28px with a mouse).
 - **Loading:** skeleton shimmer on stage only if load > 300ms; no spinners under 300ms.
 
 ## 8. Don'ts (things that made Filerobot feel off)

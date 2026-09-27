@@ -1,3 +1,4 @@
+import { crc32, deflateSync } from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
 import type { TestHook } from './support/editor';
 
@@ -35,6 +36,49 @@ function icoFile(): TestFile {
   };
 }
 
+/** A solid blue `size`² PNG. */
+function png(size: number): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const out = Buffer.alloc(body.length + 8);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), body.length + 4);
+    return out;
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr.set([8, 6, 0, 0, 0], 8); // 8-bit RGBA
+  const row = Buffer.alloc(1 + size * 4);
+  for (let x = 0; x < size; x++) row.set([0, 0, 255, 255], 1 + x * 4);
+  const raw = Buffer.concat(Array.from({ length: size }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+/**
+ * The owner's favicon (2026-09-28): one 512 px PNG inside an ICO, whose header can only say 256
+ * (0). Chrome's own ICO decoder rejects it; Safari opens it.
+ */
+function bigPngIco(): TestFile {
+  const image = png(512);
+  const entry = Buffer.alloc(16);
+  entry.writeUInt16LE(1, 4);
+  entry.writeUInt16LE(32, 6);
+  entry.writeUInt32LE(image.length, 8);
+  entry.writeUInt32LE(22, 12);
+  return {
+    name: 'GLASSBOX G BLACK.ico',
+    mimeType: 'image/vnd.microsoft.icon',
+    buffer: Buffer.concat([Buffer.from([0, 0, 1, 0, 1, 0]), entry, image]),
+  };
+}
+
 const svg = (body: string): TestFile => ({
   name: 'drawing.svg',
   mimeType: 'image/svg+xml',
@@ -64,6 +108,12 @@ test.describe('Opening files', () => {
   test('an .ico opens like any other image', async ({ page }) => {
     const errors = await openFile(page, icoFile());
     await expect.poll(() => imageSize(page)).toBe('16x16');
+    expect(errors).toEqual([]);
+  });
+
+  test('an .ico holding a PNG bigger than 256 px opens at its real size', async ({ page }) => {
+    const errors = await openFile(page, bigPngIco());
+    await expect.poll(() => imageSize(page)).toBe('512x512');
     expect(errors).toEqual([]);
   });
 

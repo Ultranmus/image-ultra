@@ -3,7 +3,10 @@
 Measured with `pnpm bench` (Phase 7.7a; DECISIONS #100). It builds everything, starts the
 playground and runs `/bench` in Chrome twice: with WebGL2 (the real GPU) and with WebGL turned off
 (the Canvas2D fallback). The same page runs in any browser: open `/bench` and press **Run**
-(e.g. on a phone over Wi-Fi — try 12 / 24MP there).
+(e.g. on a phone over Wi-Fi). **Phone:** `pnpm build`, then `pnpm --filter playground start`
+(production — dev mode adds React's checks), open `http://<Mac's LAN IP>:3100/bench`
+(`ipconfig getifaddr en0`) and press **12MP** — iPhones can't make canvases above ~16.7 MP, so the
+24 / 48MP test photos fail there.
 
 **How it measures:** generated test photos (gradients, shapes, fine noise; JPEG 90%); window
 1400×900 at 2× pixels (a Retina Mac). "Drag" changes one value every frame for 90 frames through
@@ -106,3 +109,44 @@ Above the GPU's texture limit (16384 px on the M4; 8192 in headless test Chrome)
 rendered in tiles at full size. Normal-size exports are unchanged (24MP JPEG 276 ms, 48MP 517 ms
 after 7.7d). The output canvas is probed above 16.7 MP; iPhones cap canvases at ~16.7 MP, so larger
 exports there come back scaled down with `downscaled: true`.
+
+## 2026-09-28 · Owner's iPhone (Chrome on iOS = WebKit, WebGL2 "Apple GPU"), dev server
+
+|                                                                | 12MP             | 24MP              |
+| -------------------------------------------------------------- | ---------------- | ----------------- |
+| Load (decode)                                                  | 89 ms            | 172 ms            |
+| First paint                                                    | 156 ms           | 337 ms            |
+| Every drag (Exposure, Sharpen, Curves, Straighten, Crop, Zoom) | 59 fps           | 59 fps            |
+| Export JPEG                                                    | 447 ms (6.4 MB)  | 956 ms (12.6 MB)  |
+| Export "WebP"                                                  | 611 ms (16.7 MB) | 1258 ms (28.9 MB) |
+| Export PNG                                                     | 654 ms (16.7 MB) | 1335 ms (28.9 MB) |
+
+- Phone GPU drags are at the cap too → the screen-sized photo copy (7.7b) is **not needed**.
+- iOS can't encode WebP: it silently makes PNG (same size as PNG). `ExportResult.mimeType` /
+  `fileName` already report the type actually produced.
+- **48MP crashed the tab at the export step** (twice — the first fix wasn't enough). Measured on the
+  Mac with `e2e/support/memory.ts` (DECISIONS #104):
+
+| 48MP photo                     | before                 | after                                                |
+| ------------------------------ | ---------------------- | ---------------------------------------------------- |
+| Preview textures (fitted)      | 192 MB                 | 50 MB (4096 px copy; full photo only when zoomed in) |
+| JPEG export — canvases at peak | 418 MB (> iOS ~384 MB) | 214 MB                                               |
+| JPEG export — textures at peak | 384 MB                 | 67 MB                                                |
+| PNG export — canvases at peak  | 264 MB                 | 214 MB                                               |
+
+Owner to re-run 48MP on the phone.
+
+## 2026-09-28 · Owner's iPhone after DECISIONS #104 — 48MP works
+
+|                            | 12MP            | 24MP             | 48MP              |
+| -------------------------- | --------------- | ---------------- | ----------------- |
+| Load (decode)              | 84 ms           | 166 ms           | 319 ms            |
+| First paint                | 150 ms          | 260 ms           | 529 ms            |
+| Every drag                 | 59 fps          | 59 fps           | 59 fps            |
+| Export JPEG                | 467 ms (6.4 MB) | 924 ms (12.6 MB) | 1898 ms (24.9 MB) |
+| Export "WebP" (PNG on iOS) | 624 ms          | 1215 ms          | 2409 ms           |
+| Export PNG                 | 636 ms          | 1247 ms          | 2488 ms           |
+
+The full 12 / 24 / 48MP run finishes without a crash (it crashed twice before). Every target met on
+the phone too. (The bench's last row is now "Decoded photo" — it was always w × h × 4, and the
+preview no longer keeps that on the GPU.)

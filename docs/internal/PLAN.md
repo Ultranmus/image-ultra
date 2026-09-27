@@ -156,7 +156,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
       presses on one control coalesce into one undo step.
 - [x] **7.4** Mobile (owner's phone test done 2026-09-27): 320–430px layouts, thumb-zone controls, no sideways-scrolling rows (Annotate,
       Adjust header), pinch / two-finger pan / long-press; owner tests on a real phone.
-- [x] **7.5** A11y & motion (owner VoiceOver check pending) — approved 2026-09-27 (owner: "go"), commit after each step:
+- [x] **7.5** A11y & motion (owner VoiceOver check done 2026-09-28) — approved 2026-09-27 (owner: "go"), commit after each step:
   - [x] **7.5a** axe in e2e: zero WCAG 2.2 A/AA violations in every tool + mode, every popover /
         panel, dark + light, desktop + 390px; fix findings (contrast → tokens + THEMING).
   - [x] **7.5b** Keyboard & focus: tab order, popover focus in/out, focus never lost when a button

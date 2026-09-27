@@ -70,9 +70,12 @@ Update this file at the end of every session.
   Waiting: owner's phone `/bench` run → decides the GPU screen-sized copy (BACKLOG).
 - **7.7c — done** (DECISIONS #102): `e2e/memory.spec.ts` counts images + textures; four leaks fixed.
 - **7.7d — done** (DECISIONS #103): tiled export at full size above the GPU limits; `downscaled` flag.
-  **Phase 7.7 done** — waiting for the owner's review and phone `/bench` run.
-- Next: **Phase 8 — Release** (plan it for the owner first). Phase 7 open items for the owner:
-  VoiceOver check (7.5c), phone `/bench` (7.7b), Hindi / Arabic native review, `.ico` crash info.
+  **Phase 7.7 done — owner approved (2026-09-28).** Phone `/bench`: 59 fps at 12 / 24MP; 48MP export
+  crashed (iOS memory) → fixed (DECISIONS #104, 418 → 214 MB canvases); **owner confirmed 48MP
+  works on the iPhone**. Uncommitted: all of 2026-09-28's work (owner hasn't asked to commit yet).
+- Next: **Phase 8 — Release** (plan it for the owner first). Phase 7 has no open owner items (`.ico` crash
+  found and fixed 2026-09-28, DECISIONS #105). (Hindi / Arabic: owner checked —
+  labels wired right, words not; left as examples, not fixed.)
 
 ## How to work with this owner
 

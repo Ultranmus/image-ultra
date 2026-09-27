@@ -601,3 +601,26 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   mapping, factors 1 / 2 / 4 shared with the CPU. `e2e/tiled-export.spec.ts` (3; the full-size test
   fails on the old code). Export speed unchanged. All checks green (145 unit, 152 e2e). **Phase 7.7
   done** apart from the owner's phone `/bench` run.
+- 2026-09-28 · Owner approved 7.7. Owner checked the Hindi / Arabic playground labels: every label
+  is wired to the right place, but the words aren't good translations — left as examples only,
+  since the package doesn't ship languages (DECISIONS #99).
+- 2026-09-28 · Owner's VoiceOver check: okay. 7.5 fully done.
+- 2026-09-28 · **Owner's iPhone `/bench`:** 12 / 24MP drags at 59 fps (no screen-sized copy needed);
+  iOS makes PNG when asked for WebP; 48MP crashed the tab at export (iOS canvas budget). Fixes: exports
+  above 16.7 MP always tile, export canvases freed right after use (DECISIONS #104); `/bench` gets
+  per-size buttons and frees its test photo. Playground: `suppressHydrationWarning` on `<html>`
+  (Chrome on iPhone adds `__gcrremoteframetoken` — a harmless hydration warning the owner saw).
+  Checks green (145 unit, 152 e2e; one touch-size e2e timing flake against the dev server).
+- 2026-09-28 · Owner: 48MP still crashed after the first fix (pause after the zoom drag, then the tab
+  died — the export). Added canvas + peak tracking to `e2e/support/memory.ts` and measured: the JPEG
+  export peaked at 418 MB of canvases (white-background copy) and 384 MB of textures (a second full
+  upload). Fixed: in-place JPEG flatten, tiles always upload only their part (≤ 2048 px), and the
+  preview draws a 4096 px copy of big photos (full photo only when zoomed in). Now 214 MB / 67 MB at
+  the export peak, 50 MB of textures while fitted. New e2e: 48MP memory + the copy draws the photo
+  correctly. All checks green (145 unit, 153 e2e).
+- 2026-09-28 · Owner's iPhone re-run: 48MP works, and the full 12 / 24 / 48MP run finishes — 59 fps
+  drags, 48MP JPEG export 1.9 s (PERF.md). Bench row "Photo texture" renamed "Decoded photo".
+- 2026-09-28 · **`.ico` crash reproduced** with the owner's file: a 512 px PNG inside an ICO (header
+  says 256). Chrome can't decode it, Safari can. New `loader/ico.ts` decodes the largest PNG entry
+  directly (DECISIONS #105); all 9 of the owner's .ico files open in Chrome at their real size.
+  4 unit tests, 1 e2e. All checks green (149 unit, 154 e2e).

@@ -1,6 +1,7 @@
 import type { ImageSource, LoadedImage } from '../types';
 import { readJpegExif } from '../export/exif';
 import { detectImageFormat, type ImageFormat } from './detectFormat';
+import { largestIcoPng } from './ico';
 
 export interface LoadImageOptions {
   /** Abort a slow load, e.g. when the user picks another image. */
@@ -112,6 +113,19 @@ async function fromBlob(
     throw new ImageLoadError(`This file isn't an image (${blob.type}).`, 'not-image');
   }
   const mimeType = blob.type || null;
+
+  // An ICO whose largest image is a PNG: decode that PNG (Chrome rejects PNGs over 256 px in ICOs).
+  if (format === 'ico') {
+    const png = largestIcoPng(new Uint8Array(await blob.arrayBuffer()));
+    if (png) {
+      try {
+        const bitmap = await createImageBitmap(new Blob([png as BlobPart], { type: 'image/png' }));
+        return fromBitmap(bitmap, mimeType, name);
+      } catch {
+        // Fall through to the browser's own ICO decoding.
+      }
+    }
+  }
 
   let firstError: unknown;
   try {

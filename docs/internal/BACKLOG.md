@@ -220,8 +220,11 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ### Found during Phase 5.1
 
-- [ ] **Owner's `.ico` crash not reproduced** — ask which browser/file. Chrome decodes ICO; Safari
-      may not (would now show "This file type (ICO) isn't supported.") — _check with owner_
+- [x] **Owner's `.ico` crash not reproduced** _(found + fixed 2026-09-28, DECISIONS #105)_ — the
+      owner's favicon (`GLASSBOX ASSETS … G BLACK.ico`) holds one 512 px PNG while an ICO header can
+      only say 256: Chrome's decoder rejects it (Safari opens it), so the editor said "not
+      supported" (before Phase 5.1: a crash). Now the largest PNG entry is decoded directly — all 9
+      of the owner's .ico files open in Chrome.
 - [x] **Hidden shapes can't be reached from the photo** _(7.1: "Show all" in Layers)_ (they're invisible, so right-click can't hit
       them) — Layers "⋯" / eye covers it; a "Show all" could come with multi-select — _Phase 6/7_
 - [ ] **Touch long-press on a drawing tool** cancels the stroke it started; fine for now, verify on a
@@ -267,7 +270,7 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Focus rings clipped in toolbar rows** (owner, screenshot: Annotate's Select button) — the
       edge-fade mask cut off the ring outside the row's box. Fix: the mask only applies while the
       row overflows; e2e ring check now treats masks as clipping — _fixed 2026-09-27_
-- [ ] **Owner VoiceOver spot check** (7.5c) — ⌘F5 on the Mac, open the playground: Tab through the
+- [x] **Owner VoiceOver spot check** (7.5c) _(done 2026-09-28: owner says it's okay)_ — ⌘F5 on the Mac, open the playground: Tab through the
       TopBar and rail, switch tools, undo, select a shape with Tab on the photo. Listen for anything
       missing, doubled or confusing — _7.5 review_
 - [ ] **A rare e2e flake** (7.5b): 1 of 4 full runs failed one `toBeLessThan` check (not in
@@ -292,6 +295,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [ ] **Hindi and Arabic playground labels are drafts** (7.6b) — written by Claude; they're test
       cases and examples only (the package ships English — DECISIONS #99). Say so wherever the docs
       link them — _Phase 8 docs_
+  - Owner checked (2026-09-28): the wiring is right (every label lands in the right place) but the
+    words aren't good translations. Not fixing — apps bring their own languages (DECISIONS #99).
 - [ ] **Emoji names and search are English** (owner chose backlog, 2026-09-27) — the emoji data file
       is English. Fix: an `emojiLocale` option that loads a localized emoji data file (emojibase
       has ~20 languages) — _later_
@@ -360,10 +365,16 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       3 fps, Curves 8–9 fps at 2× pixels, any photo size) — _Phase 7.7b_
   - Fix: render the preview at 1× or ½ resolution while a change is open (`beginChange` …
     `endChange`), full resolution on release.
-- [ ] **Phone GPU speed not measured** (7.7b) — owner: open `/bench` on the phone (12 / 24MP) —
+- [x] **Phone GPU speed not measured** (7.7b) _(measured 2026-09-28 on the owner's iPhone: 59 fps at
+      12 / 24MP — no screen-sized copy needed)_ — owner: open `/bench` on the phone (12 / 24MP) —
       _Phase 7.7_
   - Fix if drags < 50 fps: preview samples a screen-sized copy of the photo (~2× the stage) while
     zoomed out, the full texture only past ~50% zoom.
+- [x] **48MP export crashed the iPhone tab** (found 2026-09-28, owner's `/bench`) — iOS's ~384 MB
+      canvas budget — _fixed in code 2026-09-28 (first try not enough; second: in-place JPEG
+      flatten, part-only tile uploads, 4096 px preview copy — DECISIONS #104); confirmed on the owner's iPhone 2026-09-28 (full 12 / 24 / 48MP run)_
+- [ ] **iOS exports WebP as PNG** (found 2026-09-28) — WebKit has no WebP encoder; the result says
+      `image/png` — _Phase 8 docs: mention it_
 - [ ] **WebP export is slow** (found 2026-09-27 by 7.7a: 4 s at 24MP, 9.5 s at 48MP; JPEG 0.3 s) —
       the browser's WebP encoder, same on both renderers — _later (Worker export)_
   - Fix: encode in a Web Worker (`OffscreenCanvas.convertToBlob`) so the page stays responsive;

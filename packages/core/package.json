@@ -3,6 +3,16 @@
   "version": "0.0.0",
   "description": "Framework-agnostic, typed image editing engine for image-ultra.",
   "license": "MIT",
+  "author": "Ultranmus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ultranmus/image-ultra.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/Ultranmus/image-ultra#readme",
+  "bugs": {
+    "url": "https://github.com/Ultranmus/image-ultra/issues"
+  },
   "engines": {
     "node": ">=18"
   },

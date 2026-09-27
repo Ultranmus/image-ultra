@@ -81,7 +81,10 @@ Update this file at the end of every session.
 - **8c done** (DECISIONS #109): `apps/docs` — `pnpm --filter docs dev` (port 3300). Guides are MDX in
   `app/docs/*/page.mdx`; `/reference` is generated from `packages/*/dist/index.d.ts` (build packages
   first); `pnpm --filter docs check:snippets` type-checks guide examples.
-- Next: **8d CI + release pipeline** — needs the owner: GitHub repo, npm account + `@image-ultra` org.
+- **8d prepared** (DECISIONS #110): repo `github.com/Ultranmus/image-ultra` (public, created by the
+  owner; `origin` added, **nothing pushed yet**), CI + release workflows, 0.1.0 changeset.
+  Waiting for the owner: (1) keep or hide their email in existing commits, (2) keep
+  `docs/internal/` public, (3) "push"; npm account + 2FA + `image-ultra` org still to create.
 - Phase 7 has no open owner items (`.ico` crash found and fixed 2026-09-28, DECISIONS #105).
   (Hindi / Arabic: owner checked — labels wired right, words not; left as examples, not fixed.)
 

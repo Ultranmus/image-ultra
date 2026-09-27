@@ -1,20 +1,46 @@
+# Every push to main and every pull request: the same checks as locally (DECISIONS #110).
 name: CI
+
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
   pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
       - uses: actions/setup-node@v4
-        with: { node-version: 24, cache: pnpm }
+        with:
+          node-version: 24
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm build
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm --filter playground exec playwright install --with-deps chromium
-      - run: pnpm e2e
+
+      - name: Lint and formatting
+        run: pnpm lint && pnpm format:check
+      - name: Build
+        run: pnpm build
+      - name: Types (incl. docs code examples)
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: What npm users get
+        run: pnpm check:package
+
+      - name: Browsers for end-to-end tests
+        run: pnpm --filter playground exec playwright install --with-deps chromium
+      - name: End-to-end (playground, docs, examples)
+        run: pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: '**/test-results/'
+          retention-days: 7

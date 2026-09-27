@@ -243,7 +243,7 @@ LICENSE is MIT ("image-ultra contributors"); bundles today: core 49 KB + react 8
       (48MP, iPhone canvas budget, iOS saves WebP as PNG), metadata / EXIF, stickers / watermark /
       app assets, SSR; **API reference generated from the TypeScript types and their doc comments**
       (never drifts); the live editor on the home page. Follows UI_VISION / THEMING for its own look.
-- [ ] **8d CI + release pipeline**: GitHub Actions — lint, typecheck, unit, build, e2e (Chromium),
+- [ ] **8d CI + release pipeline** (prepared 2026-09-28, DECISIONS #110 — waiting for the first push): GitHub Actions — lint, typecheck, unit, build, e2e (Chromium),
       package checks, examples; changesets "Version packages" PR, npm publish with provenance on
       merge. Owner sets up: GitHub repo, npm account + `@image-ultra` org, publish token (or npm
       trusted publishing).

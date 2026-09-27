@@ -17,6 +17,7 @@ export type WatermarkPosition =
   | 'custom'
   | 'tile';
 
+/** Where a watermark can go: 9 anchors, `custom` and `tile`. */
 export const WATERMARK_POSITIONS = [
   'top-left',
   'top',
@@ -31,6 +32,7 @@ export const WATERMARK_POSITIONS = [
   'tile',
 ] as const satisfies readonly WatermarkPosition[];
 
+/** A text or logo watermark: position, size, opacity, colour. */
 export interface WatermarkState {
   kind: 'text' | 'image';
   /** For `text`. */
@@ -56,6 +58,7 @@ export interface WatermarkState {
   margin: number;
 }
 
+/** The watermark a new one starts from. */
 export const DEFAULT_WATERMARK: WatermarkState = {
   kind: 'text',
   text: '© Watermark',

@@ -42,8 +42,10 @@ export interface RedactBrush extends RedactionBase {
   size: number;
 }
 
+/** A redaction area (box or brush stroke). */
 export type Redaction = RedactBox | RedactBrush;
 
+/** Redaction styles: pixelate, blur or solid. */
 export const REDACT_STYLES = [
   'pixelate',
   'blur',

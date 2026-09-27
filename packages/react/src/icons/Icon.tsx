@@ -1,5 +1,6 @@
 import type { ReactNode, SVGProps } from 'react';
 
+/** Props every icon accepts (custom tool icons too). */
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'children'> {
   /** Rendered size in CSS px. Icons are drawn on a 24px grid. */
   size?: number;

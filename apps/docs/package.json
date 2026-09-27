@@ -6,9 +6,11 @@
     "dev": "next dev --port 3300",
     "build": "next build",
     "start": "node scripts/serve.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node scripts/generate-api.ts && tsc --noEmit",
     "e2e": "playwright test",
-    "check:snippets": "node scripts/check-snippets.ts"
+    "check:snippets": "node scripts/check-snippets.ts",
+    "predev": "node scripts/generate-api.ts",
+    "prebuild": "node scripts/generate-api.ts"
   },
   "dependencies": {
     "@image-ultra/core": "workspace:*",

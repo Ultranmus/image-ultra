@@ -26,6 +26,7 @@ export interface EditorContextValue {
   sizePresets: readonly SizePreset[];
 }
 
+/** One of your own stickers (`stickers` prop). */
 export interface StickerOption {
   id: string;
   /** Accessible name / tooltip. */
@@ -34,6 +35,7 @@ export interface StickerOption {
   src: string;
 }
 
+/** A font offered for text shapes and the watermark (`fonts` prop). */
 export interface FontOption {
   /** Shown in the font menu. */
   label: string;
@@ -54,14 +56,20 @@ export function useEditorState<T>(selector: (state: EditorStoreState) => T): T {
   return useStore(useEditorContext().store, selector);
 }
 
+/**
+ * The editor's store, inside a custom tool: read with `getState()`, change edits with `update` /
+ * `beginChange`.
+ */
 export function useEditorStore(): EditorStore {
   return useEditorContext().store;
 }
 
+/** The editor's labels (after your `labels` overrides), inside a custom tool. */
 export function useLabels(): Labels {
   return useEditorContext().labels;
 }
 
+/** The saved looks and a setter, inside a custom tool. */
 export function useLooks(): [readonly Look[], (looks: Look[]) => void] {
   const { looks, setLooks } = useEditorContext();
   return [looks, setLooks];
@@ -71,6 +79,7 @@ export function usePortalContainer(): HTMLElement | null {
   return useEditorContext().portalContainer;
 }
 
+/** The fonts offered for text (the `fonts` prop, or the defaults), inside a custom tool. */
 export function useFonts(): readonly FontOption[] {
   return useEditorContext().fonts;
 }
@@ -99,10 +108,12 @@ export function useToolState<T>(initial: T): [T, (next: T | ((prev: T) => T)) =>
   return [value, setValue];
 }
 
+/** Whether the watermark is locked by the app (`lockWatermark`), inside a custom tool. */
 export function useWatermarkLocked(): boolean {
   return useEditorContext().watermarkLocked;
 }
 
+/** Your stickers (the `stickers` prop), inside a custom tool. */
 export function useStickers(): readonly StickerOption[] {
   return useEditorContext().stickers;
 }

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { rowStep } from './rowStep';
 
+/** One chip in a `PresetStrip`. */
 export interface Preset<T extends string> {
   value: T;
   label: string;
@@ -23,6 +24,7 @@ export interface Preset<T extends string> {
   badge?: ReactNode;
 }
 
+/** Props for `PresetStrip`. */
 export interface PresetStripProps<T extends string> {
   label: string;
   presets: readonly Preset<T>[];

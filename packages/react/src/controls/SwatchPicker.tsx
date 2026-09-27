@@ -24,6 +24,7 @@ export const DEFAULT_SWATCHES = [
   '#4d194d',
 ] as const;
 
+/** Props for `SwatchPicker`. */
 export interface SwatchPickerProps {
   /** Hex colour or `null` (none). */
   value: string | null;

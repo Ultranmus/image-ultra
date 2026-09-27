@@ -22,6 +22,7 @@ export interface Rect {
   height: number;
 }
 
+/** Rotation, flips, straighten, perspective and crop. */
 export interface GeometryState {
   /** Clockwise rotation in 90° steps, applied first. */
   rotation: QuarterTurn;
@@ -46,6 +47,7 @@ export interface GeometryState {
   cropShape: CropShape;
 }
 
+/** Crop outline: `rect` or `ellipse` (a round crop). */
 export type CropShape = 'rect' | 'ellipse';
 
 /**
@@ -160,6 +162,7 @@ export interface CurvesState {
   blue: CurvePoint[];
 }
 
+/** A tone curve: `rgb` (all) or one colour channel. */
 export type CurveChannel = keyof CurvesState;
 
 /**
@@ -199,8 +202,13 @@ export interface RasterAsset {
   inputHash?: string;
 }
 
+/** An image stored in the edits (stickers, logos, pasted images, a Fill image). */
 export type EditAsset = RasterAsset;
 
+/**
+ * Every edit, as serializable JSON: geometry, colour, filter, elements, frame, fill, watermark,
+ * output size and the images they use. The source photo is never changed.
+ */
 export interface EditState {
   version: typeof EDIT_STATE_VERSION;
   geometry: GeometryState;
@@ -317,6 +325,7 @@ export function isNeutralCurves(curves: CurvesState): boolean {
   );
 }
 
+/** Thrown by `parseEditState` when the input can't be read as edits. */
 export class EditStateError extends Error {
   override readonly name = 'EditStateError';
 }

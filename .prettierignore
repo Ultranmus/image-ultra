@@ -7,3 +7,4 @@ build
 .react-router
 .snippets
 out
+apps/docs/app/reference/api.json

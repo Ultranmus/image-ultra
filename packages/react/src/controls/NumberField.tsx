@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 
+/** Props for `NumberField`. */
 export interface NumberFieldProps {
   label: string;
   value: number;

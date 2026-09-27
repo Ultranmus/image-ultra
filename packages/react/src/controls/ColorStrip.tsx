@@ -4,6 +4,7 @@ import { Popover } from './Popover';
 import { DEFAULT_SWATCHES, HsvPicker } from './SwatchPicker';
 import { rowStep } from './rowStep';
 
+/** Props for `ColorStrip`. */
 export interface ColorStripProps {
   /** Accessible name of the group, e.g. "Fill colour". */
   label: string;

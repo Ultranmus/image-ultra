@@ -27,6 +27,7 @@ export const FRAME_STYLES = [
   'polaroid',
 ] as const satisfies readonly FrameStyle[];
 
+/** A frame around the photo. */
 export interface FrameState {
   style: FrameStyle;
   /** Thickness as a fraction of the output's short side (0.005…0.2). */

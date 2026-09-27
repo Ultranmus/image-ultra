@@ -31,8 +31,10 @@ import { drawElements, redactElements } from '../render/elements';
 import type { AnyCanvas, Renderer, RendererKind } from '../render/renderer';
 import type { ImageSource, LoadedImage, Size } from '../types';
 
+/** Output formats: JPEG, PNG or WebP. */
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
 
+/** How an export is encoded and sized. */
 export interface ExportOptions {
   /** Default: the source type when it's PNG/JPEG/WebP, otherwise PNG. */
   mimeType?: ExportMimeType;
@@ -61,6 +63,7 @@ export interface ExportOptions {
   tileSize?: number;
 }
 
+/** The exported image, its size and type, and the edits that produced it. */
 export interface ExportResult {
   blob: Blob;
   width: number;

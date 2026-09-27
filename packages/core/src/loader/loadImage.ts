@@ -3,6 +3,7 @@ import { readJpegExif } from '../export/exif';
 import { detectImageFormat, type ImageFormat } from './detectFormat';
 import { largestIcoPng } from './ico';
 
+/** Options for `loadImage`. */
 export interface LoadImageOptions {
   /** Abort a slow load, e.g. when the user picks another image. */
   signal?: AbortSignal;
@@ -19,6 +20,10 @@ export interface LoadImageOptions {
  */
 export type ImageLoadErrorCode = 'unsupported' | 'damaged' | 'not-image' | 'network';
 
+/**
+ * Why a photo didn't open (`code`): unsupported format, damaged file, not an image, or a download
+ * error.
+ */
 export class ImageLoadError extends Error {
   override readonly name = 'ImageLoadError';
   readonly code: ImageLoadErrorCode;

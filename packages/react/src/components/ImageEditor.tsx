@@ -61,6 +61,7 @@ import { useAnnouncer, useStoreAnnouncements } from '../hooks/useAnnouncer';
 const MOTION_MS = 320;
 const NO_STICKERS: StickerOption[] = [];
 
+/** Props for `<ImageEditor>`. */
 export interface ImageEditorProps {
   /** Image to edit. Omit to show the drop zone. */
   src?: ImageSource | undefined;
@@ -156,6 +157,10 @@ export interface ImageEditorHandle {
   save(): Promise<ExportResult | null>;
 }
 
+/**
+ * The image editor. Give it a photo (`src`); get the edited image and the edits as JSON
+ * (`onSave`).
+ */
 export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(function ImageEditor(
   {
     src,

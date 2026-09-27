@@ -317,6 +317,7 @@ export interface Labels {
 const namesById = (list: readonly { id: string; name?: string; label?: string }[]) =>
   Object.fromEntries(list.map((item) => [item.id, item.name ?? item.label ?? item.id]));
 
+/** The English labels: every string the editor shows. A template for your own translations. */
 export const defaultLabels: Labels = {
   filterNames: namesById(FILTER_PRESETS),
   sizePresetNames: namesById(SIZE_PRESETS),
@@ -655,6 +656,7 @@ type NestedKey = {
   [K in keyof Labels]: Labels[K] extends string | ((...args: never[]) => string) ? never : K;
 }[keyof Labels];
 
+/** Any subset of `Labels`, also inside groups: pass to `labels` to translate or rename text. */
 export type LabelOverrides = Partial<Omit<Labels, NestedKey>> & {
   [K in NestedKey]?: Partial<Labels[K]>;
 };

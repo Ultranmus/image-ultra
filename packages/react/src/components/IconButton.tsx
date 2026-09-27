@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { focusNeighbour } from './focusFallback';
 
+/** Props for `IconButton`. */
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Accessible name, also shown as the hover tooltip. */
   label: string;
@@ -19,6 +20,7 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   size?: 'md' | 'sm';
 }
 
+/** A square icon button with a tooltip, styled like the editor's own. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   { label, icon, showLabel = false, variant = 'ghost', size = 'md', className, ...props },
   ref,

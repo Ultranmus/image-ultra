@@ -3,6 +3,7 @@ import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from
 /** What started a change: a drag / double-click, or the keyboard. */
 export type ChangeSource = 'pointer' | 'keyboard';
 
+/** Props for `RulerSlider`. */
 export interface RulerSliderProps {
   /** Accessible name. */
   label: string;

@@ -12,6 +12,7 @@ import {
 import { useEditorState } from '../context';
 import { getOrientedToStage } from '../tools/annotate/state';
 
+/** Props for `MaskBrushOverlay`. */
 export interface MaskBrushOverlayProps {
   strokes: readonly MaskStroke[];
   onChange: (strokes: MaskStroke[]) => void;

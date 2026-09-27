@@ -6,6 +6,7 @@ export interface SegmentedOption<T extends string> {
   label: string;
 }
 
+/** Props for `SegmentedControl`. */
 export interface SegmentedControlProps<T extends string> {
   /** Accessible name of the group. */
   label: string;

@@ -2,6 +2,7 @@ import type { EditState, Rect } from '../state/editState';
 import type { Affine } from '../state/geometry';
 import type { LoadedImage, Size } from '../types';
 
+/** `webgl2`, or `canvas2d` where WebGL2 isn't available. */
 export type RendererKind = 'webgl2' | 'canvas2d';
 export type AnyCanvas = HTMLCanvasElement | OffscreenCanvas;
 

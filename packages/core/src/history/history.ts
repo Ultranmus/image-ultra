@@ -8,6 +8,7 @@ export interface HistoryEntry<T> {
   label: string;
 }
 
+/** Undo / redo steps. */
 export interface History<T> {
   past: HistoryEntry<T>[];
   future: HistoryEntry<T>[];

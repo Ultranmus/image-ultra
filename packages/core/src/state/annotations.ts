@@ -8,6 +8,7 @@ import { resizeRedaction, type RedactBox, type RedactBrush } from './redactions'
  * them upright. Sizes (stroke width, font size) are in image pixels, so they scale with the export.
  */
 
+/** Element types. */
 export type ShapeType =
   'rect' | 'ellipse' | 'line' | 'path' | 'text' | 'image' | 'redact' | 'watermark';
 
@@ -29,6 +30,7 @@ interface ShapeBase {
 /** Any CSS colour, or `null` for none. */
 export type Paint = string | null;
 
+/** A rectangle element. */
 export interface RectShape extends ShapeBase {
   type: 'rect';
   x: number;
@@ -41,6 +43,7 @@ export interface RectShape extends ShapeBase {
   cornerRadius: number;
 }
 
+/** An ellipse element. */
 export interface EllipseShape extends ShapeBase {
   type: 'ellipse';
   /** Bounding box. */
@@ -53,8 +56,10 @@ export interface EllipseShape extends ShapeBase {
   strokeWidth: number;
 }
 
+/** Line ends: none, arrow or circle. */
 export type LineCap = 'none' | 'arrow' | 'circle';
 
+/** A line or arrow element. */
 export interface LineShape extends ShapeBase {
   type: 'line';
   /** Start and end. */
@@ -77,8 +82,10 @@ export interface PathShape extends ShapeBase {
   strokeWidth: number;
 }
 
+/** Text alignment in a text element. */
 export type TextAlign = 'left' | 'center' | 'right';
 
+/** A text element. */
 export interface TextShape extends ShapeBase {
   type: 'text';
   /** Top-left of the text box; the height follows the wrapped text. */
@@ -99,6 +106,7 @@ export interface TextShape extends ShapeBase {
   background: Paint;
 }
 
+/** An image element (sticker, logo, pasted image). */
 export interface ImageShape extends ShapeBase {
   type: 'image';
   x: number;
@@ -128,6 +136,7 @@ export interface WatermarkShape extends ShapeBase {
 /** Id of the watermark's element (marker, and its selection on the photo). */
 export const WATERMARK_ELEMENT_ID = 'watermark';
 
+/** Any element on the photo: shapes, text, images, redaction areas, the watermark's place. */
 export type Shape =
   | RectShape
   | EllipseShape

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 
+/** `dark` (default), `light`, or `auto` to follow the OS setting. */
 export type ThemeMode = 'dark' | 'light' | 'auto';
 
 /**

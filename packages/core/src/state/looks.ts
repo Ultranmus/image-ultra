@@ -14,6 +14,7 @@ export interface Look {
   filter: FilterState | null;
 }
 
+/** Saves the colour part of `state` (finetune, levels, curves, filter) as a named look. */
 export function createLook(state: EditState, name: string, id: string = randomId()): Look {
   return {
     id,

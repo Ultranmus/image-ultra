@@ -32,6 +32,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- Immer recipes return nothing or a replacement
 export type EditRecipe = (draft: Draft<EditState>) => void | EditState;
 
+/** Options for `update` / `beginChange`. */
 export interface ChangeOptions {
   /**
    * Merge with the previous step when it had the same label, was also coalesced, and ended less
@@ -49,12 +50,14 @@ export interface EditorTask {
   progress: number | null;
 }
 
+/** Passed to `runTask` jobs: report progress, check for cancellation. */
 export interface TaskContext {
   /** Aborted when the user cancels or the editor closes. Pass it to fetch/models. */
   signal: AbortSignal;
   progress(value: number | null): void;
 }
 
+/** The store's data: status, image, edits, history, viewport, active tool. */
 export interface EditorState {
   status: EditorStatus;
   image: LoadedImage | null;
@@ -101,6 +104,7 @@ export interface EditorState {
   compare: number | null;
 }
 
+/** Options for zoom / pan changes. */
 export interface ViewportChangeOptions {
   /** Stage point that stays fixed while zooming. Defaults to the stage centre. */
   anchor?: Point;
@@ -108,6 +112,7 @@ export interface ViewportChangeOptions {
   animate?: boolean;
 }
 
+/** Everything the store can do: load, change edits, undo / redo, zoom, export. */
 export interface EditorActions {
   /** Opens an image. `state` restores previously saved edits. Clears history. */
   load(source: ImageSource, options?: { state?: EditState }): Promise<void>;
@@ -152,9 +157,12 @@ export interface EditorActions {
   destroy(): void;
 }
 
+/** The store's data and actions together (`EditorState & EditorActions`). */
 export type EditorStoreState = EditorState & EditorActions;
+/** The editor's store (a zustand store): `getState()`, `subscribe()`. */
 export type EditorStore = StoreApi<EditorStoreState>;
 
+/** Options for `createEditorStore`. */
 export interface CreateEditorStoreOptions {
   defaultTool?: string;
   viewport?: ViewportOptions;
@@ -168,9 +176,15 @@ const EMPTY_VIEWPORT: Viewport = { scale: 1, x: 0, y: 0 };
 
 /** Selectors for common derived values. */
 export const selectCanUndo = (s: EditorState): boolean => s.history.past.length > 0;
+/** Store selector: is there a step to redo? */
 export const selectCanRedo = (s: EditorState): boolean => s.history.future.length > 0;
+/** Store selector: do the edits differ from the ones the photo opened with? */
 export const selectIsDirty = (s: EditorState): boolean => s.edit !== s.initialEdit;
 
+/**
+ * Creates the editor's state store (image, edits, undo history, viewport, tools) with no UI
+ * attached.
+ */
 export function createEditorStore(options: CreateEditorStoreOptions = {}): EditorStore {
   const viewportOptions = options.viewport ?? {};
   const historyLimit = options.historyLimit ?? DEFAULT_HISTORY_LIMIT;

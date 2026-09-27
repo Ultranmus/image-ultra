@@ -2,6 +2,7 @@ import * as RadixPopover from '@radix-ui/react-popover';
 import type { ReactNode } from 'react';
 import { usePortalContainer } from '../context';
 
+/** Props for `Popover`. */
 export interface PopoverProps {
   /** The element that opens the popover (usually an `IconButton` or `ColorButton`). */
   trigger: ReactNode;

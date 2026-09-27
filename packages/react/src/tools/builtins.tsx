@@ -32,6 +32,7 @@ function StickerOverlay() {
 }
 import { RedactOverlay } from './redact/RedactOverlay';
 
+/** The built-in tools by id, in their default order. */
 export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
   adjust: defineTool({
     id: 'adjust',
@@ -70,6 +71,7 @@ export const BUILT_IN_TOOLS: Record<ToolId, ToolDefinition> = {
   }),
 };
 
+/** An entry of the `tools` prop: a built-in tool id or your own `defineTool(...)`. */
 export type ToolInput = ToolId | ToolDefinition;
 
 /** Turns the `tools` prop (ids and/or custom definitions) into definitions, dropping duplicates. */

@@ -49,6 +49,8 @@ export const TOOL_IDS = [
   'watermark',
 ] as const;
 
+/** Ids of the built-in tools. */
 export type ToolId = (typeof TOOL_IDS)[number];
 
+/** `idle` (no photo), `loading`, `ready` or `error`. */
 export type EditorStatus = 'idle' | 'loading' | 'ready' | 'error';

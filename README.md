@@ -27,6 +27,8 @@ import '@image-ultra/react/styles.css';
 See the [React package README](packages/react/README.md) for saving and restoring edits,
 choosing tools, theming and languages.
 
+Working examples: [Next.js App Router, Vite + React 18, React Router](apps/examples).
+
 ## Working on this repo
 
 pnpm workspace with Turborepo. Node 20.19+ and pnpm (via corepack).
@@ -36,7 +38,7 @@ pnpm install
 pnpm playground        # the dev playground on http://localhost:3100
 pnpm build             # build the packages and the playground
 pnpm lint && pnpm typecheck && pnpm test
-pnpm e2e               # Playwright (uses the last production build)
+pnpm e2e               # Playwright: playground + example apps (uses the last production build)
 pnpm check:package     # what npm users get: exports, types, size budget, SSR import
 pnpm bench             # performance benchmark (slow; see docs/internal/PERF.md)
 ```

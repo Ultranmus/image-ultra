@@ -76,7 +76,9 @@ Update this file at the end of every session.
 - **Phase 8 — Release** (plan approved; DECISIONS #106: apps/docs, Vercel, 0.1.0, accounts at 8d).
   **8a done** (DECISIONS #107): core = stable `@image-ultra/core` + `@image-ultra/core/internal`
   (React imports helpers from `/internal`); `pnpm check:package` (run after `pnpm build`); READMEs.
-- Next: **8b examples** (Next App Router, Vite + React 18, React Router) in `apps/examples/`.
+- **8b done** (DECISIONS #108): `apps/examples/{next-app,vite,react-router}` + shared
+  `apps/examples/e2e/smoke.spec.ts` (ports 3201–3203); `pnpm e2e` runs them all.
+- Next: **8c docs site** (`apps/docs`, Next static export, Vercel later).
 - Phase 7 has no open owner items (`.ico` crash found and fixed 2026-09-28, DECISIONS #105).
   (Hindi / Arabic: owner checked — labels wired right, words not; left as examples, not fixed.)
 

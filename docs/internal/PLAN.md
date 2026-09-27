@@ -232,7 +232,7 @@ LICENSE is MIT ("image-ultra contributors"); bundles today: core 49 KB + react 8
       **SSR import test** (both packages import in plain Node without `window` — hard rule) + no
       `any` in the published `.d.ts`; `@internal` options (e.g. `tileSize`) hidden from the types.
       Public API review: list every export, drop or rename anything we don't want to support.
-- [ ] **8b Examples** in `apps/examples/`: **Next.js App Router**, **Vite + React 18** (proves the
+- [x] **8b Examples** (done 2026-09-28; DECISIONS #108) in `apps/examples/`: **Next.js App Router**, **Vite + React 18** (proves the
       React 18 peer range) and **React Router (framework mode, ex-Remix)**. Each: open a photo, save
       (download), restore saved edits from JSON. Built in CI, plus one Playwright smoke test each
       (loads, exports). They install the packages like a user would (workspace link now, npm later).

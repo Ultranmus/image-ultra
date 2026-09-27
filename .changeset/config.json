@@ -5,5 +5,5 @@
   "fixed": [["@image-ultra/core", "@image-ultra/react"]],
   "access": "public",
   "baseBranch": "main",
-  "ignore": ["playground"]
+  "ignore": ["playground", "example-next-app", "example-vite", "example-react-router"]
 }

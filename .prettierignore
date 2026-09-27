@@ -3,3 +3,5 @@ dist
 pnpm-lock.yaml
 test-results
 playwright-report
+build
+.react-router

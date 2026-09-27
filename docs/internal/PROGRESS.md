@@ -635,3 +635,9 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   internal entry didn't resolve for old `node10` TS setups (→ `typesVersions`), `tileSize` leaked
   into `renderToCanvas`'s published type (→ `@internal` + `stripInternal`), no `engines` field.
   READMEs for the repo, react and core (examples type-checked). All checks green (149 unit, 154 e2e).
+- 8a committed. **8b examples** (DECISIONS #108): Next.js App Router (React 19, SSR), Vite + React 18
+  (client), React Router 8 framework mode (React 19, SSR) — same `PhotoEditor`, shared smoke test
+  (save as download, reopen saved edits after reload). React 18 proven: only 18.3.1 in the Vite
+  bundle. Found: inside the monorepo the editor's dev copy of React 19 (runtime + types) leaks into
+  the React 18 app → `dedupe` + `paths`, documented as not needed from npm. All green: build,
+  typecheck, 149 unit, 154 playground e2e + 3 example smoke tests, package checks.

@@ -1,0 +1,25 @@
+{
+  "name": "example-vite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3202",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 3202 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@image-ultra/react": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "6.0.3",
+    "vite": "^8.3.1"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "@image-ultra/react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Premium, fully typed image editor component for React and Next.js.",
   "license": "MIT",
   "author": "Ultranmus",

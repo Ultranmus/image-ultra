@@ -36,6 +36,7 @@ pnpm workspace with Turborepo. Node 20.19+ and pnpm (via corepack).
 ```sh
 pnpm install
 pnpm playground        # the dev playground on http://localhost:3100
+pnpm --filter docs dev # the docs site on http://localhost:3300
 pnpm build             # build the packages and the playground
 pnpm lint && pnpm typecheck && pnpm test
 pnpm e2e               # Playwright: playground + example apps (uses the last production build)

@@ -236,7 +236,7 @@ LICENSE is MIT ("image-ultra contributors"); bundles today: core 49 KB + react 8
       React 18 peer range) and **React Router (framework mode, ex-Remix)**. Each: open a photo, save
       (download), restore saved edits from JSON. Built in CI, plus one Playwright smoke test each
       (loads, exports). They install the packages like a user would (workspace link now, npm later).
-- [ ] **8c Docs site** (`apps/docs`, Next.js static export, Vercel): Getting started
+- [x] **8c Docs site** (done 2026-09-28; DECISIONS #109) (`apps/docs`, Next.js static export, Vercel): Getting started
       (install, Next / Vite / React Router), guides — saving & restoring edits (`onSave`,
       `EditState` JSON, headless `renderImage`), theming (**live theming playground**: tokens → copy
       CSS), custom tools, **Localization** (DECISIONS #99), accessibility, big photos & limits

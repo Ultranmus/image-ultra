@@ -22,6 +22,8 @@ Feature reference: Filerobot Image Editor. UX reference: Pintura. We copy **neit
 - Core's public, semver-covered API is `packages/core/src/index.ts` only. Everything else goes in
   `src/internal.ts` (`@image-ultra/core/internal`), which React imports from. Run
   `pnpm check:package` after `pnpm build` before a release (DECISIONS #107).
+- Every public export needs a doc comment — the docs' API reference is generated from them
+  (`apps/docs`, DECISIONS #109). New or changed public API: update the guide in `apps/docs/app/docs/`.
 - No CSS-in-JS runtime, no third-party UI kit styling. Plain CSS + `--iu-*` variables in `@layer image-ultra`.
 - CSS class prefix: `iu-`. CSS var prefix: `--iu-`. No raw hex/px values in component CSS — tokens only.
 - Every edit is non-destructive: it's a change to `EditState` (serializable JSON), never to source pixels.

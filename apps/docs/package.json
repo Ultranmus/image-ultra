@@ -6,7 +6,7 @@
     "dev": "next dev --port 3300",
     "build": "next build",
     "start": "node scripts/serve.ts",
-    "typecheck": "node scripts/generate-api.ts && tsc --noEmit",
+    "typecheck": "node scripts/generate-api.ts && tsc --noEmit && node scripts/check-snippets.ts",
     "e2e": "playwright test",
     "check:snippets": "node scripts/check-snippets.ts",
     "predev": "node scripts/generate-api.ts",
@@ -27,6 +27,7 @@
     "shiki": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@types/mdx": "^2.0.14",
     "@types/node": "^26.6.2",

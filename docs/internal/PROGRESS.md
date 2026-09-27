@@ -641,3 +641,9 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   bundle. Found: inside the monorepo the editor's dev copy of React 19 (runtime + types) leaks into
   the React 18 app → `dedupe` + `paths`, documented as not needed from npm. All green: build,
   typecheck, 149 unit, 154 playground e2e + 3 example smoke tests, package checks.
+- 8b committed. **8c docs site** (DECISIONS #109), committed in parts: (1) site + home + getting
+  started + 11 guides, `check:snippets` (found 3 wrong examples); (2) API reference generated from
+  the published `.d.ts` with the TS compiler, doc comments added to 71 undocumented exports; (3)
+  theme playground with contrast readouts and copyable props / CSS; (4) docs e2e with axe in light
+  - dark (34 tests) — fixed Shiki theme contrast, reference link target size, an example accent.
+    All green: build, typecheck, 149 unit, e2e 154 + 34 + 3, package checks.

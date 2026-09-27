@@ -78,7 +78,10 @@ Update this file at the end of every session.
   (React imports helpers from `/internal`); `pnpm check:package` (run after `pnpm build`); READMEs.
 - **8b done** (DECISIONS #108): `apps/examples/{next-app,vite,react-router}` + shared
   `apps/examples/e2e/smoke.spec.ts` (ports 3201–3203); `pnpm e2e` runs them all.
-- Next: **8c docs site** (`apps/docs`, Next static export, Vercel later).
+- **8c done** (DECISIONS #109): `apps/docs` — `pnpm --filter docs dev` (port 3300). Guides are MDX in
+  `app/docs/*/page.mdx`; `/reference` is generated from `packages/*/dist/index.d.ts` (build packages
+  first); `pnpm --filter docs check:snippets` type-checks guide examples.
+- Next: **8d CI + release pipeline** — needs the owner: GitHub repo, npm account + `@image-ultra` org.
 - Phase 7 has no open owner items (`.ico` crash found and fixed 2026-09-28, DECISIONS #105).
   (Hindi / Arabic: owner checked — labels wired right, words not; left as examples, not fixed.)
 

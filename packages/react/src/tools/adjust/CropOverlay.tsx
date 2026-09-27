@@ -13,7 +13,7 @@ import {
   type CropView,
   type EditorStore,
   type Rect,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { useLatest } from '../../hooks/useLatest';
 

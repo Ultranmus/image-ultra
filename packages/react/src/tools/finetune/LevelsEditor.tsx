@@ -4,7 +4,7 @@ import {
   isNeutralLevels,
   type ChangeOptions,
   type LevelsState,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { IconReset } from '../../icons/Icon';

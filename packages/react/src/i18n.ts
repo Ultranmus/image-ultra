@@ -1,5 +1,5 @@
 import type { EmojiGroup } from './tools/sticker/emojiData';
-import { FILTER_PRESETS } from '@image-ultra/core';
+import { FILTER_PRESETS } from '@image-ultra/core/internal';
 import { BUILTIN_STICKERS } from './tools/sticker/builtins';
 import { SIZE_PRESETS } from './tools/resize/presets';
 import type {
@@ -9,7 +9,7 @@ import type {
   RedactStyle,
   ToolId,
   WatermarkPosition,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 
 /** A label with a number in it: a template with `{count}`, or a function for plural rules. */
 export type CountLabel = string | ((count: number) => string);

@@ -1,4 +1,4 @@
-import type { Box } from '@image-ultra/core';
+import type { Box } from '@image-ultra/core/internal';
 
 export interface SnapResult {
   dx: number;

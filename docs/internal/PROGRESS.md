@@ -624,3 +624,14 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   says 256). Chrome can't decode it, Safari can. New `loader/ico.ts` decodes the largest PNG entry
   directly (DECISIONS #105); all 9 of the owner's .ico files open in Chrome at their real size.
   4 unit tests, 1 e2e. All checks green (149 unit, 154 e2e).
+
+## 2026-09-28 · Phase 8 — Release
+
+- Plan approved (8a–8e); owner's answers: separate `apps/docs`, Vercel, 0.1.0, accounts at 8d
+  (DECISIONS #106).
+- **8a package quality gate** (DECISIONS #107): core split into a stable entry (~110 names) and
+  `core/internal` (owner's choice); `pnpm check:package` — publint, attw, size budget, SSR import,
+  no `any` — all green, each shown to catch a deliberately broken build. Found by the checks: the
+  internal entry didn't resolve for old `node10` TS setups (→ `typesVersions`), `tileSize` leaked
+  into `renderToCanvas`'s published type (→ `@internal` + `stripInternal`), no `engines` field.
+  READMEs for the repo, react and core (examples type-checked). All checks green (149 unit, 154 e2e).

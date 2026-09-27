@@ -1,6 +1,6 @@
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import type { ReactNode } from 'react';
-import type { Shape } from '@image-ultra/core';
+import type { Shape } from '@image-ultra/core/internal';
 import { copyShapeById, pasteSelection, useClipboardKind } from '../../clipboard';
 import {
   useEditorState,

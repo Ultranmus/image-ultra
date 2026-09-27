@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext } from 'react';
 import { useStore } from 'zustand';
-import type { EditorStore, EditorStoreState, FilterPreset, Look } from '@image-ultra/core';
+import type { EditorStore, EditorStoreState, FilterPreset, Look } from '@image-ultra/core/internal';
 import type { SizePreset } from './tools/resize/presets';
 import type { Labels } from './i18n';
 

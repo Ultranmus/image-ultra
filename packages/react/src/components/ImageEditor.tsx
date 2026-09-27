@@ -25,7 +25,7 @@ import {
   type ToolId,
   FILTER_PRESETS,
   type FilterPreset,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { SIZE_PRESETS, type SizePreset } from '../tools/resize/presets';
 import { useCompareHold } from '../hooks/useCompareHold';
 import { useLooksState } from '../hooks/useLooksState';

@@ -1,4 +1,4 @@
-import type { EditorStore } from '@image-ultra/core';
+import type { EditorStore } from '@image-ultra/core/internal';
 import type { ChangeSource } from './RulerSlider';
 
 /**

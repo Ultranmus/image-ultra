@@ -5,7 +5,7 @@ import {
   lookMatches,
   type EditState,
   type ThumbnailRenderer,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import {
   useEditorState,
   useEditorStore,

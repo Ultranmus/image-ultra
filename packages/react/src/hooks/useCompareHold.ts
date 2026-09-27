@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import type { EditorStore } from '@image-ultra/core';
+import type { EditorStore } from '@image-ultra/core/internal';
 
 /**
  * "Hold to see the original": `start` shows the whole before image, `end` returns to whatever

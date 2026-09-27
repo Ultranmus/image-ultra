@@ -8,7 +8,7 @@ import {
   type FrameState,
   type FrameStyle,
   type ThumbnailRenderer,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels, useToolState } from '../../context';
 import { Popover } from '../../controls/Popover';
 import { PresetStrip, type Preset } from '../../controls/PresetStrip';

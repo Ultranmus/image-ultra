@@ -1,4 +1,9 @@
-import { createShapeId, getCanvasRect, type EditorStore, type Point } from '@image-ultra/core';
+import {
+  createShapeId,
+  getCanvasRect,
+  type EditorStore,
+  type Point,
+} from '@image-ultra/core/internal';
 import { fileToAsset } from '../assets';
 
 /**

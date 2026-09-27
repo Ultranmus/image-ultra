@@ -8,7 +8,7 @@ import {
   simplifyPoints,
   type MaskStroke,
   type Point,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState } from '../context';
 import { getOrientedToStage } from '../tools/annotate/state';
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import type { Shape } from '@image-ultra/core';
+import type { Shape } from '@image-ultra/core/internal';
 import { shapeName } from './shapeName';
 import { useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';

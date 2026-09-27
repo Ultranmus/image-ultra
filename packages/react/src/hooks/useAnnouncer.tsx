@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { getOutputSize, type EditorStore, type EditorStoreState } from '@image-ultra/core';
+import { getOutputSize, type EditorStore, type EditorStoreState } from '@image-ultra/core/internal';
 import { formatCount, type Labels } from '../i18n';
 import { shapeName } from '../tools/annotate/shapeName';
 import { selectionIds, type AnnotateState } from '../tools/annotate/state';

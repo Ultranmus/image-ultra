@@ -102,8 +102,10 @@ export interface RenderedCanvas {
 export async function renderToCanvas(
   image: LoadedImage,
   state: EditState,
-  options: Pick<ExportOptions, 'maxWidth' | 'maxHeight' | 'renderer' | 'tileSize'> & {
+  options: Pick<ExportOptions, 'maxWidth' | 'maxHeight' | 'renderer'> & {
     background?: string;
+    /** @internal Testing only (see `ExportOptions.tileSize`). */
+    tileSize?: number;
   } = {},
 ): Promise<RenderedCanvas> {
   const full = getOutputSize(image, state);

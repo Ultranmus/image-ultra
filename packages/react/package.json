@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "description": "Premium, fully typed image editor component for React and Next.js.",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "sideEffects": [
     "*.css"

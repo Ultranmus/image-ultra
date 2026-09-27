@@ -13,7 +13,7 @@ import {
   type Shape,
   type TextAlign,
   type Viewport,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useToolState } from '../../context';
 
 export type AnnotateMode =

@@ -18,9 +18,11 @@
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
     "e2e": "turbo run e2e",
+    "check:package": "node scripts/check-package.ts",
     "bench": "pnpm build && pnpm --filter playground bench"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
@@ -28,6 +30,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "jiti": "^2.7.0",
     "prettier": "^3.9.9",
+    "publint": "^0.3.24",
     "turbo": "^2.11.3",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.70.1"

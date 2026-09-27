@@ -6,7 +6,7 @@ import {
   watermarkAspect,
   watermarkFullHeight,
   type BoxHandle,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels, useWatermarkLocked } from '../../context';
 import { cursorFor } from '../annotate/AnnotateOverlay';
 import { snapAngle } from '../annotate/snapping';

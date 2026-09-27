@@ -11,7 +11,7 @@ import {
   isNeutralFinetune,
   isNeutralLevels,
   type FinetuneState,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels, useLooks } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { PresetStrip, type Preset } from '../../controls/PresetStrip';

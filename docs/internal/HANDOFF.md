@@ -73,9 +73,12 @@ Update this file at the end of every session.
   **Phase 7.7 done — owner approved (2026-09-28).** Phone `/bench`: 59 fps at 12 / 24MP; 48MP export
   crashed (iOS memory) → fixed (DECISIONS #104, 418 → 214 MB canvases); **owner confirmed 48MP
   works on the iPhone**. Uncommitted: all of 2026-09-28's work (owner hasn't asked to commit yet).
-- Next: **Phase 8 — Release** (plan it for the owner first). Phase 7 has no open owner items (`.ico` crash
-  found and fixed 2026-09-28, DECISIONS #105). (Hindi / Arabic: owner checked —
-  labels wired right, words not; left as examples, not fixed.)
+- **Phase 8 — Release** (plan approved; DECISIONS #106: apps/docs, Vercel, 0.1.0, accounts at 8d).
+  **8a done** (DECISIONS #107): core = stable `@image-ultra/core` + `@image-ultra/core/internal`
+  (React imports helpers from `/internal`); `pnpm check:package` (run after `pnpm build`); READMEs.
+- Next: **8b examples** (Next App Router, Vite + React 18, React Router) in `apps/examples/`.
+- Phase 7 has no open owner items (`.ico` crash found and fixed 2026-09-28, DECISIONS #105).
+  (Hindi / Arabic: owner checked — labels wired right, words not; left as examples, not fixed.)
 
 ## How to work with this owner
 

@@ -1,315 +1,121 @@
-export type { EditorStatus, ImageSource, LoadedImage, Point, Size, ToolId } from './types';
-export { TOOL_IDS } from './types';
-
+/**
+ * `@image-ultra/core` — the stable, semver-covered API: edit state, loading, rendering / export,
+ * the editor store, filters and looks, and the types they use (DECISIONS #107). Helpers used only by
+ * `@image-ultra/react` live in `@image-ultra/core/internal`.
+ */
 export {
+  /* Loading */
   loadImage,
   ImageLoadError,
+  detectImageFormat,
   type ImageLoadErrorCode,
   type LoadImageOptions,
-} from './loader/loadImage';
-export { detectImageFormat, type ImageFormat } from './loader/detectFormat';
+  type ImageFormat,
+  type ImageSource,
+  type LoadedImage,
 
-/* Edit state */
-export {
+  /* Edit state (serializable JSON) */
   EDIT_STATE_VERSION,
-  FINETUNE_KEYS,
-  FINETUNE_RANGES,
   EditStateError,
   MAX_OUTPUT_SIDE,
+  FINETUNE_KEYS,
+  FINETUNE_RANGES,
   createEditState,
-  getBeforeState,
-  createCurvesState,
-  createFinetuneState,
-  createGeometryState,
-  createIdentityCurve,
-  createLevelsState,
-  isIdentityCurve,
-  isNeutralCurves,
-  isNeutralFinetune,
-  isNeutralLevels,
-  parseCurve,
   parseEditState,
-  type EditAsset,
+  getBeforeState,
   type EditState,
-  type FinetuneState,
+  type EditAsset,
+  type RasterAsset,
   type GeometryState,
   type QuarterTurn,
   type CropShape,
+  type CanvasState,
+  type ResizeState,
+  type FinetuneState,
+  type LevelsState,
+  type CurvesState,
   type CurveChannel,
   type CurvePoint,
-  type CurvesState,
   type FilterState,
-  type LevelsState,
-  type RasterAsset,
-  type CanvasState,
   type Rect,
-  type ResizeState,
-} from './state/editState';
-export {
-  applyToPoint,
-  compose,
-  getCanvasRect,
-  getCanvasSize,
-  getCropRect,
-  getCropSize,
-  getImageBounds,
-  getImageQuad,
-  getOrientedSize,
-  getOrientedToSource,
-  getOutputSize,
-  getOutputToSource,
-  getPhotoRect,
-  getSourceToOriented,
-  invert,
-  isAffine,
-  rotate,
-  scale,
-  translate,
-  mat3Apply,
-  mat3Compose,
-  mat3Invert,
-  MAX_TILT_DEGREES,
-  type Affine,
-  type Mat3,
-} from './state/geometry';
-export {
-  cropFits,
-  cropForAspect,
-  fitCrop,
-  flipGeometry,
-  getImageCenter,
-  largestFit,
-  moveCrop,
-  zoomCrop,
-  rectCenter,
-  resizeCrop,
-  rotateGeometry,
-  rotateResize,
-  syncResizeToCrop,
-  type CropHandle,
-} from './state/cropMath';
+  type Point,
+  type Size,
 
-/* History */
-export {
-  createHistory,
-  pushHistory,
-  redoHistory,
-  undoHistory,
-  jumpHistory,
-  type History,
-  type HistoryEntry,
-} from './history/history';
-
-/* Rendering & export */
-export {
-  colorPixel,
-  compileColor,
-  detailPixel,
-  finishPixel,
-  hueRotation,
-  type ColorProgram,
-} from './render/color';
-export {
-  createThumbnailRenderer,
-  scaleEditState,
-  type ThumbnailRenderer,
-} from './render/thumbnails';
-export { buildToneLUT, createCurveFunction, createLevelsFunction, sampleLUT } from './state/curves';
-export {
-  boxCenter,
-  createShapeId,
-  defaultShapeName,
-  flipAnnotations,
-  getShapeBounds,
-  getShapeBox,
-  getShapeCorners,
-  hitTestShape,
-  moveShape,
-  normalizeDegrees,
-  pointsBox,
-  resizeBox,
-  resizeRotatedBox,
-  rotateAnnotations,
-  rotatePoint,
-  setShapeBox,
-  shapeAt,
-  type Box,
-  type BoxHandle,
-  type EllipseShape,
-  type ImageShape,
-  type LineCap,
-  type LineShape,
-  type Paint,
-  type PathShape,
-  type RectShape,
+  /* Elements on the photo */
+  WATERMARK_ELEMENT_ID,
+  REDACT_STYLES,
   type Shape,
   type ShapeType,
+  type DrawnShape,
+  type LineShape,
+  type RectShape,
+  type EllipseShape,
+  type PathShape,
+  type TextShape,
+  type ImageShape,
   type RedactShape,
   type WatermarkShape,
-  type DrawnShape,
+  type Paint,
+  type LineCap,
   type TextAlign,
-  type TextShape,
-} from './state/annotations';
-export { parseAnnotations } from './state/parseAnnotations';
-export {
-  drawMask,
-  rasterizeMask,
-  simplifyPoints,
-  tracePath,
-  type MaskStroke,
-  type PathSink,
-} from './state/strokes';
-export {
-  arrowHeadLength,
-  drawAnnotations,
-  ensureAnnotationFonts,
-  getOrientedToOutput,
-  breakTokens,
-  layoutText,
-  loadAnnotationAssets,
-  loadAssetBitmap,
-  measureTextHeight,
-  TEXT_WRAP_SLACK,
-  textFont,
-  textIndexAt,
-  type DrawAnnotationsOptions,
-  type TextLayout,
-} from './render/annotations';
-export {
-  DEFAULT_REDACT_COLOR,
-  DEFAULT_REDACT_STRENGTH,
-  REDACT_STYLES,
-  flipRedactions,
-  hitTestRedaction,
-  moveRedaction,
-  redactBlockSize,
-  redactBlurRadius,
-  redactReference,
-  redactionAt,
-  redactionBounds,
-  redactionCorners,
-  resizeRedaction,
-  rotateRedactions,
+  type Redaction,
   type RedactBox,
   type RedactBrush,
   type RedactStyle,
-  type Redaction,
-} from './state/redactions';
-export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
-export { textDirection } from './render/textDirection';
-export { drawElements, redactElements, type DrawElementsOptions } from './render/elements';
-export { WATERMARK_ELEMENT_ID } from './state/annotations';
-export {
-  copyShapes,
-  fitShapes,
-  pasteClipboard,
-  type ClipboardEntry,
-  type ClipboardItem,
-} from './state/clipboard';
-export {
-  alignShapes,
-  boxesIntersect,
-  distributeShapes,
-  groupBounds,
-  rotateShapes,
-  scaleShapes,
-  transformShape,
-  type AlignEdge,
-  type TextHeight,
-} from './state/arrange';
-export {
-  DEFAULT_FRAME_COLOR,
-  DEFAULT_FRAME_SIZE,
-  FRAME_SIZE_RANGE,
+
+  /* Frame, Fill and watermark */
   FRAME_STYLES,
-  type BackgroundState,
+  WATERMARK_POSITIONS,
+  DEFAULT_WATERMARK,
   type FrameState,
   type FrameStyle,
-} from './state/frame';
-export { drawBackground, drawFrame, type DrawBackgroundOptions } from './render/frame';
-export {
-  DEFAULT_WATERMARK,
-  WATERMARK_POSITIONS,
-  parseWatermark,
-  type WatermarkPosition,
+  type BackgroundState,
   type WatermarkState,
-} from './state/watermark';
-export {
-  drawWatermark,
-  layoutWatermark,
-  watermarkAspect,
-  watermarkFont,
-  watermarkFullHeight,
-} from './render/watermark';
-export { applyLook, createLook, lookMatches, parseLooks, type Look } from './state/looks';
-export {
+  type WatermarkPosition,
+
+  /* Filters, looks and auto-enhance */
   FILTER_PRESETS,
   filterFromPreset,
-  type FilterCategory,
-  type FilterPreset,
-} from './filters/presets';
-export {
+  createLook,
+  applyLook,
+  lookMatches,
+  parseLooks,
   autoEnhance,
-  computeAutoEnhance,
-  analysisState,
-  computeHistogram,
-  percentile,
-  renderAnalysisPixels,
+  type FilterPreset,
+  type FilterCategory,
+  type Look,
   type AutoEnhanceResult,
-  type Histogram,
-} from './analysis/analyze';
-export { createCanvas, createRenderer } from './render/createRenderer';
-export type {
-  AnyCanvas,
-  CheckerStyle,
-  CreateRendererOptions,
-  Renderer,
-  RendererKind,
-  RenderParams,
-} from './render/renderer';
-export {
-  exportImage,
+
+  /* Rendering and export */
   renderImage,
+  exportImage,
   renderToCanvas,
-  type RenderedCanvas,
-  type ExportMimeType,
   type ExportOptions,
   type ExportResult,
-} from './export/exportImage';
+  type ExportMimeType,
+  type RenderedCanvas,
+  type RendererKind,
 
-/* Viewport */
-export {
-  centerAt,
-  clampViewport,
-  fitViewport,
-  getCropView,
-  getFitScale,
-  lerpCropView,
-  getScaleLimits,
-  lerpViewport,
-  panBy,
-  stageToImage,
-  viewportsEqual,
-  zoomAt,
-  type CropView,
-  type Viewport,
-  type ViewportOptions,
-} from './viewport/viewport';
-
-/* Store */
-export {
+  /* The editor store (UI-independent state + undo history) */
+  TOOL_IDS,
   createEditorStore,
-  selectCanRedo,
   selectCanUndo,
+  selectCanRedo,
   selectIsDirty,
   type CreateEditorStoreOptions,
-  type EditorActions,
-  type EditorState,
   type EditorStore,
   type EditorStoreState,
+  type EditorState,
+  type EditorActions,
+  type EditorStatus,
   type EditorTask,
-  type ChangeOptions,
   type EditRecipe,
+  type ChangeOptions,
   type TaskContext,
+  type ToolId,
+  type History,
+  type HistoryEntry,
+  type Viewport,
   type ViewportChangeOptions,
-} from './store/editorStore';
+  type CropView,
+} from './internal';

@@ -42,7 +42,7 @@ import {
   type Point,
   type Renderer,
   type RenderParams,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { ToolIdContext, useEditorState, useEditorStore, useLabels } from '../context';
 import type { Labels } from '../i18n';
 import { CompareDivider } from './CompareDivider';

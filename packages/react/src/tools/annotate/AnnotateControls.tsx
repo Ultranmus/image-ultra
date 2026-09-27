@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react';
-import { type Shape, type TextAlign } from '@image-ultra/core';
+import { type Shape, type TextAlign } from '@image-ultra/core/internal';
 import {
   useEditorState,
   useEditorStore,

@@ -1,4 +1,4 @@
-import { TOOL_IDS, type ToolId } from '@image-ultra/core';
+import { TOOL_IDS, type ToolId } from '@image-ultra/core/internal';
 import {
   IconAdjust,
   IconAnnotate,

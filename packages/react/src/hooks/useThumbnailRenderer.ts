@@ -3,7 +3,7 @@ import {
   createThumbnailRenderer,
   type LoadedImage,
   type ThumbnailRenderer,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 
 /** One shared renderer for all thumbnails of the current image. */
 export function useThumbnailRenderer(image: LoadedImage | null): ThumbnailRenderer | null {

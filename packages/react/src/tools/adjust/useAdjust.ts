@@ -14,7 +14,7 @@ import {
   type EditState,
   type GeometryState,
   type LoadedImage,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorStore, useLabels } from '../../context';
 
 /** The dial can edit one of these. */

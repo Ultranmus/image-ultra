@@ -11,7 +11,7 @@ import {
   type EditorStore,
   type EditState,
   type Shape,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import type { Labels } from '../../i18n';
 import {
   ensureMarker,

@@ -13,7 +13,7 @@ import {
   type LoadedImage,
   type Shape,
   type WatermarkState,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 
 /*
  * The watermark as an element on the photo (DECISIONS #88). Its look and layout live in

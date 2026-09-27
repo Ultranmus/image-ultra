@@ -5,7 +5,7 @@ import {
   type EditState,
   type Histogram,
   type ThumbnailRenderer,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 
 /** Longest side of the copy the histograms are counted on. */
 const SIZE = 200;

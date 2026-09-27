@@ -8,7 +8,7 @@ import {
   type ClipboardEntry,
   type EditorStore,
   type Point,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import type { Labels } from './i18n';
 import {
   getOrientedToStage,

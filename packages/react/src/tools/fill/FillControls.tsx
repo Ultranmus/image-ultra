@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { BackgroundState } from '@image-ultra/core';
+import type { BackgroundState } from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels, useToolState } from '../../context';
 import { SegmentedControl } from '../../controls/SegmentedControl';
 import { ColorStrip } from '../../controls/ColorStrip';

@@ -216,10 +216,39 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
 
 ### Phase 8 — Release
 
-- [ ] Docs site in playground (guides, API reference, theming playground) — incl. a **Localization**
-      guide: `labels` / full `Labels` typing / plurals / `dir` / app content names (DECISIONS #99)
-- [ ] Examples: Next App Router, Vite, Remix/React Router
-- [ ] Changesets, npm publish, README, LICENSE
+**Plan approved 2026-09-28** (owner: "go"). Commit after each step, stop for review.
+Owner's answers (2026-09-28, DECISIONS #106): docs in a separate `apps/docs`; hosted on Vercel;
+first version **0.1.0**; owner creates the GitHub repo + npm `@image-ultra` org at 8d.
+Found while planning: names `@image-ultra/core`, `@image-ultra/react`, `image-ultra` are free on
+npm; no GitHub remote yet; no README; changesets config exists (both packages versioned together);
+LICENSE is MIT ("image-ultra contributors"); bundles today: core 49 KB + react 84 KB + CSS 9 KB
+(gzip), emoji data split out; `'use client'` banner already on the react build.
+
+- [x] **8a Package quality gate** (done 2026-09-28; DECISIONS #107 — owner chose to split core into a
+      stable entry + `core/internal`):
+      package.json metadata (repository, homepage, bugs, engines), a README per package + root
+      README; `pnpm check:package` = publint + "are the types wrong" (ESM / CJS / types resolve in
+      every setup) + a **size budget** (fails if core > 55 KB, react > 95 KB, CSS > 12 KB gzip) + an
+      **SSR import test** (both packages import in plain Node without `window` — hard rule) + no
+      `any` in the published `.d.ts`; `@internal` options (e.g. `tileSize`) hidden from the types.
+      Public API review: list every export, drop or rename anything we don't want to support.
+- [ ] **8b Examples** in `apps/examples/`: **Next.js App Router**, **Vite + React 18** (proves the
+      React 18 peer range) and **React Router (framework mode, ex-Remix)**. Each: open a photo, save
+      (download), restore saved edits from JSON. Built in CI, plus one Playwright smoke test each
+      (loads, exports). They install the packages like a user would (workspace link now, npm later).
+- [ ] **8c Docs site** (`apps/docs`, Next.js static export, Vercel): Getting started
+      (install, Next / Vite / React Router), guides — saving & restoring edits (`onSave`,
+      `EditState` JSON, headless `renderImage`), theming (**live theming playground**: tokens → copy
+      CSS), custom tools, **Localization** (DECISIONS #99), accessibility, big photos & limits
+      (48MP, iPhone canvas budget, iOS saves WebP as PNG), metadata / EXIF, stickers / watermark /
+      app assets, SSR; **API reference generated from the TypeScript types and their doc comments**
+      (never drifts); the live editor on the home page. Follows UI_VISION / THEMING for its own look.
+- [ ] **8d CI + release pipeline**: GitHub Actions — lint, typecheck, unit, build, e2e (Chromium),
+      package checks, examples; changesets "Version packages" PR, npm publish with provenance on
+      merge. Owner sets up: GitHub repo, npm account + `@image-ultra` org, publish token (or npm
+      trusted publishing).
+- [ ] **8e Launch**: publish **0.1.0**, deploy the docs to Vercel, install from npm into a
+      fresh Next app and a fresh Vite app as the final check; CHANGELOG entry.
 
 ### Phase 9 — AI (`@image-ultra/plugin-ai`, optional package)
 

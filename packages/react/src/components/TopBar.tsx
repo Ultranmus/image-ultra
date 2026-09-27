@@ -1,4 +1,4 @@
-import { selectCanRedo, selectCanUndo, selectIsDirty } from '@image-ultra/core';
+import { selectCanRedo, selectCanUndo, selectIsDirty } from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels } from '../context';
 import { useRef } from 'react';
 import {

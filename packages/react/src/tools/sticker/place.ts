@@ -4,7 +4,7 @@ import {
   loadImage,
   type EditorStore,
   type RasterAsset,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 
 type Asset = { id: string; value: RasterAsset };
 

@@ -37,7 +37,7 @@ import {
   type Point,
   type Shape,
   type TextShape,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels, useWatermarkLocked } from '../../context';
 import { createRedactBox, createRedactBrush, type RedactDraw } from '../redact/state';
 import { elementsOf, WATERMARK_ELEMENT_ID } from './watermarkElement';

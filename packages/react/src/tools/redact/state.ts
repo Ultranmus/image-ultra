@@ -9,7 +9,7 @@ import {
   type Point,
   type RedactShape,
   type RedactStyle,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useToolState } from '../../context';
 import { INITIAL_ANNOTATE_STATE, type AnnotateState } from '../annotate/state';
 

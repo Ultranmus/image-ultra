@@ -3,7 +3,7 @@ import {
   parseWatermark,
   type EditState,
   type WatermarkState,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 
 /**
  * The `watermark` prop: any watermark fields, plus `logo` (an image URL) for a logo watermark.

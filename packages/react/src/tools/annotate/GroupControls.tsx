@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { getCanvasRect, type AlignEdge, type Shape } from '@image-ultra/core';
+import { getCanvasRect, type AlignEdge, type Shape } from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { Popover } from '../../controls/Popover';

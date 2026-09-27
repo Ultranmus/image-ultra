@@ -1,6 +1,6 @@
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import type { ReactNode } from 'react';
-import { getCanvasRect, type AlignEdge } from '@image-ultra/core';
+import { getCanvasRect, type AlignEdge } from '@image-ultra/core/internal';
 import { copySelection, pasteSelection, useClipboardKind } from '../../clipboard';
 import { useEditorStore, useLabels, usePortalContainer } from '../../context';
 import { formatCount } from '../../i18n';

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { EditorStore, EditorStoreState } from '@image-ultra/core';
+import type { EditorStore, EditorStoreState } from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore } from '../../context';
 
 /**

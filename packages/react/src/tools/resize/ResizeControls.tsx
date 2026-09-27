@@ -8,7 +8,7 @@ import {
   type EditState,
   type LoadedImage,
   type WatermarkPosition,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import {
   useEditorState,
   useEditorStore,

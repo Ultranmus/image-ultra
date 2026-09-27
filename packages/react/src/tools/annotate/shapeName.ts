@@ -1,4 +1,4 @@
-import type { Shape } from '@image-ultra/core';
+import type { Shape } from '@image-ultra/core/internal';
 import type { Labels } from '../../i18n';
 
 /** An element's name for Layers and screen readers: the user's name, else one from the labels. */

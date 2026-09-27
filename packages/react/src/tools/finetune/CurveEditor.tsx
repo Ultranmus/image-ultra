@@ -15,7 +15,7 @@ import {
   type ChangeOptions,
   type CurveChannel,
   type CurvePoint,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { PresetStrip } from '../../controls/PresetStrip';
 import { IconButton } from '../../components/IconButton';

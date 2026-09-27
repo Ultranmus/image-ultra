@@ -1,4 +1,4 @@
-import { REDACT_STYLES, type RedactShape, type RedactStyle } from '@image-ultra/core';
+import { REDACT_STYLES, type RedactShape, type RedactStyle } from '@image-ultra/core/internal';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
 import { IconButton } from '../../components/IconButton';
 import { ColorStrip } from '../../controls/ColorStrip';

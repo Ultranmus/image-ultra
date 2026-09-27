@@ -1,4 +1,4 @@
-import { createShapeId, type RasterAsset } from '@image-ultra/core';
+import { createShapeId, type RasterAsset } from '@image-ultra/core/internal';
 
 /**
  * Reads an image file into an `EditState.assets` entry: downscaled to at most `maxSide` px and

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { parseLooks, type Look } from '@image-ultra/core';
+import { parseLooks, type Look } from '@image-ultra/core/internal';
 
 export const DEFAULT_LOOKS_KEY = 'image-ultra:looks';
 

@@ -4,7 +4,7 @@ import {
   WATERMARK_POSITIONS,
   type WatermarkPosition,
   type WatermarkState,
-} from '@image-ultra/core';
+} from '@image-ultra/core/internal';
 import {
   useEditorState,
   useEditorStore,

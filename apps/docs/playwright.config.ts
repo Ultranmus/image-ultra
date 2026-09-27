@@ -3,7 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
-  reporter: [['list']],
+  // In CI, failures also show as annotations on the GitHub run (readable without signing in).
+  reporter: process.env['CI'] ? [['list'], ['github']] : [['list']],
   use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:3300' },
   // The site follows the OS: check both.
   projects: [

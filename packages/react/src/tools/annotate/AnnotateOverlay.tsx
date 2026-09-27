@@ -318,6 +318,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
     if (longPress.current) window.clearTimeout(longPress.current.timer);
     longPress.current = null;
   };
+
   /* ── Text editing ───────────────────────────────────────────────── */
 
   /** Opens the in-place editor. `caret`: index to put the caret at; default = end of the text. */
@@ -336,12 +337,52 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
     if (current.text.trim() === '')
       replace(labels.editText, { ...current, text: labels.textDefault });
     state.endChange();
+    // Finished from the keyboard (Esc, ⌘↵): the text box goes away, so focus goes to the photo.
+    // (Finished by clicking elsewhere: focus is already there.)
+    const layer = rootRef.current;
+    if (layer && layer.ownerDocument.activeElement?.matches('.iu-textedit'))
+      layer.focus({ preventScroll: true });
     setUi((u) => ({ ...u, editingId: null }));
     creatingText.current = false;
   };
 
   useEffect(() => {
     commitRef.current = commitText;
+  });
+
+  /**
+   * Enter on the photo with a drawing tool (keyboard users): a default-size shape in the middle of
+   * the result, selected; a text box opens for typing. Pen and Polygon need a pointer.
+   */
+  const addAtCentre = useRef<() => boolean>(() => false);
+  const addAtCentreNow = () => {
+    const mode = ui.mode;
+    if (!image || selectOnly || redact) return false;
+    if (mode === 'select' || mode === 'pen' || mode === 'polygon') return false;
+    const c = getCanvasRect(image, edit);
+    const p = { x: c.x + c.width / 2, y: c.y + c.height / 2 };
+    if (mode === 'text') {
+      const shape = createText(p, ui.style, ref, labels.textDefault);
+      store.getState().beginChange(labels.annotateModes.text);
+      update(labels.annotateModes.text, (list) => [...list, shape]);
+      startEditing(shape as TextShape, true);
+      return true;
+    }
+    const half = ref * 0.1;
+    const line = mode === 'line' || mode === 'arrow';
+    const shape = createShape(
+      mode,
+      { x: p.x - half, y: line ? p.y : p.y - half },
+      { x: p.x + half, y: line ? p.y : p.y + half },
+      ui.style,
+      ref,
+    );
+    update(modeLabel(mode), (list) => [...list, shape]);
+    select(shape.id);
+    return true;
+  };
+  useEffect(() => {
+    addAtCentre.current = addAtCentreNow;
   });
 
   /* ── Polygon ────────────────────────────────────────────────────── */
@@ -1040,6 +1081,15 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       // ⌘/Ctrl shortcuts from the Layers panel (select all, duplicate) still apply to the selection.
       if (target.closest('.iu-popover, .iu-compare')) return;
       if (target.closest('.iu-layers') && !(e.metaKey || e.ctrlKey)) return;
+      // Enter, Space, arrows and Home/End belong to the focused control (a button, slider, tab…);
+      // the photo only takes them when it has focus itself.
+      const controlKeys = ['Enter', ' ', 'Home', 'End'];
+      if (
+        target !== rootRef.current &&
+        target.closest(INTERACTIVE) &&
+        (controlKeys.includes(e.key) || e.key.startsWith('Arrow'))
+      )
+        return;
       const {
         ui: u,
         selected: sel,
@@ -1052,6 +1102,27 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       const mod = e.metaKey || e.ctrlKey;
       const state = store.getState();
       const movable = grp.filter((s) => !s.locked);
+
+      if (e.key === 'Tab' && !mod && target === rootRef.current) {
+        // Tab / Shift+Tab on the photo step through the elements in drawing order (like Canva);
+        // past either end the selection clears and Tab moves on, so focus is never trapped.
+        const ids = elementsOf(state.image, state.edit, watermarkLockedRef.current)
+          .filter(selectable)
+          .map((s) => s.id);
+        if (ids.length === 0) return;
+        const at = u.selectedId ? ids.indexOf(u.selectedId) : -1;
+        const next = at < 0 ? (e.shiftKey ? ids.length - 1 : 0) : at + (e.shiftKey ? -1 : 1);
+        const id = ids[next];
+        if (!id) {
+          setUi((v) => ({ ...v, ...selectPatch([]) }));
+          return;
+        }
+        setPolygon([]);
+        setUi((v) => ({ ...v, mode: 'select', ...selectPatch([id]) }));
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
 
       if (e.key === ' ' && target.closest('.iu-stage')) {
         // Space + drag pans (the stage takes the press while it's held). Only with the photo
@@ -1096,7 +1167,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       } else if (e.key === 'Enter') {
         if (poly.length) finishPolygon(poly);
         else if (sel?.type === 'text' && !sel.locked) startEditing(sel, false);
-        else return;
+        else if (target !== rootRef.current || !addAtCentre.current()) return;
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !sel.locked) {
         actions.remove(sel.id);
         setUi((v) => ({ ...v, ...selectPatch([]) }));
@@ -1194,7 +1265,8 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
       className="iu-annotate-layer"
       data-mode={mode}
       data-cursor={spaceHeld ? 'grab' : (dragCursor ?? hoverCursor)}
-      tabIndex={-1}
+      // A Tab stop: Tab / Shift+Tab here step through the elements (see the key handler).
+      tabIndex={0}
       role="group"
       aria-label={labels.tools.annotate}
       onPointerDown={onPointerDown}

@@ -159,7 +159,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
 - [ ] **7.5** A11y & motion — approved 2026-09-27 (owner: "go"), commit after each step:
   - [x] **7.5a** axe in e2e: zero WCAG 2.2 A/AA violations in every tool + mode, every popover /
         panel, dark + light, desktop + 390px; fix findings (contrast → tokens + THEMING).
-  - [ ] **7.5b** Keyboard & focus: tab order, popover focus in/out, focus never lost when a button
+  - [x] **7.5b** Keyboard & focus: tab order, popover focus in/out, focus never lost when a button
         disappears (Crop, Watermark, mask brush overlays), unclipped focus rings, keyboard-only e2e
         flow; **Tab / Shift+Tab steps through elements in Select mode** (owner's choice).
   - [ ] **7.5c** Screen readers: live announcements (undo/redo step, zoom, selection count, saving /

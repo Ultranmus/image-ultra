@@ -111,6 +111,7 @@ export function TopBar({
         </Popover>
         {layersTool && (
           <IconButton
+            className="iu-topbar__layers"
             label={labels.layers}
             icon={<IconLayers />}
             disabled={!ready}
@@ -167,9 +168,13 @@ export function TopBar({
           icon={<IconCheck size={18} />}
           showLabel
           variant="primary"
-          disabled={!ready || saving}
+          // While saving it stays focusable (aria-disabled), so keyboard focus stays on it.
+          disabled={!ready}
+          aria-disabled={saving || undefined}
           aria-busy={saving}
-          onClick={onDone}
+          onClick={() => {
+            if (!saving) onDone();
+          }}
         />
       </div>
     </header>

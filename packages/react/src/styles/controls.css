@@ -36,11 +36,11 @@
     padding: 0 var(--iu-space-4) 0 var(--iu-space-3);
   }
 
-  .iu-button:hover:not(:disabled) {
+  .iu-button:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--iu-surface-2);
   }
 
-  .iu-button:active:not(:disabled) {
+  .iu-button:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.97);
   }
 
@@ -50,7 +50,8 @@
     box-shadow: var(--iu-focus-ring);
   }
 
-  .iu-button:disabled {
+  .iu-button:disabled,
+  .iu-button[aria-disabled='true'] {
     opacity: 0.35;
     cursor: default;
   }
@@ -245,16 +246,23 @@
     display: flex;
     justify-content: safe center;
     gap: 6px;
-    padding: 3px;
+    /* Room for the 4px focus ring (the row scrolls, so it clips). */
+    padding: var(--iu-space-1);
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  /* Sideways-scrolling rows fade an edge when there is more past it (`useEdgeFade`). */
+  /* Sideways-scrolling rows fade an edge when there is more past it (`useEdgeFade`). A mask also
+     cuts off everything outside the row's box — focus rings too — so it's only there while the
+     row actually overflows (and then the row's padding leaves room for the ring). */
   .iu-presets,
   .iu-fade-x {
     --iu-fade-start: #000;
     --iu-fade-end: #000;
+  }
+
+  .iu-presets:is([data-more-start], [data-more-end]),
+  .iu-fade-x:is([data-more-start], [data-more-end]) {
     -webkit-mask-image: linear-gradient(
       90deg,
       var(--iu-fade-start),

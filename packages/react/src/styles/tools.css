@@ -773,7 +773,10 @@
   }
 
   .iu-fill__kinds {
-    max-width: 100%;
+    /* Scrolling rows clip overflow: room for the focus ring, without changing the layout. */
+    max-width: calc(100% + 2 * var(--iu-space-1));
+    margin: calc(-1 * var(--iu-space-1));
+    padding: var(--iu-space-1);
     overflow-x: auto;
     scrollbar-width: none;
   }

@@ -45,9 +45,12 @@ Update this file at the end of every session.
   rounds of fixes (Resize header, per-tool phone layouts, Annotate tools scroll on phones, **Layers in
   the TopBar**, Curves channel chips). All checks green (141 unit, 119 e2e).
 - **7.5 A11y & motion — in progress** (plan approved, PLAN.md; commit after each step): **7.5a axe —
-  done** (DECISIONS #93; `e2e/a11y.spec.ts`, zero WCAG 2.2 AA problems). Next: 7.5b keyboard & focus
-  (incl. Tab / Shift+Tab through elements in Select mode — owner's choice), then 7.5c screen readers,
-  7.5d motion + 36px touch switches.
+  done** (DECISIONS #93; `e2e/a11y.spec.ts`, zero WCAG 2.2 AA problems). **7.5b keyboard & focus —
+  done** (DECISIONS #94; `e2e/keyboard.spec.ts`: Tab through elements, Enter adds a shape, focus never
+  lost, unclipped rings, keyboard-only flow). Next: 7.5c screen readers (give the photo layer its own
+  name — today it's "Annotate", same as the rail tab), then 7.5d motion + 36px touch switches.
+- **e2e runs against `next start` of the last production build when no dev server is on 3100 —
+  run `pnpm build` after package changes** (a stale build made passing tests fail once).
 
 ## How to work with this owner
 

@@ -206,4 +206,9 @@
   .iu-annotate-layer:focus {
     outline: none;
   }
+
+  /* The photo reached with Tab (Annotate, Sticker, Redact): a ring inside the stage edge. */
+  .iu-annotate-layer:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--iu-accent);
+  }
 }

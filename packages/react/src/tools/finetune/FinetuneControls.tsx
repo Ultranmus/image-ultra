@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   autoEnhance,
   createCurvesState,
@@ -38,6 +38,14 @@ export function FinetuneControls() {
   const [mode, setMode] = useState<Mode>('adjust');
   const [key, setKey] = useState<Key>('brightness');
   const [saving, setSaving] = useState(false);
+  const saveLookButton = useRef<HTMLButtonElement>(null);
+  /** The name form closed: give keyboard focus back to "Save look" (the form is gone). */
+  const refocusSaveLook = useRef(false);
+  useEffect(() => {
+    if (saving || !refocusSaveLook.current) return;
+    refocusSaveLook.current = false;
+    saveLookButton.current?.focus({ preventScroll: true });
+  }, [saving]);
   const [autoBusy, setAutoBusy] = useState(false);
   /** Name of the look just saved — shows a short confirmation with a link to the Filter tool. */
   const [savedName, setSavedName] = useState<string | null>(null);
@@ -114,10 +122,14 @@ export function FinetuneControls() {
             <SaveLookForm
               onSave={(name) => {
                 setLooks([...looks, createLook(store.getState().edit, name)]);
+                refocusSaveLook.current = true;
                 setSaving(false);
                 setSavedName(name);
               }}
-              onCancel={() => setSaving(false)}
+              onCancel={() => {
+                refocusSaveLook.current = true;
+                setSaving(false);
+              }}
             />
           ) : (
             <>
@@ -127,11 +139,16 @@ export function FinetuneControls() {
                 title={labels.autoHint}
                 icon={<IconSparkle size={18} />}
                 showLabel
-                disabled={!image || autoBusy}
+                // While it runs it stays focusable (aria-disabled), so focus stays on it.
+                disabled={!image}
+                aria-disabled={autoBusy || undefined}
                 aria-busy={autoBusy}
-                onClick={() => void runAuto()}
+                onClick={() => {
+                  if (!autoBusy) void runAuto();
+                }}
               />
               <IconButton
+                ref={saveLookButton}
                 label={labels.saveLook}
                 icon={<IconBookmark />}
                 disabled={untouched && !edit.filter}

@@ -28,6 +28,7 @@ export function ShortcutsPanel() {
     [labels.duplicate, [mod, 'D']],
     [labels.deleteShape, ['⌫']],
     [labels.nudge, ['←', '→', '↑', '↓']],
+    [labels.nextElement, ['Tab', '⇧ Tab']],
     [labels.finishOrEdit, ['↵']],
     [labels.deselect, ['Esc']],
     [labels.shapeMenu, ['⇧', 'F10']],

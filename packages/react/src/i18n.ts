@@ -35,6 +35,8 @@ export interface Labels {
   shortcutsShow: string;
   nudge: string;
   finishOrEdit: string;
+  /** Shortcuts panel: Tab / Shift+Tab on the photo. */
+  nextElement: string;
   deselect: string;
   /** Built-in tool names. Custom tools pass their own `label`. */
   tools: Record<ToolId, string>;
@@ -270,7 +272,8 @@ export const defaultLabels: Labels = {
   shortcutsGeneral: 'General',
   shortcutsShow: 'Show keyboard shortcuts',
   nudge: 'Move the selected shape (Shift: 10×)',
-  finishOrEdit: 'Finish polygon · edit text',
+  finishOrEdit: 'Add a shape in the middle · finish polygon · edit text',
+  nextElement: 'Select the next / previous element',
   deselect: 'Deselect · cancel',
   tools: {
     adjust: 'Adjust',

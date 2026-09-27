@@ -7,6 +7,7 @@ import {
   useStickers,
 } from '../../context';
 import { IconButton } from '../../components/IconButton';
+import { useRovingFocus } from '../../hooks/useRovingFocus';
 import { Popover } from '../../controls/Popover';
 import { PresetStrip } from '../../controls/PresetStrip';
 import { RulerSlider } from '../../controls/RulerSlider';
@@ -47,6 +48,9 @@ export function StickerControls() {
   const [tab, setTab] = useState<Tab>('stickers');
   const [category, setCategory] = useState<Category>('basic');
   const [query, setQuery] = useState('');
+  const stripRef = useRef<HTMLDivElement>(null);
+  // The tiles are one Tab stop; arrow keys move between them.
+  const roving = useRovingFocus(stripRef, '.iu-stickerstrip__tile', `${tab}/${category}/${query}`);
   const [emoji, setEmoji] = useState<EmojiEntry[] | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const selected = shapes.find((s) => s.id === ui.selectedId) ?? null;
@@ -244,7 +248,14 @@ export function StickerControls() {
         />
       )}
 
-      <div className="iu-stickerstrip" role="group" aria-label={labels.stickers}>
+      <div
+        ref={stripRef}
+        className="iu-stickerstrip"
+        role="group"
+        aria-label={labels.stickers}
+        onFocus={roving.onFocus}
+        onKeyDown={roving.onKeyDown}
+      >
         {tiles.length > 0 ? (
           tiles
         ) : (

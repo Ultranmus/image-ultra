@@ -77,6 +77,29 @@ export function LayersPanel({
   const [dropSlot, setDropSlot] = useState<number | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
 
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Opened with the TopBar button from the keyboard: focus moves into the panel (the selected row,
+  // else the top one), so arrow keys and Tab work in it straight away.
+  useEffect(() => {
+    const panel = panelRef.current;
+    const active = panel?.ownerDocument.activeElement;
+    if (!panel || !active?.matches('.iu-topbar__layers')) return;
+    const row =
+      panel.querySelector<HTMLElement>('.iu-layers__row[data-selected] .iu-layers__name') ??
+      panel.querySelector<HTMLElement>('.iu-layers__name');
+    (row ?? panel).focus({ preventScroll: true });
+  }, []);
+
+  /** Closes the panel; focus inside it goes back to the TopBar button instead of the page. */
+  const close = () => {
+    const panel = panelRef.current;
+    const hadFocus = panel?.contains(panel.ownerDocument.activeElement) ?? false;
+    const button = panel?.closest('.iu-root')?.querySelector<HTMLElement>('.iu-topbar__layers');
+    onClose();
+    if (hadFocus) button?.focus({ preventScroll: true });
+  };
+
   useEffect(() => {
     if (!revealId) return;
     const row = listRef.current?.querySelector<HTMLElement>(
@@ -143,10 +166,18 @@ export function LayersPanel({
 
   return (
     <section
+      ref={panelRef}
       className="iu-layers"
       aria-label={labels.layers}
+      tabIndex={-1}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
+        // (Not from a row's "⋯" menu: it portals out of the panel and closes on its own.)
+        const inPanel = panelRef.current?.contains(e.target as Node) ?? false;
+        if (e.key === 'Escape' && inPanel && !renaming && !e.defaultPrevented) {
+          e.preventDefault();
+          close();
+        }
         // ⌘/Ctrl shortcuts (copy, paste, select all, undo…) still reach the editor.
         if (!(e.metaKey || e.ctrlKey)) e.stopPropagation();
       }}
@@ -163,7 +194,7 @@ export function LayersPanel({
             label={labels.cancelEdit}
             icon={<IconClose size={16} />}
             size="sm"
-            onClick={onClose}
+            onClick={close}
           />
         </span>
       </header>

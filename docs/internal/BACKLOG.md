@@ -264,6 +264,12 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Curves: two stacked switches look bad** (owner, phone) — Adjust | Curves | Levels above
       RGB | Red | Green | Blue read as two equal menus. Fix: channels are chips with a colour dot (the
       Adjust mode's chip style), on every width; tighter chips below 360px — _fixed 2026-09-27_
+- [x] **Focus rings clipped in toolbar rows** (owner, screenshot: Annotate's Select button) — the
+      edge-fade mask cut off the ring outside the row's box. Fix: the mask only applies while the
+      row overflows; e2e ring check now treats masks as clipping — _fixed 2026-09-27_
+- [ ] **A rare e2e flake** (7.5b): 1 of 4 full runs failed one `toBeLessThan` check (not in
+      keyboard / mobile specs — 102/102 on repeat); two clean full runs after. Find it with
+      `--repeat-each` per spec if it shows up again — _7.7_
 - [ ] **Segmented switches are 28px tall** (below the 40px touch size of buttons; WCAG 2.2 minimum
       is 24px, so they pass) — consider 36–40px on touch devices — _7.5 (a11y)_
 
@@ -283,8 +289,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       exporting machine's font — _document in Phase 8_ (apps can pass web fonts via `fonts`).
 - [ ] **Inserted images are stored as data URLs inside EditState** (max 1600px WebP) — can make saved
       JSON large — _Phase 8_: option to upload assets and store URLs (`onAssetUpload` hook).
-- [ ] **Keyboard focus**: fixed for stage/annotate clicks (they now take focus); audit other
-      overlays in the Phase 7 a11y pass.
+- [x] **Keyboard focus**: fixed for stage/annotate clicks (they now take focus); audit other
+      overlays in the Phase 7 a11y pass. — _done 2026-09-27 (7.5b, DECISIONS #94)_
 
 ### From Phase 4 — Finetune + Filters
 

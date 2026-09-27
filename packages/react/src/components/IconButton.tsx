@@ -1,4 +1,12 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from 'react';
+import { focusNeighbour } from './focusFallback';
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Accessible name, also shown as the hover tooltip. */
@@ -15,9 +23,17 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   { label, icon, showLabel = false, variant = 'ghost', size = 'md', className, ...props },
   ref,
 ) {
+  const own = useRef<HTMLButtonElement>(null);
+  useImperativeHandle(ref, () => own.current!, []);
+  // A button that disables itself while focused (Undo at the first step, Reset once reset) hands
+  // focus to its neighbour instead of dropping it to the page.
+  useLayoutEffect(() => {
+    const el = own.current;
+    if (props.disabled && el && el === el.ownerDocument.activeElement) focusNeighbour(el);
+  }, [props.disabled]);
   return (
     <button
-      ref={ref}
+      ref={own}
       type="button"
       aria-label={showLabel ? undefined : label}
       data-tooltip={showLabel ? undefined : label}

@@ -301,6 +301,18 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - A hidden `<input type="file">` opened by a visible button is `aria-hidden` (the button is the
   control). Invisible menu anchors are `aria-hidden`. A button that opens a picker is a button
   (`aria-pressed` for "selected"), never a radio. A panel that scrolls is focusable.
+- **Keyboard** (7.5b, DECISIONS #94): Tab order TopBar → ToolRail (one stop, arrows switch tools) →
+  photo → ControlBar. In Annotate / Sticker / Redact the **photo is a Tab stop** (inset accent ring
+  on `:focus-visible`): Tab / Shift+Tab select the next / previous element in drawing order; past
+  either end the selection clears and Tab moves on (never a trap). With a drawing tool, **Enter on
+  the photo adds a default-size shape in the middle** (Text opens for typing; Pen / Polygon need a
+  pointer). Enter, Space, arrows and Home/End belong to whichever control has focus. Long rows of
+  items (sticker tiles, chips, colours) are one Tab stop with arrow keys.
+- **Focus is never lost**: a button that disables itself (Undo at the first step, Reset) hands focus
+  to its neighbour; a busy button (Done while saving, Auto) stays focusable with `aria-disabled`;
+  closing the Save-look form, a text box (Esc) or the Layers panel (Esc / ✕) puts focus back on
+  the button / photo it came from. Opening Layers from the TopBar moves focus into the panel.
+  Scrolling rows leave room for the 4px focus ring (e2e checks every tool).
 
 ## 10. AI features (Phase 9 — spec in `AI_ROADMAP.md`)
 

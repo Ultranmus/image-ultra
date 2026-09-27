@@ -521,3 +521,13 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   div (Annotate layer), `aria-expanded` on a radio (Custom colour) and on the menu anchor, light
   danger red 4.45:1, Shortcuts panel scrolls but isn't focusable. All fixed (DECISIONS #93). All
   checks green (141 unit, 123 e2e).
+- **7.5b keyboard & focus:** audit scripts (Tab order per tool, focus after actions, clipped rings).
+  Found: photo unreachable by keyboard; every sticker tile a Tab stop; focus dropped after Undo /
+  Redo / Reset / Finetune Reset disable themselves, after saving a look, while Done saves, after Esc
+  in a text box; Layers panel never took focus; chip strips and Fill's switch row clipped the ring
+  by 1px; **Enter on any button re-opened the selected text box** (the photo's key handler claimed
+  it editor-wide). Fixed all (DECISIONS #94) + Tab / ⇧Tab through elements and Enter adds a shape
+  (owner's choice). `e2e/keyboard.spec.ts` (6 tests incl. a keyboard-only crop → brighten → text →
+  save). All checks green (141 unit, 129 e2e); one rare flake logged in BACKLOG.
+- Owner review of 7.5b: focus rings clipped on toolbar rows (edge-fade mask). Mask now only while
+  a row overflows; the ring check counts masks. All checks green.

@@ -29,7 +29,7 @@ export function gaussianBlur(
   height: number,
   sigma: number,
 ): BlurredImage {
-  const scale = Math.min(4, Math.max(1, Math.floor(sigma / 3)));
+  const scale = blurDownscale(sigma);
   const small = downsample(premultiplied, width, height, scale);
   const { width: w, height: h } = small;
   let data = small.data;
@@ -40,6 +40,14 @@ export function gaussianBlur(
     data = boxPass(data, w, h, radius, false);
   }
   return { data, width: w, height: h, scale };
+}
+
+/**
+ * How much a blur of `sigma` px is computed smaller (1, 2 or 4 — shared by GPU and CPU). Powers of
+ * two keep the smaller grid aligned with export tiles, whose edges are multiples of 4 (7.7d).
+ */
+export function blurDownscale(sigma: number): number {
+  return sigma >= 12 ? 4 : sigma >= 6 ? 2 : 1;
 }
 
 /** Bilinear sample of a blurred image at source pixel centre `x`,`y`, unpremultiplied (0…1). */

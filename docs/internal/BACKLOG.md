@@ -368,7 +368,8 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
       the browser's WebP encoder, same on both renderers — _later (Worker export)_
   - Fix: encode in a Web Worker (`OffscreenCanvas.convertToBlob`) so the page stays responsive;
     show progress on Done.
-- [ ] **Images above the GPU texture limit are downscaled** (16384px desktop, 4096–8192 mobile) —
+- [x] **Images above the GPU texture limit are downscaled** _(fixed 2026-09-27, 7.7d: tiled export at
+      full size; the preview stays downscaled)_ (16384px desktop, 4096–8192 mobile) —
       _Phase 7 (perf)_
   - Fix: tiled textures / tiled export.
 

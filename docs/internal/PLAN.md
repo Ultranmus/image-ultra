@@ -181,7 +181,7 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
   - [x] **7.6c** (language part done in 7.6b — English · Hindi · Arabic · Pseudo; owner: the package ships English only, apps add languages — DECISIONS #99) Playground language switch: English · Arabic (RTL demo, drafted — needs native
         review) · pseudo-locale. English only ships. (The switch with English · pseudo was added in
         7.6a, owner asked to test from the UI.)
-- [ ] **7.7** Perf: 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled
+- [x] **7.7** Perf (owner's phone `/bench` run pending): 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled
       export above the GPU texture limit (preview stays downscaled). Approved 2026-09-27 (owner: "go"), commit after each step:
   - [x] **7.7a** Benchmark first (measure, don't guess): a playground page `/bench` + a Playwright
         script (`pnpm bench`, not part of `pnpm e2e`) using generated 12 / 24 / 48MP test photos
@@ -204,13 +204,14 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         (92 MB at 24MP); unused redaction / Fill / compare layers held full-size canvases; the
         WebGL renderer kept every downscaled copy of oversized photos until unmount. Undo history
         holds JSON only (checked).
-  - [ ] **7.7d** Tiled export: photos or outputs bigger than the GPU texture limit (16384px desktop,
-        4096–8192 phones) export at **full size** — the output is rendered in tiles, each reading only
-        its part of the source (with a margin for blur / sharpen so seams never show; grain and
-        vignette use output coordinates, so they line up). Tiles go onto one 2D canvas, then encode.
-        Limit: the browser's biggest canvas (~268MP Chrome/Firefox, ~16MP iOS Safari) — above it the
-        export is scaled down and `ExportResult` says so (`downscaled: true`). e2e: a 20000px-wide
-        photo exports at full size with no seams (pixel check across a tile edge vs. a small render).
+  - [x] **7.7d** Tiled export (DECISIONS #103): photos or outputs above the GPU limits export at
+        **full size** — the photo pass runs in tiles (≤ 4096 px, a margin of 3σ for blur / sharpen /
+        clarity that stops at the output's edges), each uploading only its part of the photo. The
+        output canvas is probed; if the browser can't hold it the result is scaled down and
+        `ExportResult.downscaled` is `true`. Found on the way: the GPU blur's smaller copy was
+        slightly stretched (fixed: exact mapping, factors 1 / 2 / 4). e2e `tiled-export.spec.ts`:
+        tiled = one-pass (max 4/255 visible, both renderers); a photo 3616 px wider than the GPU
+        limit exports at full width with 1 px stripes intact (fails on the old code).
   - Not in 7.7: Web Worker / OffscreenCanvas export and WebGPU (Phase 9 runtime may bring them).
 
 ### Phase 8 — Release

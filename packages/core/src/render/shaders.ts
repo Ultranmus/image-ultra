@@ -211,10 +211,11 @@ uniform vec2 u_dir;         // (1, 0) or (0, 1)
 uniform float u_sigma;      // in source texels
 uniform float u_step;       // tap spacing in source texels
 uniform int u_taps;         // taps on each side
+uniform float u_down;       // source texels per target texel (exact, so tiles line up)
 out vec4 outColor;
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_targetSize;
+  vec2 uv = gl_FragCoord.xy * u_down / u_sourceSize;
   vec4 sum = vec4(0.0);
   float total = 0.0;
   for (int i = -32; i <= 32; i++) {
@@ -240,7 +241,9 @@ uniform sampler2D u_blurTex;
 uniform bool u_hasSharpen;
 uniform bool u_hasClarity;
 uniform bool u_hasBlur;
-uniform vec2 u_canvasSize;
+uniform vec2 u_sharpenUV;   // canvas px → UV of each (smaller) blurred texture
+uniform vec2 u_clarityUV;
+uniform vec2 u_blurUV;
 uniform float u_sharpen;
 uniform float u_clarity;
 
@@ -254,22 +257,21 @@ void main() {
     outColor = vec4(0.0);
     return;
   }
-  vec2 uv = gl_FragCoord.xy / u_canvasSize;
   vec4 base = texelFetch(u_base, ivec2(gl_FragCoord.xy), 0);
   vec3 c = unpremultiply(base);
   float alpha = base.a;
 
   if (u_hasBlur) {
-    vec4 b = texture(u_blurTex, uv);
+    vec4 b = texture(u_blurTex, gl_FragCoord.xy * u_blurUV);
     c = unpremultiply(b);
     alpha = b.a;
   } else {
     if (u_hasSharpen) {
-      vec3 s = unpremultiply(texture(u_sharpenTex, uv));
+      vec3 s = unpremultiply(texture(u_sharpenTex, gl_FragCoord.xy * u_sharpenUV));
       c += (c - s) * (u_sharpen * 1.5);
     }
     if (u_hasClarity) {
-      vec3 s = unpremultiply(texture(u_clarityTex, uv));
+      vec3 s = unpremultiply(texture(u_clarityTex, gl_FragCoord.xy * u_clarityUV));
       float l = dot(clamp(c, 0.0, 1.0), LUMA);
       c += (c - s) * (u_clarity * 1.2 * 4.0 * l * (1.0 - l));
     }

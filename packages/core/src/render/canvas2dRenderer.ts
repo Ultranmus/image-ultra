@@ -33,6 +33,7 @@ export class Canvas2DRenderer implements Renderer {
   readonly kind = 'canvas2d' as const;
   /** Conservative limit that works on every browser, incl. iOS Safari. */
   readonly maxOutputSize = 8192;
+  readonly maxTextureSize = Infinity;
   private readonly ctx: Context2D;
   private checkerCache: { key: string; pattern: CanvasPattern } | null = null;
 

@@ -6,12 +6,14 @@ import {
   mat3FromAffine,
   mat3ToGL,
   scale,
+  translate,
   type Affine,
 } from '../state/geometry';
 import { LUT_SIZE } from '../state/curves';
 import type { LoadedImage, Size } from '../types';
 import { compileColor, detailSigmas, grainCell, type ColorProgram } from './color';
 import { cssColorToRgb, type AnyCanvas, type Renderer, type RenderParams } from './renderer';
+import { blurDownscale } from './blur';
 import { BLUR_SHADER, FINISH_SHADER, MAIN_SHADER, VERTEX_SHADER } from './shaders';
 
 interface Program {
@@ -48,7 +50,7 @@ export class WebGLRenderer implements Renderer {
   private uploads = new WeakMap<ImageBitmap, ImageBitmap>();
   /** Downscaled copy for an image above the texture limit (only the latest image's is kept). */
   private owned: { source: ImageBitmap; copy: ImageBitmap } | null = null;
-  private readonly maxTextureSize: number;
+  readonly maxTextureSize: number;
 
   private constructor(
     private readonly canvas: AnyCanvas,
@@ -124,7 +126,7 @@ export class WebGLRenderer implements Renderer {
   render(params: RenderParams): void {
     const { gl } = this;
     const gpu = this.gpu;
-    const upload = this.uploads.get(params.image.bitmap);
+    const upload = params.source?.bitmap ?? this.uploads.get(params.image.bitmap);
     if (!gpu || !upload || gl.isContextLost()) return;
 
     const { canvasSize, outputSize, image, state } = params;
@@ -174,8 +176,11 @@ export class WebGLRenderer implements Renderer {
     gl.uniform1i(this.loc(main, 'u_mode'), multi ? 1 : 0);
     gl.uniform1i(this.loc(main, 'u_image'), 0);
     gl.uniform1i(this.loc(main, 'u_lut'), 1);
+    // A tile's bitmap covers only `rect` of the source: UV 0…1 spans that rect.
+    const rect = params.source?.rect ?? { x: 0, y: 0, width: image.width, height: image.height };
     const outputToUV = mat3Compose(
-      scale(1 / image.width, 1 / image.height),
+      scale(1 / rect.width, 1 / rect.height),
+      translate(-rect.x, -rect.y),
       getOutputToSource(image, state, params.outputScale),
     );
     this.setMat3(main, 'u_outputToUV', mat3ToGL(outputToUV));
@@ -191,7 +196,7 @@ export class WebGLRenderer implements Renderer {
 
     // Blurred copies for each detail effect, radius converted from output to canvas pixels.
     const sigmas = detailSigmas(state.finetune, outputSize);
-    const blurred: Partial<Record<DetailKind, Target>> = {};
+    const blurred: Partial<Record<DetailKind, { target: Target; down: number }>> = {};
     for (const kind of ['sharpen', 'clarity', 'blur'] as const) {
       const sigma = sigmas[kind] / outputPerCanvasPx;
       if (sigma > 0) blurred[kind] = this.blur(gpu, kind, base, Math.max(0.5, sigma));
@@ -200,21 +205,25 @@ export class WebGLRenderer implements Renderer {
     const finish = gpu.finish;
     gl.useProgram(finish.program);
     setShared(finish);
-    gl.uniform2f(this.loc(finish, 'u_canvasSize'), canvasSize.width, canvasSize.height);
     gl.uniform1f(this.loc(finish, 'u_sharpen'), state.finetune.sharpen);
     gl.uniform1f(this.loc(finish, 'u_clarity'), state.finetune.clarity);
-    const units: [string, string, DetailKind | 'base', number][] = [
-      ['u_base', '', 'base', 2],
-      ['u_sharpenTex', 'u_hasSharpen', 'sharpen', 3],
-      ['u_clarityTex', 'u_hasClarity', 'clarity', 4],
-      ['u_blurTex', 'u_hasBlur', 'blur', 5],
-    ];
-    for (const [sampler, flag, kind, unit] of units) {
-      const t = kind === 'base' ? base : blurred[kind];
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, base.texture);
+    gl.uniform1i(this.loc(finish, 'u_base'), 2);
+    for (const [kind, unit] of [
+      ['sharpen', 3],
+      ['clarity', 4],
+      ['blur', 5],
+    ] as const) {
+      const b = blurred[kind];
       gl.activeTexture(gl.TEXTURE0 + unit);
-      gl.bindTexture(gl.TEXTURE_2D, t?.texture ?? base.texture);
-      gl.uniform1i(this.loc(finish, sampler), unit);
-      if (flag) gl.uniform1i(this.loc(finish, flag), t ? 1 : 0);
+      gl.bindTexture(gl.TEXTURE_2D, b?.target.texture ?? base.texture);
+      gl.uniform1i(this.loc(finish, `u_${kind}Tex`), unit);
+      gl.uniform1i(this.loc(finish, `u_has${kind[0]!.toUpperCase()}${kind.slice(1)}`), b ? 1 : 0);
+      // Texel i of the smaller texture covers canvas px [i·down, (i+1)·down).
+      const down = b?.down ?? 1;
+      const t = b?.target ?? base;
+      gl.uniform2f(this.loc(finish, `u_${kind}UV`), 1 / (down * t.width), 1 / (down * t.height));
     }
     this.drawTo(null, canvasSize);
   }
@@ -256,9 +265,14 @@ export class WebGLRenderer implements Renderer {
   }
 
   /** Two-pass Gaussian of `source` (premultiplied), downsampled for large radii. */
-  private blur(gpu: GpuResources, kind: DetailKind, source: Target, sigma: number): Target {
+  private blur(
+    gpu: GpuResources,
+    kind: DetailKind,
+    source: Target,
+    sigma: number,
+  ): { target: Target; down: number } {
     const { gl } = this;
-    const down = Math.min(4, Math.max(1, Math.floor(sigma / 3)));
+    const down = blurDownscale(sigma);
     const w = Math.max(1, Math.ceil(source.width / down));
     const h = Math.max(1, Math.ceil(source.height / down));
     const tmp = this.target(gpu, `${kind}-tmp`, w, h);
@@ -278,6 +292,7 @@ export class WebGLRenderer implements Renderer {
     gl.uniform2f(this.loc(p, 'u_dir'), 1, 0);
     gl.uniform1f(this.loc(p, 'u_sigma'), sigma);
     gl.uniform1f(this.loc(p, 'u_step'), step);
+    gl.uniform1f(this.loc(p, 'u_down'), down);
     this.drawTo(tmp, { width: w, height: h });
 
     // Vertical: tmp → out (same size; distances now in downsampled texels).
@@ -286,8 +301,9 @@ export class WebGLRenderer implements Renderer {
     gl.uniform2f(this.loc(p, 'u_dir'), 0, 1);
     gl.uniform1f(this.loc(p, 'u_sigma'), sigma / down);
     gl.uniform1f(this.loc(p, 'u_step'), step / down);
+    gl.uniform1f(this.loc(p, 'u_down'), 1);
     this.drawTo(out, { width: w, height: h });
-    return out;
+    return { target: out, down };
   }
 
   /* ── Resources ─────────────────────────────────────────────────────── */

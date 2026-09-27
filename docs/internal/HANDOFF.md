@@ -69,7 +69,10 @@ Update this file at the end of every session.
 - **7.7b — done** (DECISIONS #101): Canvas2D draws fewer pixels while dragging (3 → 20–60 fps).
   Waiting: owner's phone `/bench` run → decides the GPU screen-sized copy (BACKLOG).
 - **7.7c — done** (DECISIONS #102): `e2e/memory.spec.ts` counts images + textures; four leaks fixed.
-- Next: **7.7d tiled export** (photos / outputs above the GPU texture limit export at full size).
+- **7.7d — done** (DECISIONS #103): tiled export at full size above the GPU limits; `downscaled` flag.
+  **Phase 7.7 done** — waiting for the owner's review and phone `/bench` run.
+- Next: **Phase 8 — Release** (plan it for the owner first). Phase 7 open items for the owner:
+  VoiceOver check (7.5c), phone `/bench` (7.7b), Hindi / Arabic native review, `.ico` crash info.
 
 ## How to work with this owner
 

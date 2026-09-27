@@ -593,3 +593,11 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   closing (12 MB here, 92 MB at 24MP); unused layers held full-size canvases; oversized-photo copies
   piled up in the WebGL renderer. Now flat over 10 photos; closing the editor frees everything.
   Test checked to fail without the fixes. All checks green (145 unit, 149 e2e).
+- 7.7c committed. **7.7d tiled export** (DECISIONS #103): above the GPU limits the photo pass runs in
+  tiles with a detail margin, each uploading only its part of the photo; the output canvas is
+  probed and `ExportResult.downscaled` reports a browser-forced shrink. First run: tiles differed
+  on the photo's border (a tile's margin saw empty space where one pass repeats the edge) → margins
+  stop at the output's edges. Also found: the GPU blur's smaller copy was slightly stretched → exact
+  mapping, factors 1 / 2 / 4 shared with the CPU. `e2e/tiled-export.spec.ts` (3; the full-size test
+  fails on the old code). Export speed unchanged. All checks green (145 unit, 152 e2e). **Phase 7.7
+  done** apart from the owner's phone `/bench` run.

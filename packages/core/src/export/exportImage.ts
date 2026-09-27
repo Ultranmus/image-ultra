@@ -5,10 +5,16 @@ import {
   compose,
   getOrientedSize,
   getOutputSize,
+  getOutputToSource,
   getPhotoRect,
   IDENTITY,
+  mat3Apply,
   scale as scaleBy,
+  translate,
+  type Mat3,
 } from '../state/geometry';
+import type { Rect } from '../state/editState';
+import { detailSigmas } from '../render/color';
 import { redactReference } from '../state/redactions';
 import {
   ensureAnnotationFonts,
@@ -22,7 +28,7 @@ import type { WatermarkState } from '../state/watermark';
 import { canvasToBlob, createCanvas, createRenderer } from '../render/createRenderer';
 import { drawRedactions } from '../render/redactions';
 import { drawElements, redactElements } from '../render/elements';
-import type { AnyCanvas, RendererKind } from '../render/renderer';
+import type { AnyCanvas, Renderer, RendererKind } from '../render/renderer';
 import type { ImageSource, LoadedImage, Size } from '../types';
 
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
@@ -48,6 +54,11 @@ export interface ExportOptions {
    * orientation is reset (the pixels are already turned) and the size fields are updated.
    */
   keepMetadata?: boolean | { location?: boolean };
+  /**
+   * @internal Testing only: always render in tiles of this many output px (normally tiles are
+   * used only above the GPU's limits).
+   */
+  tileSize?: number;
 }
 
 export interface ExportResult {
@@ -61,6 +72,11 @@ export interface ExportResult {
   /** The edits that produced this image — store it to re-open the editor later. */
   state: EditState;
   renderer: RendererKind;
+  /**
+   * The result is smaller than asked for: the browser can't hold a canvas that big (e.g. ~16 MP
+   * on iPhones, ~268 MP on desktop browsers), so it was scaled down to fit.
+   */
+  downscaled: boolean;
 }
 
 const EXTENSIONS: Record<string, string> = {
@@ -75,6 +91,8 @@ export interface RenderedCanvas {
   width: number;
   height: number;
   renderer: RendererKind;
+  /** Smaller than asked for (see `ExportResult.downscaled`). */
+  downscaled: boolean;
 }
 
 /**
@@ -84,7 +102,7 @@ export interface RenderedCanvas {
 export async function renderToCanvas(
   image: LoadedImage,
   state: EditState,
-  options: Pick<ExportOptions, 'maxWidth' | 'maxHeight' | 'renderer'> & {
+  options: Pick<ExportOptions, 'maxWidth' | 'maxHeight' | 'renderer' | 'tileSize'> & {
     background?: string;
   } = {},
 ): Promise<RenderedCanvas> {
@@ -109,22 +127,14 @@ export async function renderToCanvas(
       continue;
     }
     try {
-      const { size, scale } = fitOutput(full, options, renderer.maxOutputSize);
-      await renderer.prepare(image);
-      renderer.render({
-        image,
-        state,
-        canvasSize: size,
-        outputSize: size,
-        outputScale: scale,
-        canvasToOutput: IDENTITY,
-        checker: null,
-        smooth: true,
-      });
-      // Copy onto a 2D canvas: a uniform encoder, and room for the 2D layers below.
-      let out = createCanvas(size.width, size.height);
+      // Full size (or the app's max size) — scaled down only if the browser can't hold it.
+      const wanted = fitOutput(full, options);
+      const { size, scale, canvas: target } = fitCanvas(full, wanted.scale);
+      const downscaled = size.width < wanted.size.width || size.height < wanted.size.height;
+      // The photo pass lands on a 2D canvas: a uniform encoder, and room for the 2D layers below.
+      let out = target;
       let ctx = context2d(out);
-      ctx.drawImage(canvas, 0, 0);
+      await drawPhoto(ctx, renderer, canvas, image, state, size, scale, options.tileSize);
 
       const transform = compose(scaleBy(scale), getOrientedToOutput(image, state));
       // The round crop is the photo's ellipse (inside any added canvas space).
@@ -214,7 +224,13 @@ export async function renderToCanvas(
       }
       if (drawMark && !markDrawn) drawMark(ctx);
 
-      return { canvas: out, width: size.width, height: size.height, renderer: renderer.kind };
+      return {
+        canvas: out,
+        width: size.width,
+        height: size.height,
+        renderer: renderer.kind,
+        downscaled,
+      };
     } catch (error) {
       lastError = error;
     } finally {
@@ -260,6 +276,7 @@ export async function exportImage(
     fileName: `${baseName}.${EXTENSIONS[actualType] ?? 'png'}`,
     state,
     renderer: rendered.renderer,
+    downscaled: rendered.downscaled,
   };
 }
 
@@ -313,6 +330,162 @@ export function fitOutput(
 }
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+/** Canvases up to this size work in every browser (iOS Safari's area limit); no probe needed. */
+const SAFE_CANVAS_AREA = 16_777_216;
+const SAFE_CANVAS_SIDE = 8192;
+
+/**
+ * The output canvas at `scale`, or scaled down until the browser can hold it. Browsers don't
+ * report their limit, so a big canvas is probed: draw its last pixel and read it back.
+ */
+function fitCanvas(full: Size, wanted: number): { size: Size; scale: number; canvas: AnyCanvas } {
+  let scale = wanted;
+  for (let attempt = 0; ; attempt++) {
+    const size = {
+      width: Math.max(1, Math.round(full.width * scale)),
+      height: Math.max(1, Math.round(full.height * scale)),
+    };
+    const canvas = usableCanvas(size, attempt >= 20);
+    if (canvas) return { size, scale, canvas };
+    scale *= 0.85;
+  }
+}
+
+function usableCanvas({ width, height }: Size, force: boolean): AnyCanvas | null {
+  const safe = width * height <= SAFE_CANVAS_AREA && Math.max(width, height) <= SAFE_CANVAS_SIDE;
+  try {
+    const canvas = createCanvas(width, height);
+    if (safe || force) return canvas;
+    const ctx = canvas.getContext('2d') as Context2D | null;
+    if (!ctx) return null;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(width - 1, height - 1, 1, 1);
+    const ok = ctx.getImageData(width - 1, height - 1, 1, 1).data[3] === 255;
+    ctx.clearRect(width - 1, height - 1, 1, 1);
+    return ok ? canvas : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The photo pass (geometry + colour + detail + finish) onto `ctx`. One render when it fits the
+ * renderer; otherwise in tiles (Phase 7.7d): each tile is rendered with a margin wide enough for
+ * blur / sharpen / clarity, so no seams show, and — when the source is above the texture limit —
+ * uploads only the part of the photo it shows. Vignette and grain use output positions, so they
+ * line up across tiles.
+ */
+async function drawPhoto(
+  ctx: Context2D,
+  renderer: Renderer,
+  rendered: AnyCanvas,
+  image: LoadedImage,
+  state: EditState,
+  size: Size,
+  scale: number,
+  tileSize: number | undefined,
+): Promise<void> {
+  const common = {
+    image,
+    state,
+    outputSize: size,
+    outputScale: scale,
+    checker: null,
+    smooth: true,
+  };
+  const bigSource = Math.max(image.width, image.height) > renderer.maxTextureSize;
+  const bigOutput = Math.max(size.width, size.height) > renderer.maxOutputSize;
+  if (tileSize === undefined && !bigSource && !bigOutput) {
+    await renderer.prepare(image);
+    renderer.render({ ...common, canvasSize: size, canvasToOutput: IDENTITY });
+    ctx.drawImage(rendered, 0, 0);
+    return;
+  }
+
+  const limit = renderer.maxOutputSize;
+  const margin = Math.min(tileMargin(state, size), roundDown4((limit - 256) / 2));
+  const inner = tileSize ?? Math.max(256, Math.min(4096, roundDown4(limit - 2 * margin)));
+  const partial = renderer.kind === 'webgl2' && (bigSource || tileSize !== undefined);
+  if (!partial) await renderer.prepare(image);
+  const toSource = getOutputToSource(image, state, scale);
+
+  for (let y = 0; y < size.height; y += inner) {
+    for (let x = 0; x < size.width; x += inner) {
+      const w = Math.min(inner, size.width - x);
+      const h = Math.min(inner, size.height - y);
+      // The margin stops at the output's edges: there the canvas edge is the output edge, as in a
+      // one-pass render (blurs repeat the edge pixel instead of mixing in empty space).
+      const x0 = Math.max(0, x - margin);
+      const y0 = Math.max(0, y - margin);
+      const box = {
+        x: x0,
+        y: y0,
+        width: Math.min(size.width, x + w + margin) - x0,
+        height: Math.min(size.height, y + h + margin) - y0,
+      };
+      let source: { bitmap: ImageBitmap; rect: Rect } | undefined;
+      if (partial) {
+        const rect = sourceRect(toSource, box, image);
+        if (!rect) continue; // no photo in this tile
+        const k = Math.min(1, renderer.maxTextureSize / Math.max(rect.width, rect.height));
+        const bitmap = await createImageBitmap(
+          image.bitmap,
+          rect.x,
+          rect.y,
+          rect.width,
+          rect.height,
+          k < 1
+            ? {
+                resizeWidth: Math.max(1, Math.floor(rect.width * k)),
+                resizeHeight: Math.max(1, Math.floor(rect.height * k)),
+                resizeQuality: 'high',
+              }
+            : {},
+        );
+        source = { bitmap, rect };
+      }
+      try {
+        renderer.render({
+          ...common,
+          ...(source && { source }),
+          canvasSize: { width: box.width, height: box.height },
+          canvasToOutput: translate(box.x, box.y),
+        });
+        ctx.drawImage(rendered, x - x0, y - y0, w, h, x, y, w, h);
+      } finally {
+        source?.bitmap.close();
+      }
+    }
+  }
+}
+
+/** Output px a tile needs around it: 3σ of the widest detail blur (multiple of 4: blur grids). */
+function tileMargin(state: EditState, size: Size): number {
+  const sigmas = detailSigmas(state.finetune, size);
+  const sigma = Math.max(sigmas.sharpen, sigmas.clarity, sigmas.blur);
+  return Math.max(4, Math.ceil((3 * sigma + 4) / 4) * 4);
+}
+
+function roundDown4(n: number): number {
+  return Math.max(0, Math.floor(n / 4) * 4);
+}
+
+/** Source px under an output box (bounding box of its corners, +2 px for filtering), or null. */
+function sourceRect(toSource: Mat3, box: Rect, image: Size): Rect | null {
+  const corners = [
+    { x: box.x, y: box.y },
+    { x: box.x + box.width, y: box.y },
+    { x: box.x, y: box.y + box.height },
+    { x: box.x + box.width, y: box.y + box.height },
+  ].map((p) => mat3Apply(toSource, p));
+  const x0 = Math.max(0, Math.floor(Math.min(...corners.map((p) => p.x))) - 2);
+  const y0 = Math.max(0, Math.floor(Math.min(...corners.map((p) => p.y))) - 2);
+  const x1 = Math.min(image.width, Math.ceil(Math.max(...corners.map((p) => p.x))) + 2);
+  const y1 = Math.min(image.height, Math.ceil(Math.max(...corners.map((p) => p.y))) + 2);
+  if (!(x1 > x0 && y1 > y0)) return null;
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
 
 function context2d(canvas: AnyCanvas): Context2D {
   const ctx = canvas.getContext('2d') as Context2D | null;

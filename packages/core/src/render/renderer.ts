@@ -43,6 +43,11 @@ export interface RenderParams {
    * shows the cropped-away image). Default `true`; the crop view turns it off to show everything.
    */
   clipToPhoto?: boolean;
+  /**
+   * Draw from this bitmap, which holds only `rect` of the source image (in source px, possibly
+   * scaled down) — for tiled exports of images above the texture limit. Canvas2D ignores it.
+   */
+  source?: { bitmap: ImageBitmap; rect: Rect };
 }
 
 export interface Renderer {
@@ -51,8 +56,10 @@ export interface Renderer {
   prepare(image: LoadedImage): Promise<void>;
   isReady(image: LoadedImage): boolean;
   render(params: RenderParams): void;
-  /** Largest output width/height this renderer can produce. */
+  /** Largest output width/height this renderer can produce in one pass. */
   readonly maxOutputSize: number;
+  /** Largest source image side it can sample without scaling it down (`Infinity` = no limit). */
+  readonly maxTextureSize: number;
   dispose(): void;
 }
 

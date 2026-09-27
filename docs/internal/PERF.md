@@ -99,3 +99,10 @@ freed). 10 photos of 3MP, each with a sticker, the Filter thumbnails, compare on
 
 Also freed now (not in the counts): the full-size drawing buffers of unused layers (compare,
 redactions, Fill) — ~20 MB each on a Retina stage.
+
+## Large photos (7.7d)
+
+Above the GPU's texture limit (16384 px on the M4; 8192 in headless test Chrome) the export is
+rendered in tiles at full size. Normal-size exports are unchanged (24MP JPEG 276 ms, 48MP 517 ms
+after 7.7d). The output canvas is probed above 16.7 MP; iPhones cap canvases at ~16.7 MP, so larger
+exports there come back scaled down with `downscaled: true`.

@@ -167,23 +167,30 @@ export async function renderToCanvas(
       }
 
       // 2. Fill underneath, or flatten for JPEG.
-      if (state.background || options.background) {
+      if (options.background && !state.background) {
+        // Colour behind the photo on the same canvas: a second full-size canvas would double the
+        // memory (a 48MP JPEG went over iPhones' ~384 MB canvas budget — DECISIONS #104).
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = options.background;
+        ctx.fillRect(0, 0, size.width, size.height);
+        ctx.restore();
+      } else if (state.background) {
         const flat = createCanvas(size.width, size.height);
         const fctx = context2d(flat);
         if (options.background) {
           fctx.fillStyle = options.background;
           fctx.fillRect(0, 0, size.width, size.height);
         }
-        if (state.background) {
-          const asset =
-            state.background.kind === 'image' ? state.assets[state.background.assetId] : undefined;
-          const bitmap = asset ? await loadAssetBitmap(asset.src) : null;
-          drawBackground(fctx, state.background, size, {
-            result: out,
-            ...(bitmap && { image: bitmap }),
-          });
-        }
+        const asset =
+          state.background.kind === 'image' ? state.assets[state.background.assetId] : undefined;
+        const bitmap = asset ? await loadAssetBitmap(asset.src) : null;
+        drawBackground(fctx, state.background, size, {
+          result: out,
+          ...(bitmap && { image: bitmap }),
+        });
         fctx.drawImage(out, 0, 0);
+        releaseCanvas(out);
         out = flat;
         ctx = fctx;
       }
@@ -221,6 +228,7 @@ export async function renderToCanvas(
         }).watermarkDrawn;
         lctx.restore();
         ctx.drawImage(layer, 0, 0);
+        releaseCanvas(layer);
       }
       if (drawMark && !markDrawn) drawMark(ctx);
 
@@ -235,6 +243,7 @@ export async function renderToCanvas(
       lastError = error;
     } finally {
       renderer.dispose();
+      releaseCanvas(canvas);
     }
   }
   throw lastError instanceof Error ? lastError : new Error('image-ultra: rendering failed.');
@@ -254,7 +263,12 @@ export async function exportImage(
     ...options,
     ...(mimeType === 'image/jpeg' && { background: options.background ?? '#ffffff' }),
   });
-  let blob = await canvasToBlob(rendered.canvas, mimeType, quality);
+  let blob: Blob;
+  try {
+    blob = await canvasToBlob(rendered.canvas, mimeType, quality);
+  } finally {
+    releaseCanvas(rendered.canvas);
+  }
   const actualType = blob.type || mimeType;
   if (options.keepMetadata && image.exif && actualType === 'image/jpeg') {
     const exif = cleanExif(image.exif, {
@@ -331,6 +345,15 @@ export function fitOutput(
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
+/**
+ * Frees a canvas's pixels now (width / height 0) instead of whenever it's garbage collected —
+ * Safari counts canvas memory until then.
+ */
+function releaseCanvas(canvas: AnyCanvas): void {
+  canvas.width = 0;
+  canvas.height = 0;
+}
+
 /** Canvases up to this size work in every browser (iOS Safari's area limit); no probe needed. */
 const SAFE_CANVAS_AREA = 16_777_216;
 const SAFE_CANVAS_SIDE = 8192;
@@ -395,7 +418,11 @@ async function drawPhoto(
     smooth: true,
   };
   const bigSource = Math.max(image.width, image.height) > renderer.maxTextureSize;
-  const bigOutput = Math.max(size.width, size.height) > renderer.maxOutputSize;
+  // Above ~16.7 MP the GPU's own drawing surface is kept tile-sized too: iPhones allow ~384 MB of
+  // canvases per page, and a 48MP output plus a 48MP drawing surface is already 384 MB.
+  const bigOutput =
+    Math.max(size.width, size.height) > renderer.maxOutputSize ||
+    size.width * size.height > SAFE_CANVAS_AREA;
   if (tileSize === undefined && !bigSource && !bigOutput) {
     await renderer.prepare(image);
     renderer.render({ ...common, canvasSize: size, canvasToOutput: IDENTITY });
@@ -405,8 +432,10 @@ async function drawPhoto(
 
   const limit = renderer.maxOutputSize;
   const margin = Math.min(tileMargin(state, size), roundDown4((limit - 256) / 2));
-  const inner = tileSize ?? Math.max(256, Math.min(4096, roundDown4(limit - 2 * margin)));
-  const partial = renderer.kind === 'webgl2' && (bigSource || tileSize !== undefined);
+  const inner = tileSize ?? Math.max(256, Math.min(2048, roundDown4(limit - 2 * margin)));
+  // WebGL tiles upload only their part of the photo — never a second full-size copy of it (the
+  // preview already holds one).
+  const partial = renderer.kind === 'webgl2';
   if (!partial) await renderer.prepare(image);
   const toSource = getOutputToSource(image, state, scale);
 

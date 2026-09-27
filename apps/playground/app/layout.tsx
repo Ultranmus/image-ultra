@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // Some browsers add their own attributes to <html> before React loads (Chrome on iPhone adds
+    // `__gcrremoteframetoken`): harmless, so don't warn about that one element.
+    <html lang="en" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

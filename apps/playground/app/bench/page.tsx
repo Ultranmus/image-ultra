@@ -49,6 +49,18 @@ export default function BenchPage() {
         >
           Run 12 / 24 / 48MP
         </button>
+        {/* One size at a time — iPhones can't make canvases above ~16.7 MP (use 12MP there). */}
+        {SIZES.map((size) => (
+          <button
+            key={size}
+            type="button"
+            className="pg-btn"
+            disabled={running}
+            onClick={() => void run([size]).catch(() => {})}
+          >
+            {size}
+          </button>
+        ))}
         <span className="pg-log" role="status">
           {step}
         </span>

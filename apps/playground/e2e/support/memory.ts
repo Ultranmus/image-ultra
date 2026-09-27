@@ -13,6 +13,10 @@ export interface MemoryReport {
   textures: number;
   /** Megabytes of live texture level-0 data (width × height × 4). */
   textureMB: number;
+  /** Megabytes of live canvas pixels (2D and WebGL drawing buffers; width × height × 4). */
+  canvasMB: number;
+  /** Highest canvasMB / textureMB / bitmaps (MB) at any moment since the last `resetPeak`. */
+  peak: { canvasMB: number; textureMB: number; bitmapMB: number };
 }
 
 export async function trackMemory(page: Page): Promise<void> {
@@ -26,6 +30,7 @@ export async function trackMemory(page: Page): Promise<void> {
       bitmapIds.set(bitmap, id);
       liveBitmaps.set(id, bitmap.width * bitmap.height);
       bitmapGone.register(bitmap, id);
+      sample();
       return bitmap;
     };
     const create = window.createImageBitmap.bind(window) as (
@@ -39,7 +44,47 @@ export async function trackMemory(page: Page): Promise<void> {
       const id = bitmapIds.get(this);
       if (id !== undefined) liveBitmaps.delete(id);
       close.call(this);
+      sample();
     };
+
+    // Canvases: pixels of every <canvas> / OffscreenCanvas, freed on resize to 0 or collection.
+    const liveCanvases = new Map<number, number>(); // id → bytes
+    const canvasIds = new WeakMap<object, number>();
+    const canvasGone = new FinalizationRegistry<number>((id) => liveCanvases.delete(id));
+    const sizeCanvas = (canvas: HTMLCanvasElement | OffscreenCanvas) => {
+      let id = canvasIds.get(canvas);
+      if (id === undefined) {
+        id = nextId++;
+        canvasIds.set(canvas, id);
+        canvasGone.register(canvas, id);
+      }
+      liveCanvases.set(id, canvas.width * canvas.height * 4);
+      sample();
+    };
+    for (const Canvas of [HTMLCanvasElement, OffscreenCanvas]) {
+      for (const side of ['width', 'height'] as const) {
+        const d = Object.getOwnPropertyDescriptor(Canvas.prototype, side)!;
+        Object.defineProperty(Canvas.prototype, side, {
+          ...d,
+          set(this: HTMLCanvasElement | OffscreenCanvas, value: number) {
+            d.set!.call(this, value);
+            sizeCanvas(this);
+          },
+        });
+      }
+    }
+    const Offscreen = OffscreenCanvas;
+    (window as unknown as { OffscreenCanvas: unknown }).OffscreenCanvas = class extends Offscreen {
+      constructor(width: number, height: number) {
+        super(width, height);
+        sizeCanvas(this);
+      }
+    };
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: never[]) {
+      sizeCanvas(this);
+      return (getContext as (...a: never[]) => unknown).apply(this, args);
+    } as typeof getContext;
 
     // Textures: size per texture, grouped by context (a lost / collected context frees them all).
     type Gl = WebGL2RenderingContext;
@@ -71,6 +116,7 @@ export async function trackMemory(page: Page): Promise<void> {
       (proto as unknown as Record<string, unknown>)[name] = function (this: Gl, ...args: never[]) {
         const result = original.apply(this, args);
         after(this, args, result);
+        sample();
         return result;
       };
     };
@@ -120,7 +166,7 @@ export async function trackMemory(page: Page): Promise<void> {
       return ext;
     } as typeof proto.getExtension;
 
-    (window as unknown as { __memory: () => unknown }).__memory = () => {
+    const totals = () => {
       let pixels = 0;
       for (const p of liveBitmaps.values()) pixels += p;
       let textures = 0;
@@ -129,14 +175,43 @@ export async function trackMemory(page: Page): Promise<void> {
         textures += c.textures.size;
         for (const b of c.textures.values()) bytes += b;
       }
+      let canvasBytes = 0;
+      for (const b of liveCanvases.values()) canvasBytes += b;
+      return { pixels, textures, bytes, canvasBytes };
+    };
+    const mb = (bytes: number) => Math.round(bytes / 1e5) / 10;
+    let peak = { canvasMB: 0, textureMB: 0, bitmapMB: 0 };
+    function sample() {
+      const t = totals();
+      peak = {
+        canvasMB: Math.max(peak.canvasMB, mb(t.canvasBytes)),
+        textureMB: Math.max(peak.textureMB, mb(t.bytes)),
+        bitmapMB: Math.max(peak.bitmapMB, mb(t.pixels * 4)),
+      };
+    }
+    const hook = window as unknown as { __memory: () => unknown; __resetPeak: () => void };
+    hook.__resetPeak = () => {
+      peak = { canvasMB: 0, textureMB: 0, bitmapMB: 0 };
+      sample();
+    };
+    hook.__memory = () => {
+      const t = totals();
       return {
         bitmaps: liveBitmaps.size,
-        bitmapMP: Math.round(pixels / 1e5) / 10,
-        textures,
-        textureMB: Math.round(bytes / 1e5) / 10,
+        bitmapMP: Math.round(t.pixels / 1e5) / 10,
+        textures: t.textures,
+        textureMB: mb(t.bytes),
+        canvasMB: mb(t.canvasBytes),
+        peak,
       };
     };
   });
+}
+
+/** Collects garbage, then starts measuring peaks afresh. */
+export async function resetPeak(page: Page): Promise<void> {
+  await readMemory(page);
+  await page.evaluate(() => (window as unknown as { __resetPeak: () => void }).__resetPeak());
 }
 
 /** Collects garbage (twice, with frames between) and reads the counters. */

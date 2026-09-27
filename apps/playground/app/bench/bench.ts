@@ -45,8 +45,8 @@ export interface BenchResult {
   exports: ExportTiming[];
   /** Chrome only (`performance.memory`); after load, after drags + exports. */
   heapMegabytes: { afterLoad: number | null; afterAll: number | null };
-  /** Photo texture in GPU memory: width × height × 4 bytes. */
-  textureMegabytes: number;
+  /** The decoded photo: width × height × 4 bytes (the preview keeps a smaller copy on the GPU). */
+  photoMegabytes: number;
 }
 
 const MB = 1024 * 1024;
@@ -88,7 +88,11 @@ export async function makePhoto(size: PhotoSize): Promise<Blob> {
   tctx.putImageData(noise, 0, 0);
   ctx.fillStyle = ctx.createPattern(tile, 'repeat')!;
   ctx.fillRect(0, 0, width, height);
-  return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 });
+  const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 });
+  // Free its pixels now: iPhones count canvas memory until garbage collection (~384 MB per page).
+  canvas.width = 0;
+  canvas.height = 0;
+  return blob;
 }
 
 const nextFrame = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
@@ -277,7 +281,7 @@ export async function runBench(
     drags,
     exports,
     heapMegabytes: { afterLoad, afterAll: heap() },
-    textureMegabytes: round((image.width * image.height * 4) / MB),
+    photoMegabytes: round((image.width * image.height * 4) / MB),
   };
 }
 
@@ -321,7 +325,7 @@ export function toMarkdown(results: BenchResult[]): string {
     `| JS heap after load / all | ${results
       .map((r) => `${r.heapMegabytes.afterLoad ?? '–'} / ${r.heapMegabytes.afterAll ?? '–'} MB`)
       .join(' | ')} |`,
-    `| Photo texture (GPU) | ${results.map((r) => `${r.textureMegabytes} MB`).join(' | ')} |`,
+    `| Decoded photo (w × h × 4) | ${results.map((r) => `${r.photoMegabytes} MB`).join(' | ')} |`,
   );
   return lines.join('\n');
 }

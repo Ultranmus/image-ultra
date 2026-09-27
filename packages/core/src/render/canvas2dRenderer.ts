@@ -88,7 +88,10 @@ export class Canvas2DRenderer implements Renderer {
     ctx.imageSmoothingQuality = 'high';
     if (isAffine(sourceToCanvas)) {
       ctx.setTransform(...mat3ToAffine(sourceToCanvas));
-      ctx.drawImage(image.bitmap, 0, 0, image.width, image.height);
+      // A smaller copy (preview of a big photo) is stretched over the part of the source it holds.
+      const src = params.source;
+      if (src) ctx.drawImage(src.bitmap, src.rect.x, src.rect.y, src.rect.width, src.rect.height);
+      else ctx.drawImage(image.bitmap, 0, 0, image.width, image.height);
     } else {
       drawWarped(ctx, image.bitmap, image, sourceToCanvas);
     }

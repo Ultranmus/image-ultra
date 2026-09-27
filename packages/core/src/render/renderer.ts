@@ -45,7 +45,8 @@ export interface RenderParams {
   clipToPhoto?: boolean;
   /**
    * Draw from this bitmap, which holds only `rect` of the source image (in source px, possibly
-   * scaled down) — for tiled exports of images above the texture limit. Canvas2D ignores it.
+   * scaled down): a tile's part of the photo in tiled exports, or the preview's smaller copy of a
+   * big photo. Canvas2D uses it only without perspective.
    */
   source?: { bitmap: ImageBitmap; rect: Rect };
 }

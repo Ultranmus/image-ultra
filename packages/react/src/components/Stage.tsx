@@ -27,6 +27,7 @@ import {
   getOrientedSize,
   redactReference,
   getOutputSize,
+  getOutputToSource,
   getPhotoRect,
   ImageLoadError,
   loadAnnotationAssets,
@@ -40,6 +41,7 @@ import {
   type LoadedImage,
   type Point,
   type Renderer,
+  type RenderParams,
 } from '@image-ultra/core';
 import { ToolIdContext, useEditorState, useEditorStore, useLabels } from '../context';
 import type { Labels } from '../i18n';
@@ -131,11 +133,43 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
     }
     let frame = 0;
     let disposed = false;
+    // Big photos: the preview draws a copy at most PREVIEW_MAX_SIDE long, made once per photo.
+    let copyFor: LoadedImage | null = null;
+    let copy: ImageBitmap | null = null;
+    let copyFailed = false;
+    const previewCopy = (image: LoadedImage): ImageBitmap | null | 'pending' => {
+      const long = Math.max(image.width, image.height);
+      if (long <= PREVIEW_MAX_SIDE) return null;
+      if (copyFor !== image) {
+        copy?.close();
+        copy = null;
+        copyFailed = false;
+        copyFor = image;
+        const k = PREVIEW_MAX_SIDE / long;
+        createImageBitmap(image.bitmap, {
+          resizeWidth: Math.max(1, Math.round(image.width * k)),
+          resizeHeight: Math.max(1, Math.round(image.height * k)),
+          resizeQuality: 'high',
+        }).then(
+          (bitmap) => {
+            if (disposed || copyFor !== image) return bitmap.close();
+            copy = bitmap;
+            schedule();
+          },
+          () => {
+            // Draw from the full photo instead.
+            if (copyFor === image) copyFailed = true;
+            if (!disposed) schedule();
+          },
+        );
+      }
+      return copy ?? (copyFailed ? null : 'pending');
+    };
     // "Before" side of compare: its own canvas + renderer, created the first time it's needed.
     let beforeRenderer: Renderer | null = null;
     let beforeFor: EditState | null = null;
     let beforeState: EditState | null = null;
-    const drawBefore = (state: EditorState, image: LoadedImage) => {
+    const drawBefore = (state: EditorState, image: LoadedImage, copy: ImageBitmap | null) => {
       beforeRenderer ??= createRenderer(beforeCanvas, { premultipliedAlpha: true });
       if (!beforeRenderer.isReady(image)) {
         beforeRenderer.prepare(image).then(() => {
@@ -152,6 +186,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
         container,
         { ...state, edit: beforeState! },
         window.devicePixelRatio || 1,
+        copy,
       );
     };
     const draw = () => {
@@ -166,12 +201,15 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
           }, fail);
           return;
         }
+        // Wait for a big photo's preview copy rather than uploading the full photo meanwhile.
+        const copy = previewCopy(image);
+        if (copy === 'pending') return;
         const ratio = previewRatio(renderer, state);
-        renderPreview(renderer, container, state, ratio);
+        renderPreview(renderer, container, state, ratio, copy);
         // Same task as the GPU frame: its canvas can still be read (no preserveDrawingBuffer).
         paintRedactions(redactCanvas, canvas, state, ratio);
         paintBackground(backgroundCanvas, [canvas, redactCanvas], state, fillImage(state), ratio);
-        if (state.compare !== null) drawBefore(state, image);
+        if (state.compare !== null) drawBefore(state, image, copy);
         else if (beforeRenderer) {
           // Compare closed: free its copy of the photo on the GPU and its drawing buffer (7.7c).
           beforeRenderer.dispose();
@@ -218,6 +256,7 @@ export function Stage({ overlay: Overlay, toolId = '' }: StageProps) {
       cancelAnimationFrame(frame);
       renderer.dispose();
       beforeRenderer?.dispose();
+      copy?.close();
     };
   }, [store]);
 
@@ -719,6 +758,27 @@ function keepOnly(images: Map<string, ImageBitmap | null>, src: string | undefin
   for (const key of images.keys()) if (key !== src) images.delete(key);
 }
 
+/**
+ * Longest side of the preview's copy of a big photo (~50 MB at 4096 × 3072 instead of 192 MB for
+ * 48MP — iPhones ran out of memory). The full photo is used only when zoomed in past the copy.
+ */
+const PREVIEW_MAX_SIDE = 4096;
+
+/**
+ * Draws from the preview copy while it has enough pixels — one of its pixels covers at most one
+ * canvas pixel — otherwise from the full photo (the renderer uploads it then).
+ */
+function withPreviewCopy(params: RenderParams, copy: ImageBitmap | null): RenderParams {
+  if (!copy) return params;
+  const { image, state, canvasToOutput: c, outputScale } = params;
+  const m = getOutputToSource(image, state, outputScale);
+  const sourcePerCanvasPx =
+    Math.sqrt(Math.abs(c[0] * c[3] - c[1] * c[2])) * Math.sqrt(Math.abs(m[0] * m[4] - m[1] * m[3]));
+  if (sourcePerCanvasPx * (copy.width / image.width) < 1) return params;
+  const rect = { x: 0, y: 0, width: image.width, height: image.height };
+  return { ...params, source: { bitmap: copy, rect } };
+}
+
 /** Canvas pixels the Canvas2D fallback draws while a change is open (~0.35 MP ≈ 20 fps). */
 const DRAG_PIXEL_BUDGET = 350_000;
 
@@ -743,6 +803,7 @@ function renderPreview(
   container: HTMLElement,
   state: EditorState,
   dpr: number,
+  copy: ImageBitmap | null,
 ): void {
   const { image, edit, viewport: vp, stageSize, cropView } = state;
   if (!image) return;
@@ -766,45 +827,55 @@ function renderPreview(
     const bounds = getImageBounds(image, edit.geometry);
     const crop = getCropRect(image, edit.geometry);
     const k = 1 / (dpr * cropView.scale);
-    renderer.render({
-      ...common,
-      state: {
-        ...edit,
-        geometry: { ...edit.geometry, crop: bounds, cropShape: 'rect' },
-        canvas: null,
-        resize: { width: bounds.width, height: bounds.height },
-      },
-      outputSize: { width: bounds.width, height: bounds.height },
-      // Vignette follows the crop (as in the result), not the whole image shown around it.
-      photoRect: { ...crop, x: crop.x - bounds.x, y: crop.y - bounds.y },
-      // The crop view shows the whole photo, including what's outside the crop.
-      clipToPhoto: false,
-      canvasToOutput: [
-        k,
-        0,
-        0,
-        k,
-        -cropView.x / cropView.scale - bounds.x,
-        -cropView.y / cropView.scale - bounds.y,
-      ],
-      smooth: true,
-    });
+    renderer.render(
+      withPreviewCopy(
+        {
+          ...common,
+          state: {
+            ...edit,
+            geometry: { ...edit.geometry, crop: bounds, cropShape: 'rect' },
+            canvas: null,
+            resize: { width: bounds.width, height: bounds.height },
+          },
+          outputSize: { width: bounds.width, height: bounds.height },
+          // Vignette follows the crop (as in the result), not the whole image shown around it.
+          photoRect: { ...crop, x: crop.x - bounds.x, y: crop.y - bounds.y },
+          // The crop view shows the whole photo, including what's outside the crop.
+          clipToPhoto: false,
+          canvasToOutput: [
+            k,
+            0,
+            0,
+            k,
+            -cropView.x / cropView.scale - bounds.x,
+            -cropView.y / cropView.scale - bounds.y,
+          ],
+          smooth: true,
+        },
+        copy,
+      ),
+    );
     return;
   }
 
   // Canvas px → stage CSS px → output px.
   const k = 1 / (dpr * vp.scale);
   // With a Fill, transparent parts show the fill layer underneath instead of the checkerboard.
-  renderer.render({
-    ...common,
-    // Added canvas space is part of the result: show it (checkerboard) even where there's no photo.
-    checker: edit.background ? null : { ...common.checker, coverOutput: true },
-    state: edit,
-    outputSize: getOutputSize(image, edit),
-    canvasToOutput: [k, 0, 0, k, -vp.x / vp.scale, -vp.y / vp.scale],
-    // Show crisp pixels when zoomed in far enough to inspect them.
-    smooth: vp.scale < 3,
-  });
+  renderer.render(
+    withPreviewCopy(
+      {
+        ...common,
+        // Added canvas space is part of the result: show it (checkerboard) even where there's no photo.
+        checker: edit.background ? null : { ...common.checker, coverOutput: true },
+        state: edit,
+        outputSize: getOutputSize(image, edit),
+        canvasToOutput: [k, 0, 0, k, -vp.x / vp.scale, -vp.y / vp.scale],
+        // Show crisp pixels when zoomed in far enough to inspect them.
+        smooth: vp.scale < 3,
+      },
+      copy,
+    ),
+  );
 }
 
 /** Adds the ellipse inscribed in `r` to the current path. */

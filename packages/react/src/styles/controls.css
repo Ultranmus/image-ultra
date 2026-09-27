@@ -238,6 +238,14 @@
     outline: none;
     box-shadow: var(--iu-focus-ring);
   }
+
+  /* Very narrow editors: tighter items, so a 4-choice switch fits 320px even with wide fonts
+     (Linux / Windows defaults are wider than macOS's). */
+  @container iu (max-width: 359px) {
+    .iu-segmented__item {
+      padding: 0 var(--iu-space-2);
+    }
+  }
 }
 
 /* ── PresetStrip / chips ───────────────────────────────── */

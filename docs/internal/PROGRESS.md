@@ -647,3 +647,9 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   theme playground with contrast readouts and copyable props / CSS; (4) docs e2e with axe in light
   - dark (34 tests) — fixed Shiki theme contrast, reference link target size, an example accent.
     All green: build, typecheck, 149 unit, e2e 154 + 34 + 3, package checks.
+- 8c committed. **8d**: owner created the GitHub repo (public) + npm org + `NPM_TOKEN` secret;
+  pushed. Release first failed (Actions may not open PRs → owner changed the setting; then
+  changesets/action v2 renamed inputs → fixed); actions bumped to current majors (v4 ran on
+  deprecated Node 20). "Version packages" PR #1 open. CI on Linux: one e2e failure — the Fill
+  switch overflowed at 320px with Linux's wider font → narrow editors tighten segmented items
+  (UI_VISION §3). Playwright `github` reporter in CI so failures are readable without a login.

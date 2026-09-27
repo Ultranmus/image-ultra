@@ -82,9 +82,9 @@ Update this file at the end of every session.
   `app/docs/*/page.mdx`; `/reference` is generated from `packages/*/dist/index.d.ts` (build packages
   first); `pnpm --filter docs check:snippets` type-checks guide examples.
 - **8d prepared** (DECISIONS #110): repo `github.com/Ultranmus/image-ultra` (public, created by the
-  owner; `origin` added, **nothing pushed yet**), CI + release workflows, 0.1.0 changeset.
-  Waiting for the owner: (1) keep or hide their email in existing commits, (2) keep
-  `docs/internal/` public, (3) "push"; npm account + 2FA + `image-ultra` org still to create.
+  owner), **pushed 2026-09-28** (remote `git@github-personal:…`, the owner's personal SSH key;
+  email kept in history, `docs/internal/` public — owner took the recommendations). npm org
+  `image-ultra` + `NPM_TOKEN` secret done; "Version packages" PR #1 open — merge only when CI is green.
 - Phase 7 has no open owner items (`.ico` crash found and fixed 2026-09-28, DECISIONS #105).
   (Hindi / Arabic: owner checked — labels wired right, words not; left as examples, not fixed.)
 
@@ -98,6 +98,10 @@ Update this file at the end of every session.
 
 ## Commands & gotchas
 
+- **e2e reuses a dev server already on 3100** — after changing package CSS, restart `pnpm playground`
+  (or stop it) first: `next dev` kept the old `styles.css`, and a test passed against stale CSS.
+- CI (GitHub Actions) runs on Linux: fonts are wider than macOS's. Failed tests show as annotations
+  on the run (Playwright `github` reporter), readable without signing in via the API.
 - Run: `pnpm playground` → http://localhost:3100 (builds packages, then `next dev`).
   On a phone (same Wi-Fi): `http://<Mac's LAN IP>:3100` (`ipconfig getifaddr en0`); the config
   allows the LAN addresses (`allowedDevOrigins`). Restart `pnpm playground` after changing networks.
@@ -111,3 +115,7 @@ Update this file at the end of every session.
   `pnpm prettier --write`; re-read the file first.
 - Headless Chrome logs "GPU stall due to ReadPixels" for any WebGL canvas — not our bug (DECISIONS #54).
 - The owner keeps the Mac awake with `caffeinate -dims` during long work; on battery, closing the lid still sleeps.
+- **Vercel (2026-09-27)**: `apps/docs/vercel.json` added (build `pnpm turbo run build --filter=docs`
+  from the repo root, output `out/`; verified locally). Waiting: owner imports
+  `Ultranmus/image-ultra` on vercel.com with Root Directory `apps/docs`. After the first deploy, point
+  `homepage` in the package.json files at the docs URL (DECISIONS #110).

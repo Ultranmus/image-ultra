@@ -62,7 +62,8 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 ```
 
 - Breakpoints use **container queries** on `.iu-root`, not viewport — the editor may live in a small modal.
-- Minimum usable size: 320 × 480.
+- Minimum usable size: 320 × 480. Below 360px wide, segmented switches use 8px side padding (not 12px) so a 4-choice switch fits
+  with wider system fonts too (Linux / Windows; found by CI on Linux, 2026-09-28).
 - **Rows never scroll sideways** (owner, 7.4): a tool's header / inspector row that doesn't fit
   wraps onto a second line, and the ControlBar grows to fit (148px minimum,
   `--iu-size-controlbar-max` = 248px, then it scrolls up/down). Below 480px a switch in a header

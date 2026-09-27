@@ -2,7 +2,11 @@
 
 ## How theming works
 
-- All styles live in `@layer image-ultra` so any consumer CSS (unlayered) wins without `!important`.
+- All styles live in `@layer image-ultra`, plus **one unlayered guard** (DECISIONS #112):
+  `.iu-root :where(*) { all: revert-layer }` (and `::before` / `::after` / `::placeholder`). The app's
+  unlayered CSS (resets, Tailwind v3 preflight) can't reach inside the editor. Consumers restyle via
+  the `--iu-*` variables (always win), a two-class selector (`.my-editor .iu-chip`), or their own
+  layer declared after `image-ultra`. Tested by `apps/playground/e2e/host-css.spec.ts`.
 - Tokens are CSS custom properties prefixed `--iu-`, declared on `.iu-root`.
 - Theme selected with `data-iu-theme="dark" | "light"` on `.iu-root`. `theme="auto"` omits the attribute and
   uses `@media (prefers-color-scheme)`.

@@ -34,8 +34,8 @@ use a lighter or darker shade than buttons.
 
 ## 3. CSS variables
 
-Every colour, size and duration is a CSS variable on `.iu-root`. All the editor's CSS lives in
-the `image-ultra` cascade layer, so any rule of yours wins — no `!important`, no specificity games:
+Every colour, size and duration is a CSS variable on `.iu-root`. Setting them is the way to
+restyle the editor, and it always works:
 
 ```css
 .my-editor .iu-root {
@@ -66,6 +66,24 @@ The main ones:
 
 With `theme="dark"` or `"light"` the editor sets `data-iu-theme` on `.iu-root`; `"auto"` follows
 `prefers-color-scheme`. Style both with `.iu-root[data-iu-theme='light']` if you need to.
+
+## Your app's CSS
+
+The editor's CSS lives in the `image-ultra` cascade layer, and your app's global CSS can't reach
+inside it: a reset like `* { padding: 0; margin: 0 }` (create-next-app's default
+`globals.css`) or Tailwind's preflight leaves the editor as it is.
+
+To change a rule of the editor's itself, use two classes, or a cascade layer declared after
+`image-ultra`:
+
+```css
+.my-editor .iu-chip {
+  border-radius: 4px;
+}
+```
+
+With Tailwind v4 (or any CSS in layers), import `@image-ultra/react/styles.css` **after** your
+own stylesheet, so the `image-ultra` layer comes after `base`.
 
 ## Icons
 

@@ -119,3 +119,11 @@ Update this file at the end of every session.
   `Ultranmus/image-ultra`, Root Directory `apps/docs`, config in `apps/docs/vercel.json` — no `outputDirectory`, see DECISIONS #111; every push
   to main deploys, PRs get previews). `homepage` in both packages, the READMEs and the docs'
   `metadataBase` point there (DECISIONS #111).
+- **0.1.0 published (2026-09-27)** — both packages on npm (`@image-ultra` org; the first release run
+  failed with "Scope not found" until the owner created the org). No provenance (BACKLOG).
+  **Install check (8e) found a bug**: a fresh create-next-app's unlayered `globals.css` reset squashed
+  the editor → unlayered guard rule (DECISIONS #112, `e2e/host-css.spec.ts`), patch changeset
+  `.changeset/app-css-guard.md` → **0.1.1**; README `'use client'` note. Next: owner merges the
+  "Version packages" PR for 0.1.1 → rerun the fresh Next + Vite install check against 0.1.1
+  (scaffolds in the session scratchpad are throwaway; recreate with `pnpm create next-app` /
+  `pnpm create vite --template react-ts`, keep create-next-app's globals.css) → CHANGELOG → Phase 8 done.

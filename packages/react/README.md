@@ -53,7 +53,9 @@ Import the stylesheet once, anywhere in your app.
 ### Next.js (App Router)
 
 The package is marked `'use client'`, so you can render `<ImageEditor>` from a Server Component
-page. Import `@image-ultra/react/styles.css` in your root layout.
+page. Import `@image-ultra/react/styles.css` in your root layout. Handlers like `onSave` are
+functions, which Server Components can't pass on: put the editor with its handlers in a component
+of your own that starts with `'use client'` (like `PhotoEditor` above).
 
 ## Save and restore edits
 

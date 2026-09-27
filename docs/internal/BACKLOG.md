@@ -5,6 +5,17 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 
 ## Open
 
+- [ ] **0.1.0 was published without npm provenance** (found 2026-09-27) — `NPM_CONFIG_PROVENANCE`
+      in release.yml didn't reach `changeset publish` → `pnpm publish`; npm shows no attestation.
+      _Phase 8e/next release_
+  - Fix: set up npm trusted publishing for both packages (then provenance is automatic), or pass
+    `--provenance` through; check `npm view @image-ultra/react dist.attestations` after 0.1.1.
+- [x] **The app's unlayered CSS reset squashed the editor** _(fixed 2026-09-27, 0.1.1, DECISIONS
+      #112)_ — found by the 0.1.0 install check in a fresh create-next-app.
+- [x] **README quick start fails in a Next Server Component** _(fixed 2026-09-27)_ — `onSave` is a
+      function; the README now says to wrap the editor in a `'use client'` component (docs site
+      already did).
+
 ### Phase 5.1 — owner-reported (2026-09-24) · all fixed 2026-09-25
 
 - [x] **1. Tooltips get clipped inside panels** (seen in the Layers panel)

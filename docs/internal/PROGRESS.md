@@ -659,3 +659,9 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - CI (Linux): `memory stays flat over 10 photos` timed out at 30s (13s on the Mac; software WebGL on
   the runner) — no assertion failed, so no leak; the test gets 90s like the other heavy ones.
   Vercel: `outputDirectory: "out"` broke the Next.js builder → removed (DECISIONS #111).
+- **8e launch**: 0.1.0 published (after the owner created the npm org `image-ultra`; the org is
+  named in the scope). Install check from npm: Vite app fine; fresh Next app — (1) README quick
+  start with `onSave` in a Server Component fails the build → README note; (2) create-next-app's
+  unlayered `* { padding: 0; margin: 0 }` squashed every button → unlayered `all: revert-layer`
+  guard (DECISIONS #112, owner approved) + `e2e/host-css.spec.ts` (fails without the guard; flaky
+  until reduced motion + 1px position tolerance). Patch changeset for 0.1.1.

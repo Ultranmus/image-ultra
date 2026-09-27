@@ -1,0 +1,91 @@
+export const metadata = { title: 'Getting started' };
+
+# Getting started
+
+`@image-ultra/react` is an image editor component. Give it a photo; get back the edited image and
+the edits as JSON.
+
+## Install
+
+```sh
+npm install @image-ultra/react
+```
+
+React 18.2 or 19. The package ships its own types; there's nothing else to install.
+
+## Add the editor
+
+```tsx
+import { ImageEditor } from '@image-ultra/react';
+import '@image-ultra/react/styles.css';
+
+export function PhotoEditor() {
+  return (
+    <div style={{ height: 600 }}>
+      <ImageEditor
+        src="/photo.jpg"
+        onSave={(result) => {
+          // result.blob: the edited image · result.state: the edits (JSON)
+          console.log(result.fileName, result.width, result.height);
+        }}
+      />
+    </div>
+  );
+}
+```
+
+Two things matter:
+
+1. **Import the stylesheet once**, anywhere in your app (usually the root layout or entry file).
+2. **Give the container a height.** The editor fills its container and needs at least 480 × 320 px.
+
+`src` can be a URL, a `File` or `Blob` from an `<input type="file">`, an `<img>`, a `<canvas>` or an
+`ImageBitmap`. Leave it out to show a drop zone where people pick a photo themselves.
+
+## Next.js (App Router)
+
+The package is marked `'use client'`, so a Server Component page can render it directly:
+
+```tsx
+// app/layout.tsx
+import '@image-ultra/react/styles.css';
+
+// app/edit/page.tsx — a Server Component
+import { ImageEditor } from '@image-ultra/react';
+
+export default function Page() {
+  return (
+    <div style={{ height: '100dvh' }}>
+      <ImageEditor src="/photo.jpg" />
+    </div>
+  );
+}
+```
+
+Handlers like `onSave` are functions, and Server Components can't pass functions to Client
+Components — put the editor with its handlers in a component of your own marked `'use client'`.
+
+## Vite
+
+```tsx
+// src/main.tsx
+import '@image-ultra/react/styles.css';
+```
+
+Then render `<ImageEditor>` anywhere. Nothing to configure.
+
+## React Router (framework mode)
+
+Import the stylesheet in `app/root.tsx` and render the editor in a route. It renders on the server
+too (the editor's frame appears before JavaScript loads).
+
+## Working examples
+
+The repository has three small apps — Next.js App Router, Vite with React 18, and React Router — each
+opening a photo, saving it as a download and reopening the saved edits: `apps/examples/`.
+
+## Next
+
+- [Save and restore edits](/docs/saving)
+- [Choose which tools appear](/docs/tools)
+- [Theme it](/docs/theming) to match your app

@@ -1,0 +1,64 @@
+export const metadata = { title: 'Stickers, watermark and fonts' };
+
+# Stickers, watermark and fonts
+
+## Your stickers
+
+```tsx
+<ImageEditor
+  src={src}
+  stickers={[
+    { id: 'logo', label: 'Our logo', src: '/brand/logo.svg' },
+    { id: 'badge', label: 'New badge', src: 'https://cdn.example.com/badge.png' },
+  ]}
+/>
+```
+
+They're shown first in the Sticker tool, before the built-in stickers, the 3D stickers and every
+emoji. The images must be same-origin or served with CORS headers — the export reads their pixels.
+
+**3D stickers** (Microsoft Fluent Emoji 3D, MIT) load on demand from a pinned jsDelivr copy. Pass
+`stickerLibrary="https://your.cdn/fluent-3d/"` to self-host the files, or `stickerLibrary={false}`
+to hide them.
+
+When a user places a sticker or uploads an image, it's copied into the edits (as a data URL, at most
+1600 px), so saved edits never depend on a URL staying online.
+
+## A watermark
+
+```tsx
+<ImageEditor src={src} watermark={{ text: '© Acme', position: 'bottom-right', opacity: 0.6 }} />
+<ImageEditor src={src} watermark={{ logo: '/brand/logo.png', size: 0.2 }} lockWatermark />
+```
+
+- `watermark` starts every photo with this watermark; users can still change or remove it in the
+  Watermark tool.
+- **`lockWatermark`** makes it permanent: users can't change or remove it, and every export has it.
+- Positions: `top-left` … `bottom-right` (9), `custom` (with `x` / `y` as fractions), and `tile`
+  (repeated across the photo). `size` is 0.01–1 of the largest mark that fits.
+
+## Fonts for text
+
+```tsx
+<ImageEditor
+  fonts={[
+    { label: 'Inter', family: 'Inter, sans-serif' },
+    { label: 'Playfair', family: "'Playfair Display', serif" },
+  ]}
+/>
+```
+
+The editor uses the fonts; your app loads them (with `next/font`, a `<link>`, or `@font-face`).
+Exports wait for a font to load, so text never falls back to another font. By default the editor
+offers system font stacks.
+
+## Saved looks
+
+Users can save their own filter looks in the Filter tool. By default they're kept in the browser's
+`localStorage`. To keep them per user in your database, control them:
+
+```tsx
+<ImageEditor looks={userLooks} onLooksChange={(looks) => saveLooks(user.id, looks)} />
+```
+
+`persistLooks={false}` keeps them in memory only; a string changes the `localStorage` key.

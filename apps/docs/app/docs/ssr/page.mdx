@@ -1,0 +1,53 @@
+export const metadata = { title: 'Server rendering' };
+
+# Server rendering
+
+Both packages are safe to import on the server: nothing touches `window` or `document` until you
+use the editor in the browser. This is checked on every release by importing both packages in
+plain Node.
+
+## Next.js
+
+`@image-ultra/react` is marked `'use client'`, so Server Components can render `<ImageEditor>`
+directly. The editor's frame (bars, tool rail) is rendered on the server; the photo appears once
+JavaScript runs.
+
+Server Components can't pass functions (like `onSave`) to Client Components. Put the editor and its
+handlers in your own client component:
+
+```tsx
+'use client';
+
+import { ImageEditor } from '@image-ultra/react';
+
+export function PhotoEditor({ src }: { src: string }) {
+  return <ImageEditor src={src} onSave={(result) => console.log(result.state)} />;
+}
+```
+
+## React Router, Remix and others
+
+The editor renders on the server like any component. No `ClientOnly` wrapper or dynamic import
+needed.
+
+## What only runs in the browser
+
+Loading, rendering and exporting need a canvas: `renderImage`, `exportImage`, `loadImage` and the
+editor itself. Call them from event handlers or effects. Pure functions — `createEditState`,
+`parseEditState` and the types — work anywhere, including API routes that validate saved edits.
+On the server, import them from **`@image-ultra/core`** (`npm install @image-ultra/core`): in
+Next.js, server code that imports from a `'use client'` package gets client references, not the
+functions.
+
+```ts
+import { EditStateError, parseEditState } from '@image-ultra/core';
+
+export function validateEdits(body: unknown) {
+  try {
+    return parseEditState(body);
+  } catch (error) {
+    if (error instanceof EditStateError) return null;
+    throw error;
+  }
+}
+```

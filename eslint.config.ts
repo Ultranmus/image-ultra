@@ -9,6 +9,8 @@ export default tseslint.config(
       '**/.next/**',
       '**/build/**',
       '**/.react-router/**',
+      '**/out/**',
+      '**/.snippets/**',
       '**/next-env.d.ts',
       '**/node_modules/**',
     ],

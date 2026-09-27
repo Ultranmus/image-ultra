@@ -1,0 +1,108 @@
+export const metadata = { title: 'Save and restore edits' };
+
+# Save and restore edits
+
+The editor never changes the photo. Every edit is a change to an **`EditState`**: plain,
+versioned JSON describing geometry, colour, filter, the elements on the photo, frame, fill,
+watermark and output size. Save that JSON and you can reopen the photo later with every edit still
+editable.
+
+## When the user presses Done
+
+```tsx
+import { ImageEditor, type ExportResult } from '@image-ultra/react';
+
+declare const photoUrl: string;
+declare function upload(image: Blob, fileName: string): Promise<void>;
+declare function saveEdits(json: string): Promise<void>;
+
+export function Editor() {
+  return (
+    <ImageEditor
+      src={photoUrl}
+      exportOptions={{ mimeType: 'image/jpeg', quality: 0.9, maxWidth: 4000 }}
+      onSave={async (result: ExportResult) => {
+        await upload(result.blob, result.fileName);
+        await saveEdits(JSON.stringify(result.state));
+      }}
+    />
+  );
+}
+```
+
+While `onSave` runs, Done shows a spinner; if it throws, the editor tells the user saving failed.
+
+`result` has:
+
+| Field             |                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `blob`            | The edited image.                                                                |
+| `fileName`        | The source name plus the right extension, e.g. `photo.jpg`.                      |
+| `width`, `height` | Final size in pixels.                                                            |
+| `mimeType`        | The type actually produced (Safari on iOS gives PNG when asked for WebP).        |
+| `state`           | The `EditState` that produced it — save this to reopen.                          |
+| `downscaled`      | `true` if the browser couldn't hold a canvas that big and the result is smaller. |
+
+## Export options
+
+| Option                  | Default                                         |                                                 |
+| ----------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| `mimeType`              | the source's type (JPEG / PNG / WebP), else PNG | `'image/jpeg'`, `'image/png'` or `'image/webp'` |
+| `quality`               | `0.92` JPEG, `0.9` WebP                         | 0…1                                             |
+| `maxWidth`, `maxHeight` | none                                            | Scale down (never up) to fit.                   |
+| `fileName`              | the source's name                               | Without extension.                              |
+| `background`            | `#ffffff` for JPEG                              | Fills transparent areas.                        |
+| `keepMetadata`          | `false`                                         | See [Photo metadata](/docs/metadata).           |
+
+## Reopen saved edits
+
+```tsx
+<ImageEditor src={photoUrl} initialState={savedJson} />
+```
+
+`initialState` accepts an `EditState` or **untrusted JSON** — it's validated, unknown fields are
+dropped, and edits saved by older versions are migrated. It's read when `src` changes; to reopen
+the same photo with other edits, remount the editor (change its `key`) or call `setState` on the
+handle.
+
+## Every change, as it happens
+
+`onChange` fires after each committed edit — once per slider drag, not on every frame — with the
+new `EditState`. Use it for autosave:
+
+```tsx
+<ImageEditor src={photoUrl} onChange={(state) => saveDraft(JSON.stringify(state))} />
+```
+
+## From your own buttons
+
+```tsx
+import { ImageEditor, useImageEditor } from '@image-ultra/react';
+
+export function Editor({ photoUrl }: { photoUrl: string }) {
+  const editor = useImageEditor();
+  return (
+    <>
+      <ImageEditor ref={editor} src={photoUrl} />
+      <button onClick={() => editor.current?.save()}>Save</button>
+      <button onClick={() => console.log(editor.current?.getState())}>Log edits</button>
+    </>
+  );
+}
+```
+
+| Handle method                 |                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------ |
+| `getState()`                  | The current `EditState`.                                                       |
+| `setState(state)`             | Replace all edits (validated). Clears undo history.                            |
+| `update(label, recipe)`       | One undoable change: `update('Rotate', (s) => { s.geometry.rotation = 90; })`. |
+| `undo()`, `redo()`, `reset()` | Like the buttons.                                                              |
+| `exportImage(options?)`       | Render and encode without calling `onSave`.                                    |
+| `save()`                      | Same as pressing Done.                                                         |
+| `store`                       | The underlying store, for advanced use.                                        |
+
+## What's in the JSON
+
+Images the user adds (stickers, logos, pasted images, a Fill image) are stored **inside** the state
+as data URLs — at most 1600 px on the long side — so the JSON is self-contained. Expect anywhere
+from a few hundred bytes (crop and colour only) to a few hundred kilobytes with images.

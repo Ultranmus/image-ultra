@@ -1,0 +1,84 @@
+export const metadata = { title: 'Languages and right-to-left' };
+
+# Languages and right-to-left
+
+The editor ships in English. Every piece of text it shows — buttons, tooltips, history steps,
+screen-reader announcements, filter and sticker names — is a typed **label** you can replace.
+There are no bundled translations: your app provides its own, in whatever languages it supports.
+
+## Change a few labels
+
+```tsx
+import { ImageEditor, type LabelOverrides } from '@image-ultra/react';
+
+const labels: LabelOverrides = {
+  done: 'Save photo',
+  tools: { finetune: 'Colour' },
+};
+
+export function Editor({ src }: { src: string }) {
+  return <ImageEditor src={src} labels={labels} />;
+}
+```
+
+`LabelOverrides` is partial all the way down: override one key, or one key inside a group
+(`tools`, `finetune`, `filterNames`, `steps`…); everything else stays English.
+
+## A complete translation
+
+Type the object as the full **`Labels`** and TypeScript lists every string you haven't translated —
+including new ones added in later versions:
+
+```ts
+import { defaultLabels, type Labels } from '@image-ultra/react';
+
+// Start from the English labels, then translate each one.
+export const german: Labels = {
+  ...defaultLabels,
+  done: 'Fertig',
+  cancel: 'Abbrechen',
+  // …
+};
+```
+
+`defaultLabels` is the English set, handy as a template.
+
+## Counts and plural rules
+
+Labels with a number can be a function, so each language can use its own plural rules:
+
+```ts
+import type { LabelOverrides } from '@image-ultra/react';
+
+const plural = new Intl.PluralRules('ru');
+export const russian: LabelOverrides = {
+  selectedCount: (n) => {
+    const form = plural.select(n);
+    return `${n} ${form === 'one' ? 'объект' : form === 'few' ? 'объекта' : 'объектов'}`;
+  },
+};
+```
+
+A plain string works too: `'{count} selected'`.
+
+## Right-to-left
+
+```tsx
+<ImageEditor dir="rtl" labels={arabic} />
+```
+
+`dir` mirrors the layout: the tool rail moves to the right, rows run right to left, arrow keys
+follow. The photo, sliders, curves, histograms and the compare slider stay left-to-right (they
+describe the image, not text). Without `dir`, the editor follows the page's direction. Text you
+type in text shapes and watermarks gets its direction from its first letter, like `dir="auto"`.
+
+## Your own content
+
+Names of things your app adds are yours: sticker `label`, font `label`, filter preset `name`, size
+preset `label`. Built-in presets take their names from `labels.filterNames` and
+`labels.sizePresetNames`, keyed by id.
+
+## Not covered
+
+- **Emoji names and emoji search** are English.
+- **Numbers** are shown with Western digits (0–9).

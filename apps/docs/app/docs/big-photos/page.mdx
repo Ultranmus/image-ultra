@@ -1,0 +1,38 @@
+export const metadata = { title: 'Big photos and limits' };
+
+# Big photos and limits
+
+Measured on an M4 MacBook and an iPhone (full numbers in the repository's `PERF.md`):
+
+|                                    | 12 MP  | 24 MP  | 48 MP  |
+| ---------------------------------- | ------ | ------ | ------ |
+| Photo on screen (iPhone)           | 0.15 s | 0.26 s | 0.53 s |
+| Every slider drag (Mac and iPhone) | 60 fps | 60 fps | 60 fps |
+| Save as JPEG (iPhone)              | 0.5 s  | 0.9 s  | 1.9 s  |
+
+## How the editor keeps it fast
+
+- **Rendering on the GPU** (WebGL2). The work per frame depends on the screen size, not the photo
+  size.
+- **A preview copy for very large photos**: the screen shows a copy at most 4096 px long; full detail
+  loads when you zoom in far enough to see it.
+- **Tiled export**: photos larger than the GPU's texture limit (16,384 px on most desktops, less on
+  phones) are exported in tiles at full size.
+- **Memory**: images and GPU memory are freed as soon as they're not needed — loading ten photos in
+  a row uses no more than loading one.
+
+## Without WebGL2
+
+Some browsers or locked-down machines have no WebGL2. The editor falls back to Canvas2D with the
+same results, done on the CPU. It stays usable (it draws fewer pixels while you drag a slider and
+sharpens on release) but is slower with colour adjustments.
+
+## Limits worth knowing
+
+- **The biggest output** is limited by the browser's largest canvas: about 268 MP on desktop
+  browsers, about 16.7 MP on iPhones and iPads. Beyond that the result is scaled down and
+  `result.downscaled` is `true` — check it if exact size matters.
+- **WebP on iPhones**: Safari on iOS can't encode WebP and saves PNG instead. `result.mimeType`
+  and `result.fileName` tell you what you got.
+- **Formats in**: whatever the browser decodes — JPEG, PNG, WebP, GIF, AVIF, BMP, ICO, SVG
+  everywhere; HEIC in Safari. An unsupported file shows a clear message instead of an error.

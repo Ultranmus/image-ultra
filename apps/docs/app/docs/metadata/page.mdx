@@ -1,0 +1,31 @@
+export const metadata = { title: 'Photo metadata (EXIF)' };
+
+# Photo metadata (EXIF)
+
+Photos carry metadata: camera, lens, date, copyright — and often **where the photo was taken**.
+By default exports carry **none of it**. That's the safe choice for photos people share.
+
+## Keep it
+
+```tsx
+<ImageEditor exportOptions={{ mimeType: 'image/jpeg', keepMetadata: true }} />
+```
+
+With `keepMetadata: true`, a JPEG exported from a JPEG keeps the source's EXIF — **except the
+location**, which is still removed. To keep the location too:
+
+```tsx
+<ImageEditor exportOptions={{ keepMetadata: { location: true } }} />
+```
+
+What changes even when kept:
+
+- **Orientation** is reset — the pixels are already turned the right way.
+- **Width and height** are updated to the exported size.
+- **The embedded thumbnail and maker notes are dropped**: the thumbnail would show the unedited
+  photo, including anything the user redacted.
+
+## Limits
+
+Metadata is kept for **JPEG to JPEG** only. WebP and PNG output, and HEIC or WebP sources, export
+without metadata.

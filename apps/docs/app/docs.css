@@ -1,0 +1,322 @@
+/* Docs site chrome — not part of the package. Colours follow THEMING.md (brand plum). */
+:root {
+  --docs-bg: #f7f7f9;
+  --docs-surface: #ffffff;
+  --docs-border: rgba(0, 0, 0, 0.1);
+  --docs-text: #18181b;
+  --docs-muted: #5b5b66;
+  --docs-accent: #4d194d;
+  --docs-accent-text: #6b2a6b;
+  --docs-code-bg: #f1f1f4;
+  --docs-header: 56px;
+  --docs-sidebar: 248px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --docs-bg: #0b0b0d;
+    --docs-surface: #131316;
+    --docs-border: rgba(255, 255, 255, 0.1);
+    --docs-text: #f4f4f5;
+    --docs-muted: #a1a1aa;
+    --docs-accent: #9c479c;
+    --docs-accent-text: #d08bd0;
+    --docs-code-bg: #1c1c21;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: var(--docs-bg);
+  color: var(--docs-text);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.6;
+}
+a {
+  color: var(--docs-accent-text);
+}
+:focus-visible {
+  outline: 2px solid var(--docs-accent);
+  outline-offset: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+.skip:focus {
+  left: 16px;
+  top: 8px;
+  z-index: 10;
+  padding: 8px 12px;
+  background: var(--docs-surface);
+}
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: var(--docs-header);
+  padding: 0 24px;
+  border-bottom: 1px solid var(--docs-border);
+  background: var(--docs-bg);
+}
+.logo {
+  font-weight: 700;
+  color: var(--docs-text);
+  text-decoration: none;
+}
+.site-header nav {
+  display: flex;
+  gap: 20px;
+}
+.site-header nav a {
+  color: var(--docs-muted);
+  text-decoration: none;
+  font-size: 14px;
+}
+.site-header nav a:hover {
+  color: var(--docs-text);
+}
+
+/* Docs pages: sidebar + text */
+.docs {
+  display: grid;
+  grid-template-columns: var(--docs-sidebar) minmax(0, 1fr);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.sidebar {
+  position: sticky;
+  top: var(--docs-header);
+  height: calc(100dvh - var(--docs-header));
+  overflow-y: auto;
+  padding: 24px 16px 40px 24px;
+  font-size: 14px;
+}
+.sidebar__title {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--docs-muted);
+}
+.sidebar ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sidebar a {
+  display: block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--docs-muted);
+  text-decoration: none;
+}
+.sidebar a:hover {
+  color: var(--docs-text);
+}
+.sidebar a[aria-current='page'] {
+  background: var(--docs-code-bg);
+  color: var(--docs-text);
+  font-weight: 500;
+}
+
+.prose {
+  max-width: 780px;
+  padding: 32px 40px 80px;
+  min-width: 0;
+}
+.prose h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin: 8px 0 16px;
+}
+.prose h2 {
+  font-size: 22px;
+  margin: 40px 0 12px;
+  padding-top: 8px;
+}
+.prose h3 {
+  font-size: 17px;
+  margin: 28px 0 8px;
+}
+.prose :is(h2, h3) {
+  scroll-margin-top: calc(var(--docs-header) + 16px);
+}
+.prose p,
+.prose li {
+  color: var(--docs-text);
+}
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+}
+.prose :not(pre) > code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--docs-code-bg);
+}
+.prose pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--docs-border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 16px 0;
+  display: block;
+  overflow-x: auto;
+}
+.prose th,
+.prose td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--docs-border);
+  text-align: left;
+  vertical-align: top;
+}
+.prose blockquote {
+  margin: 16px 0;
+  padding: 4px 16px;
+  border-left: 3px solid var(--docs-accent);
+  color: var(--docs-muted);
+}
+
+/* Shiki: light by default, dark colours under the OS dark setting. */
+.shiki,
+.shiki span {
+  background-color: var(--shiki-light-bg) !important;
+  color: var(--shiki-light);
+}
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    background-color: var(--shiki-dark-bg) !important;
+    color: var(--shiki-dark) !important;
+  }
+}
+
+/* A live editor inside a page */
+.demo {
+  height: 560px;
+  margin: 20px 0;
+  border: 1px solid var(--docs-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Home */
+.home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.hero p {
+  max-width: 640px;
+  margin: 0 0 24px;
+  font-size: 18px;
+  color: var(--docs-muted);
+}
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.button {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--docs-accent);
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.button--quiet {
+  background: transparent;
+  color: var(--docs-text);
+  border: 1px solid var(--docs-border);
+}
+.install {
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: var(--docs-code-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+}
+.home .demo {
+  height: min(680px, 78dvh);
+  margin: 40px 0;
+}
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.features li {
+  padding: 18px;
+  border: 1px solid var(--docs-border);
+  border-radius: 10px;
+  background: var(--docs-surface);
+}
+.features strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.features span {
+  color: var(--docs-muted);
+  font-size: 14px;
+}
+
+/* Phones: sidebar above the text */
+@media (max-width: 800px) {
+  .docs {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 16px;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .prose {
+    padding: 24px 16px 64px;
+  }
+  .site-header {
+    padding: 0 16px;
+    gap: 16px;
+  }
+  .demo {
+    height: 520px;
+  }
+}

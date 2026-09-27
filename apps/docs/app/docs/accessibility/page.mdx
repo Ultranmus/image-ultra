@@ -1,0 +1,46 @@
+export const metadata = { title: 'Accessibility' };
+
+# Accessibility
+
+The editor is built to be used with a keyboard, a screen reader, or a touch screen, and is checked
+automatically: every tool, panel and popover is scanned with [axe](https://github.com/dequelabs/axe-core)
+for WCAG 2.2 A and AA problems — dark and light, desktop and phone width, left-to-right and
+right-to-left — on every change.
+
+## Keyboard
+
+Everything works without a mouse: Tab moves between controls, arrow keys move within rows and adjust
+sliders (Shift for bigger steps), Enter and Space press. Press **?** in the editor for the full list.
+
+| Keys                     |                                                                |
+| ------------------------ | -------------------------------------------------------------- |
+| ⌘/Ctrl Z, ⌘/Ctrl ⇧ Z     | Undo, redo                                                     |
+| + − 0 1                  | Zoom in, out, fit, 100%                                        |
+| \\ (hold)                | Show the original                                              |
+| Space + drag             | Pan the photo                                                  |
+| Tab / ⇧ Tab on the photo | Select the next / previous element                             |
+| Enter                    | Add the selected shape tool's shape, or edit the selected text |
+| Arrows                   | Move the selected element (Shift: 10×)                         |
+| ⌘/Ctrl C, X, V, D, A     | Copy, cut, paste, duplicate, select all                        |
+| ⇧ F10                    | The element's menu                                             |
+
+Focus is always visible and never lost: when a button disappears, focus moves to its neighbour.
+
+## Screen readers
+
+Controls have names, sliders read their values, and the editor announces what isn't otherwise
+spoken: undo and redo steps, zoom changes, crop size, the selection, saving and errors. All of it
+comes from your [labels](/docs/localization), so announcements follow your app's language.
+
+## Motion, contrast, touch
+
+- **Reduced motion**: with the OS setting on, animations and animated zooms turn off.
+- **High contrast** (Windows forced colours): focus rings and selected states become outlines in
+  system colours.
+- **Touch**: pinch to zoom, two fingers to pan; switches and chips are 36 px on touch screens; the
+  layout adapts down to 320 px wide.
+
+## Your part
+
+- If you theme the editor, keep text contrast at 4.5:1 or more (the defaults do).
+- Give the editor a meaningful place on your page (a heading or `aria-label` on its container).

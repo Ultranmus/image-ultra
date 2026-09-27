@@ -1,0 +1,73 @@
+import { Demo } from '../../Demo';
+
+export const metadata = { title: 'Theming' };
+
+# Theming
+
+Three levels, from quick to complete. Try them live in the [theme playground](/theming).
+
+## 1. Dark, light or follow the OS
+
+```tsx
+<ImageEditor theme="light" /> // 'dark' (default) · 'light' · 'auto'
+```
+
+## 2. Typed overrides
+
+```tsx
+<ImageEditor theme="light" themeOverrides={{ accent: '#0e7490', radius: '12px' }} />
+```
+
+<Demo theme="light" themeOverrides={{ accent: '#0e7490', radius: '12px' }} defaultTool="finetune" />
+
+| Key                                                     | Sets                                                              |
+| ------------------------------------------------------- | ----------------------------------------------------------------- |
+| `accent`, `accentHover`, `accentContrast`, `accentText` | Primary buttons, focus, slider fill; text on and in accent colour |
+| `bg`, `stage`                                           | Editor background; behind the photo                               |
+| `surface1`, `surface2`, `surface3`                      | Bars; hover and inputs; pressed and popovers                      |
+| `text`, `textMuted`, `border`                           | Text and hairlines                                                |
+| `fontFamily`                                            | The editor's font (default: your page's)                          |
+| `radius`                                                | Base corner radius; small and large radii follow                  |
+
+Pick an accent with enough contrast against the surfaces (4.5:1 for text) — `accentText` lets text
+use a lighter or darker shade than buttons.
+
+## 3. CSS variables
+
+Every colour, size and duration is a CSS variable on `.iu-root`. All the editor's CSS lives in
+the `image-ultra` cascade layer, so any rule of yours wins — no `!important`, no specificity games:
+
+```css
+.my-editor .iu-root {
+  --iu-accent: #0e7490;
+  --iu-surface-1: #0f172a;
+  --iu-radius-md: 4px;
+}
+```
+
+```tsx
+<ImageEditor className="my-editor" />
+```
+
+The main ones:
+
+| Variable                                                                                           |                                        |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `--iu-bg`, `--iu-stage`                                                                            | Background; behind the photo           |
+| `--iu-surface-1/2/3`                                                                               | Bars; hover, inputs; pressed, popovers |
+| `--iu-border`, `--iu-border-strong`                                                                | Hairlines; control outlines            |
+| `--iu-text`, `--iu-text-muted`, `--iu-text-subtle`                                                 | Text levels                            |
+| `--iu-accent`, `--iu-accent-hover`, `--iu-accent-soft`, `--iu-accent-text`, `--iu-accent-contrast` | Accent                                 |
+| `--iu-danger`, `--iu-warning`                                                                      | Delete, warnings                       |
+| `--iu-font-family`, `--iu-font-mono`                                                               | Fonts                                  |
+| `--iu-radius-sm/md/lg`                                                                             | Corner radii                           |
+| `--iu-duration-fast/base/slow`, `--iu-ease`                                                        | Motion (set to `0ms` to turn it off)   |
+| `--iu-size-topbar`, `--iu-size-rail`, `--iu-size-controlbar`                                       | Layout sizes                           |
+
+With `theme="dark"` or `"light"` the editor sets `data-iu-theme` on `.iu-root`; `"auto"` follows
+`prefers-color-scheme`. Style both with `.iu-root[data-iu-theme='light']` if you need to.
+
+## Icons
+
+The editor uses its own icon set (24 px grid, 1.75 px stroke). Your custom tools can use any
+`ComponentType<IconProps>` — see [Custom tools](/docs/custom-tools).

@@ -1,0 +1,93 @@
+export const metadata = { title: 'Custom tools' };
+
+# Custom tools
+
+Built-in tools are made with the same API you get, so a tool of your own sits in the tool rail
+like any other. A tool is an id, a label, an icon, and a `Controls` component shown in the control
+bar while it's active.
+
+```tsx
+import {
+  defineTool,
+  ImageEditor,
+  RulerSlider,
+  useEditorState,
+  useEditorStore,
+  type IconProps,
+} from '@image-ultra/react';
+
+function SunIcon({ size = 24, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+    </svg>
+  );
+}
+
+function WarmthControls() {
+  const store = useEditorStore();
+  const warmth = useEditorState((s) => s.edit.finetune.temperature);
+  return (
+    <RulerSlider
+      label="Warmth"
+      value={Math.round(warmth * 100)}
+      min={-100}
+      max={100}
+      // A drag is one undo step: open it on start, close it on end.
+      onChangeStart={() => store.getState().beginChange('Warmth')}
+      onChange={(value) =>
+        store.getState().update('Warmth', (s) => {
+          s.finetune.temperature = value / 100;
+        })
+      }
+      onChangeEnd={() => store.getState().endChange()}
+    />
+  );
+}
+
+export const warmth = defineTool({
+  id: 'warmth',
+  label: 'Warmth',
+  icon: SunIcon,
+  Controls: WarmthControls,
+});
+
+export function Editor({ src }: { src: string }) {
+  return <ImageEditor src={src} tools={['adjust', warmth, 'filter']} />;
+}
+```
+
+## Changing the edits
+
+Tools change the `EditState` through the store — never the photo. `store.getState()` has:
+
+- `update(label, recipe)` — one undoable change. `recipe` edits a draft of the state
+  (`(s) => { s.geometry.rotation = 90; }`); `label` names the step in History.
+- `beginChange(label)` … `update(...)` … `endChange()` — many updates (a slider drag) become one
+  undo step. `cancelChange()` puts everything back.
+
+Read state with `useEditorState(selector)`; it re-renders only when the selected value changes.
+
+## More room
+
+- **`StageOverlay`** — a component drawn over the photo while the tool is active (the crop box is
+  one). Use it for handles, guides or click-to-place.
+- **`useToolState(initial)`** — state that belongs to your tool's UI (a selected mode, a colour)
+  and survives switching tools, without going into the edits or undo history.
+- **`useLabels()`** — the editor's labels, if your tool should follow the app's language.
+
+## Building blocks
+
+The controls the built-in tools use are exported, styled to match and accessible:
+`RulerSlider`, `SegmentedControl`, `PresetStrip`, `NumberField`, `ColorStrip`, `SwatchPicker`,
+`Popover` and `IconButton`. See the [API reference](/reference) for their props.

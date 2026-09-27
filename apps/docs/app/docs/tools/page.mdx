@@ -1,0 +1,59 @@
+import { Demo } from '../../Demo';
+
+export const metadata = { title: 'Choose tools' };
+
+# Choose tools
+
+By default the editor shows every built-in tool. Pass `tools` to pick them and set their order:
+
+```tsx
+<ImageEditor src={src} tools={['adjust', 'finetune', 'filter']} defaultTool="finetune" />
+```
+
+<Demo tools={['adjust', 'finetune', 'filter']} defaultTool="finetune" />
+
+| Id          | Tool                                                                   |
+| ----------- | ---------------------------------------------------------------------- |
+| `adjust`    | Crop (free, ratios, round), rotate, flip, straighten, perspective      |
+| `finetune`  | Light and colour sliders, curves, levels, auto-enhance                 |
+| `filter`    | Looks, with strength; users can save their own                         |
+| `annotate`  | Arrows, lines, shapes, pen, text, images; layers, groups, align        |
+| `redact`    | Pixelate, blur or cover areas (box or brush)                           |
+| `sticker`   | Your stickers, 3D stickers, every emoji, uploads                       |
+| `frame`     | Frames around the photo                                                |
+| `fill`      | Colour, image or blurred fill behind transparent areas and added space |
+| `resize`    | Output size, social presets, extend the canvas                         |
+| `watermark` | Text or logo, 9 positions, custom or tiled                             |
+
+You can mix in your own tools — see [Custom tools](/docs/custom-tools).
+
+## Presets
+
+Replace the filter looks or the Resize sizes with your own:
+
+```tsx
+import { FILTER_PRESETS, ImageEditor, type FilterPreset } from '@image-ultra/react';
+
+const looks: FilterPreset[] = [
+  ...FILTER_PRESETS.filter((p) => p.category === 'mono'),
+  {
+    id: 'brand',
+    name: 'Brand',
+    category: 'color',
+    matrix: [1.1, 0, 0, 0.02, 0, 1, 0, 0, 0, 0, 0.9, 0],
+  },
+];
+
+<ImageEditor
+  filterPresets={looks}
+  sizePresets={[{ id: 'banner', label: 'Banner', width: 1500, height: 500 }]}
+/>;
+```
+
+## Cancel
+
+Pass `onCancel` to show a Cancel button — for example, to close a modal:
+
+```tsx
+<ImageEditor src={src} onCancel={() => setOpen(false)} onSave={handleSave} />
+```

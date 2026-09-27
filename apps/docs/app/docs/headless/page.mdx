@@ -1,0 +1,36 @@
+export const metadata = { title: 'Render without the editor' };
+
+# Render without the editor
+
+Apply saved edits to a photo with no UI — to regenerate a download at another size, make
+thumbnails, or re-export after changing a setting.
+
+```ts
+import { renderImage } from '@image-ultra/react';
+
+declare const savedEdits: unknown;
+
+const result = await renderImage('/photo.jpg', savedEdits, {
+  mimeType: 'image/webp',
+  maxWidth: 1200,
+});
+result.blob; // the edited image
+```
+
+- The first argument is anything the editor accepts as `src`: a URL, `File`, `Blob`, `<img>`,
+  `<canvas>` or `ImageBitmap`.
+- The edits can be an `EditState` or untrusted JSON (validated like `initialState`). Leave them out
+  to just convert the photo.
+- Options are the same as the editor's [`exportOptions`](/docs/saving#export-options).
+
+Without React, install `@image-ultra/core` — it has the same `renderImage`.
+
+## It runs in the browser
+
+Rendering needs a canvas (WebGL2, or Canvas2D as a fallback), so `renderImage` runs in the browser,
+not in Node. Importing the package on the server is safe; just call it from an event handler or
+effect.
+
+## The same pixels as the editor
+
+`renderImage` is what the editor's Done button uses, so the result is exactly what the user saw.

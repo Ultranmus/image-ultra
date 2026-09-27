@@ -115,7 +115,7 @@ Update this file at the end of every session.
   `pnpm prettier --write`; re-read the file first.
 - Headless Chrome logs "GPU stall due to ReadPixels" for any WebGL canvas — not our bug (DECISIONS #54).
 - The owner keeps the Mac awake with `caffeinate -dims` during long work; on battery, closing the lid still sleeps.
-- **Vercel (2026-09-27)**: `apps/docs/vercel.json` added (build `pnpm turbo run build --filter=docs`
-  from the repo root, output `out/`; verified locally). Waiting: owner imports
-  `Ultranmus/image-ultra` on vercel.com with Root Directory `apps/docs`. After the first deploy, point
-  `homepage` in the package.json files at the docs URL (DECISIONS #110).
+- **Docs live (2026-09-27)** at https://imageultra.ashvattech.com (Vercel, Git integration on
+  `Ultranmus/image-ultra`, Root Directory `apps/docs`, config in `apps/docs/vercel.json`; every push
+  to main deploys, PRs get previews). `homepage` in both packages, the READMEs and the docs'
+  `metadataBase` point there (DECISIONS #111).

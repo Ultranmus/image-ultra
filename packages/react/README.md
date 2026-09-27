@@ -4,6 +4,8 @@ A free, fully typed image editor component for React and Next.js. Crop, rotate, 
 annotate, redact, add stickers, frames and watermarks, then save the result. Every edit is
 non-destructive and serializable, so you can store it as JSON and open it again later.
 
+**Docs and live demo: [imageultra.ashvattech.com](https://imageultra.ashvattech.com)**
+
 - **Typed end to end**: TypeScript strict, no `any` in the public API.
 - **Non-destructive**: edits are a JSON `EditState`; the source photo is never changed.
 - **Fast**: WebGL2 rendering with a Canvas2D fallback. Tested with 48MP photos on desktop and iPhone.

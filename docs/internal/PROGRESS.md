@@ -653,3 +653,6 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   deprecated Node 20). "Version packages" PR #1 open. CI on Linux: one e2e failure — the Fill
   switch overflowed at 320px with Linux's wider font → narrow editors tighten segmented items
   (UI_VISION §3). Playwright `github` reporter in CI so failures are readable without a login.
+- **8e (docs deploy)**: `apps/docs/vercel.json`; owner connected the repo on Vercel with their domain →
+  https://imageultra.ashvattech.com (home, guides, reference, 404 checked). `homepage`, READMEs and
+  `metadataBase` point there (DECISIONS #111).

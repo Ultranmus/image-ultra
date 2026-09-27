@@ -3,6 +3,8 @@
 The framework-independent engine behind [`@image-ultra/react`](https://www.npmjs.com/package/@image-ultra/react):
 the edit state, image loading, WebGL2 / Canvas2D rendering, export and the editor store.
 
+Docs and API reference: [imageultra.ashvattech.com](https://imageultra.ashvattech.com/reference)
+
 **Most apps only need `@image-ultra/react`**, which re-exports the parts of this package you're
 likely to use. Install `@image-ultra/core` directly to render saved edits without React (for
 example a script that regenerates images from saved edits), or to build your own editor UI on the

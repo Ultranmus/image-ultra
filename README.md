@@ -6,6 +6,8 @@ Crop, rotate, straighten and fix perspective; adjust light and colour with curve
 apply filters; draw shapes, arrows and text; redact; add stickers, frames, fills and watermarks;
 resize and export. Every edit is non-destructive JSON you can save and reopen.
 
+**Docs and live demo: [imageultra.ashvattech.com](https://imageultra.ashvattech.com)**
+
 | Package                                |                                                             |
 | -------------------------------------- | ----------------------------------------------------------- |
 | [`@image-ultra/react`](packages/react) | The editor component. Start here.                           |

@@ -5,6 +5,7 @@ import '@image-ultra/react/styles.css';
 import './docs.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://imageultra.ashvattech.com'),
   title: { default: 'image-ultra — typed image editor for React', template: '%s · image-ultra' },
   description:
     'A free (MIT), fully typed image editor component for React and Next.js: crop, adjust, filter, annotate, redact and export.',

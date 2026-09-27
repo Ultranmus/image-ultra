@@ -247,7 +247,7 @@ LICENSE is MIT ("image-ultra contributors"); bundles today: core 49 KB + react 8
       package checks, examples; changesets "Version packages" PR, npm publish with provenance on
       merge. Owner sets up: GitHub repo, npm account + `@image-ultra` org, publish token (or npm
       trusted publishing).
-- [ ] **8e Launch**: publish **0.1.0**, deploy the docs to Vercel, install from npm into a
+- [ ] **8e Launch**: publish **0.1.0**, deploy the docs to Vercel (done 2026-09-27: imageultra.ashvattech.com, DECISIONS #111), install from npm into a
       fresh Next app and a fresh Vite app as the final check; CHANGELOG entry.
 
 ### Phase 9 — AI (`@image-ultra/plugin-ai`, optional package)

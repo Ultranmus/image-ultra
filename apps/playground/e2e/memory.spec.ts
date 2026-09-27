@@ -56,6 +56,8 @@ async function session(page: Page, n: number) {
 }
 
 test('memory stays flat over 10 photos (images and GPU textures are freed)', async ({ page }) => {
+  // ~13s with a GPU; CI's software WebGL (Linux) takes over 30s for 10 loads + exports.
+  test.setTimeout(90_000);
   await trackMemory(page);
   await openEditor(page);
   await session(page, 0);

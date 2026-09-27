@@ -656,3 +656,6 @@ shortcuts overlay, EXIF option, copy/paste shapes).
 - **8e (docs deploy)**: `apps/docs/vercel.json`; owner connected the repo on Vercel with their domain →
   https://imageultra.ashvattech.com (home, guides, reference, 404 checked). `homepage`, READMEs and
   `metadataBase` point there (DECISIONS #111).
+- CI (Linux): `memory stays flat over 10 photos` timed out at 30s (13s on the Mac; software WebGL on
+  the runner) — no assertion failed, so no leak; the test gets 90s like the other heavy ones.
+  Vercel: `outputDirectory: "out"` broke the Next.js builder → removed (DECISIONS #111).

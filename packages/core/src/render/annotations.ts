@@ -19,6 +19,7 @@ import {
 } from '../state/geometry';
 import { tracePath } from '../state/strokes';
 import type { LoadedImage, Point } from '../types';
+import { textDirection } from './textDirection';
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -409,6 +410,8 @@ function drawText(ctx: Context2D, shape: TextShape): void {
   ctx.fillStyle = shape.color;
   ctx.textBaseline = 'middle';
   ctx.textAlign = shape.align;
+  // Arabic / Hebrew text reads right-to-left (the alignment stays physical: left is left).
+  ctx.direction = textDirection(shape.text);
   const x =
     shape.align === 'left'
       ? shape.x

@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react';
+import { rowStep } from './rowStep';
 
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -24,11 +25,11 @@ export function SegmentedControl<T extends string>({
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const dir =
-      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+      event.key === 'ArrowDown'
         ? 1
-        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        : event.key === 'ArrowUp'
           ? -1
-          : 0;
+          : rowStep(event.key, event.currentTarget);
     if (!dir) return;
     event.preventDefault();
     const index = options.findIndex((o) => o.value === value);

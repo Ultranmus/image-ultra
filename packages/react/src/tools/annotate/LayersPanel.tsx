@@ -331,6 +331,7 @@ function RenameField({
   return (
     <input
       className="iu-layers__rename"
+      dir="auto"
       aria-label={label}
       value={value}
       placeholder={placeholder}

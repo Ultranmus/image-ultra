@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+import { rowStep } from './rowStep';
 
 export interface Preset<T extends string> {
   value: T;
@@ -81,7 +82,7 @@ export function PresetStrip<T extends string>({
       refs.current[Math.max(0, current - 1)]?.focus();
       return;
     }
-    const dir = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    const dir = rowStep(event.key, event.currentTarget);
     if (!dir) return;
     event.preventDefault();
     const next = refs.current[(Math.max(0, current) + dir + presets.length) % presets.length];

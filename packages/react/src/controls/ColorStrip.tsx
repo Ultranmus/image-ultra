@@ -2,6 +2,7 @@ import { useRef, useState, type KeyboardEvent } from 'react';
 import { useLabels } from '../context';
 import { Popover } from './Popover';
 import { DEFAULT_SWATCHES, HsvPicker } from './SwatchPicker';
+import { rowStep } from './rowStep';
 
 export interface ColorStripProps {
   /** Accessible name of the group, e.g. "Fill colour". */
@@ -30,7 +31,7 @@ export function ColorStrip({
 
   // Arrow keys move between swatches (and select), like other radio groups.
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const dir = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    const dir = rowStep(event.key, event.currentTarget);
     if (!dir) return;
     const index = refs.current.findIndex((el) => el === document.activeElement);
     const next = refs.current[index + dir];

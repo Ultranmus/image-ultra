@@ -61,6 +61,7 @@ import {
   useAnnotateState,
   type AnnotateMode,
 } from './state';
+import { useLatest } from '../../hooks/useLatest';
 
 /** Screen distances (CSS px). */
 const DRAG_START = 3;
@@ -156,6 +157,8 @@ type DrawMode = AnnotateMode | 'redactBox' | 'redactBrush';
 export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateOverlayProps = {}) {
   const store = useEditorStore();
   const labels = useLabels();
+  // The keydown listener is registered once: it reads the labels live (language switches).
+  const labelsRef = useLatest(labels);
   const [storedUi, setUi] = useAnnotateState();
   const hintId = useId();
   const [layersOpen, setLayersOpen] = useLayersOpen();
@@ -808,7 +811,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
           dy += snap.dy;
         } else setGuides([]);
         actions.replaceMany(
-          labels.annotateModes.select,
+          labelsRef.current.annotateModes.select,
           it.shapes.map((s) => moveShape(s, dx, dy)),
         );
         break;
@@ -1154,7 +1157,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
         const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
         actions.replaceMany(
-          labels.annotateModes.select,
+          labelsRef.current.annotateModes.select,
           movable.map((s) => moveShape(s, dx, dy)),
           { coalesce: true },
         );
@@ -1182,7 +1185,7 @@ export function AnnotateOverlay({ selectOnly = false, redact = null }: AnnotateO
         const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
         const moved = moveShape(sel, dx, dy);
         state.update(
-          labels.annotateModes.select,
+          labelsRef.current.annotateModes.select,
           (draft) => {
             draft.annotations = draft.annotations.map((s) => (s.id === sel.id ? moved : s));
           },
@@ -1657,6 +1660,8 @@ function TextEditor({
   return (
     <textarea
       ref={ref}
+      // The user's own words: their direction comes from what they type (Arabic, Hebrew…).
+      dir="auto"
       className="iu-textedit"
       value={shape.text}
       placeholder={placeholder}

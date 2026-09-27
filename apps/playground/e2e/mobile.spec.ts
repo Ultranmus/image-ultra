@@ -106,9 +106,9 @@ for (const [width, height] of [
       await openEditor(page);
       const editor = (await page.locator('.iu-root').boundingBox())!;
       expect(editor.height).toBeGreaterThan(height * 0.85);
-      await expect(page.getByRole('radiogroup', { name: 'Theme' })).toBeHidden();
+      await expect(page.getByRole('combobox', { name: 'Theme' })).toBeHidden();
       await page.getByRole('button', { name: 'Settings' }).click();
-      await expect(page.getByRole('radiogroup', { name: 'Theme' })).toBeVisible();
+      await expect(page.getByRole('combobox', { name: 'Theme' })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     });
   });

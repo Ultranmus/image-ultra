@@ -48,7 +48,7 @@ async function openFile(page: Page, file: TestFile) {
     if (message.type() === 'error') errors.push(message.text());
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Empty' }).click();
+  await page.getByRole('combobox', { name: 'Image' }).selectOption('empty');
   await page.locator('.iu-stage input[type=file]').setInputFiles(file);
   return errors;
 }
@@ -112,7 +112,7 @@ test.describe('Opening files', () => {
 
   test('a missing URL says the download failed', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Broken URL' }).click();
+    await page.getByRole('combobox', { name: 'Image' }).selectOption('broken URL');
     await expect(page.locator('.iu-empty__title')).toHaveText('Couldn’t download the image.');
   });
 });

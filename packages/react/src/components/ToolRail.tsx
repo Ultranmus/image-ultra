@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent } from 'react';
 import { useEditorState, useEditorStore, useLabels } from '../context';
 import type { ToolDefinition } from '../tools/defineTool';
 import { toolLabel } from '../tools/toolLabel';
+import { rowStep } from '../controls/rowStep';
 
 export interface ToolRailProps {
   tools: readonly ToolDefinition[];
@@ -26,7 +27,7 @@ export function ToolRail({ tools, idPrefix }: ToolRailProps) {
         ? 0
         : event.key === 'End'
           ? last
-          : event.key === 'ArrowDown' || event.key === 'ArrowRight'
+          : event.key === 'ArrowDown' || rowStep(event.key, event.currentTarget) === 1
             ? (index + 1) % tools.length
             : (index - 1 + tools.length) % tools.length;
     const tool = tools[next];

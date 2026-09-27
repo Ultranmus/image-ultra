@@ -61,12 +61,7 @@ test.describe('Copy / paste', () => {
     await page.keyboard.press('ControlOrMeta+c');
 
     // A fresh editor (new photo): the clipboard is kept.
-    await page
-      .getByRole('radiogroup', { name: 'App watermark' })
-      .getByRole('radio', {
-        name: 'on',
-      })
-      .click();
+    await page.getByRole('combobox', { name: 'App watermark' }).selectOption('on');
     await openEditorReady(page);
     await page.getByRole('tab', { name: 'Filter' }).click();
     await page.getByRole('tab', { name: 'Filter' }).focus();

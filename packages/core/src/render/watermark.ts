@@ -1,6 +1,7 @@
 import type { WatermarkState } from '../state/watermark';
 import type { Size } from '../types';
 import { createCanvas } from './createRenderer';
+import { textDirection } from './textDirection';
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 type Box = { x: number; y: number; width: number; height: number };
@@ -96,6 +97,12 @@ export function drawWatermark(
   };
 
   ctx.save();
+  if (watermark.kind === 'text') {
+    // Arabic / Hebrew reads right-to-left; the text still starts at the mark's left edge ('start'
+    // would mean the right edge in right-to-left).
+    ctx.direction = textDirection(watermark.text);
+    ctx.textAlign = 'left';
+  }
   ctx.globalAlpha = watermark.opacity;
   ctx.fillStyle = watermark.color;
   ctx.textBaseline = 'middle';

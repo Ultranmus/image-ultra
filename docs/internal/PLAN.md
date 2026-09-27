@@ -172,11 +172,13 @@ Approved 2026-09-26 (order below, commit after each step, owner review at the en
         sticker / font / shape names (keyed by id; core takes names from the app), `filterPresets` +
         `sizePresets` props; **count labels may be `(count) => string`** (plurals, owner's choice);
         pseudo-locale e2e that fails on any unlabelled visible text or accessible name.
-  - [ ] **7.6b** RTL: `dir` prop (default: the page's), logical CSS properties, mirrored layout;
+  - [x] **7.6b** RTL: `dir` prop (default: the page's), logical CSS properties, mirrored layout;
         photo / sliders / curves / levels / histograms / compare stay LTR; arrow keys follow the
         direction in rows; undo/redo icons swap; RTL text in text shapes + watermark (preview +
-        export); axe + keyboard + layout checks in RTL.
-  - [ ] **7.6c** Playground language switch: English · Arabic (RTL demo, drafted — needs native
+        export); axe + keyboard + layout checks in RTL. **Owner added (2026-09-27):** Hindi and Arabic
+        in the playground Language switch (drafted translations, need native review), and the
+        playground settings toolbar uses dropdowns for every option except the accent colours.
+  - [ ] **7.6c** (language part done in 7.6b — English · Hindi · Arabic · Pseudo) Playground language switch: English · Arabic (RTL demo, drafted — needs native
         review) · pseudo-locale. English only ships. (The switch with English · pseudo was added in
         7.6a, owner asked to test from the UI.)
 - [ ] **7.7** Perf: 20–24MP benchmark, downscaled preview while dragging, memory cleanup, tiled

@@ -176,7 +176,7 @@ test.describe('Watermark tool', () => {
     page,
   }) => {
     await openEditor(page);
-    await page.getByRole('radio', { name: 'locked' }).click();
+    await page.getByRole('combobox', { name: 'App watermark' }).selectOption('locked');
     await page.waitForFunction(
       () =>
         (window as unknown as { __iu: TestHook }).__iu.editor.current?.store.getState().status ===

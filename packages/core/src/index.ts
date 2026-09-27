@@ -196,6 +196,7 @@ export {
   type Redaction,
 } from './state/redactions';
 export { drawRedactions, type DrawRedactionsOptions } from './render/redactions';
+export { textDirection } from './render/textDirection';
 export { drawElements, redactElements, type DrawElementsOptions } from './render/elements';
 export { WATERMARK_ELEMENT_ID } from './state/annotations';
 export {

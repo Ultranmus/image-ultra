@@ -56,7 +56,10 @@ Update this file at the end of every session.
 
 - **7.6a strings — done** (DECISIONS #97): every string through the labels, count labels may be
   functions, `filterPresets` / `sizePresets` props, pseudo-locale e2e (`/?locale=pseudo`).
-- Next: **7.6b RTL**, then 7.6c playground language switch (English · Arabic · pseudo).
+- **7.6b RTL — done** (DECISIONS #98): `dir` prop, logical CSS, rows mirror, sliders/photo stay LTR,
+  RTL canvas text; owner's additions: playground dropdown toolbar, Hindi + Arabic, Direction.
+- Next: 7.6c is mostly done (languages are in); what's left is a short review with the owner.
+  Then **7.7 Perf**.
 - **e2e runs against `next start` of the last production build when no dev server is on 3100 —
   run `pnpm build` after package changes** (a stale build made passing tests fail once).
 

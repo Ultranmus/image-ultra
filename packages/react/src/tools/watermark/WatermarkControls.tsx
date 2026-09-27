@@ -108,6 +108,7 @@ export function WatermarkControls() {
               <span className="iu-sr-only">{labels.watermarkText}</span>
               <input
                 className="iu-field__input"
+                dir="auto"
                 value={current.text}
                 maxLength={200}
                 // Typing is one undo step: opened on focus, closed on blur.

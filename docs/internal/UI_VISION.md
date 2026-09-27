@@ -42,6 +42,16 @@ the component is wrong (or this doc must be updated first, deliberately).
 └────────┴─────────────────────────────────────────────────────┘
 ```
 
+### Right-to-left (`dir="rtl"` or an RTL page; 7.6b, DECISIONS #98)
+
+The whole chrome mirrors: tool rail on the right (bottom rail starts at the right), TopBar ✕ on
+the right and Done on the left, Undo / Redo arrows flipped, rows and Layers panel (left side)
+reversed. ← / → in rows (tools, chips, colours, stickers, switches) follow the reading order.
+**Stays left-to-right:** the photo and everything drawn on it, sliders (→ = more), curves,
+levels, histograms, the colour picker and the before/after divider. Text boxes and the watermark
+draw Arabic / Hebrew right-to-left (preview and export); text fields the user types in are
+`dir="auto"`.
+
 ### Mobile / narrow (container width < 768px)
 
 ```
@@ -288,6 +298,9 @@ ToolRail (horizontal, scrollable, bottom — thumb zone)
 - ❌ Text-only buttons for tools, or icon-only without label in ToolRail.
 - ❌ Browser-default `<select>`, `<input type=range>`, `alert()`, `confirm()`.
 - ❌ Hardcoded colours/sizes in components. Tokens only (`THEMING.md`).
+- ❌ `left` / `right` for layout. Layout CSS uses logical properties (`margin-inline-start`,
+  `inset-inline-end`, `text-align: start`…) so right-to-left mirrors by itself; only geometry
+  (the photo's overlays, ruler, curves, levels, compare divider) stays physical.
 - ❌ Hardcoded UI text. Every string, name and history step comes from the typed labels
   (`i18n.ts`); `e2e/i18n.spec.ts` walks the editor in a pseudo-locale (`/?locale=pseudo`, every
   label wrapped in ⟦ ⟧) and fails on any text or accessible name without the brackets.

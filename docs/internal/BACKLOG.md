@@ -284,6 +284,14 @@ suggested fix, and the phase it's planned for. Tick `[x]` and note the date when
 - [x] **Shortcuts scrollbar covered the key caps** (owner, macOS overlay scrollbars) — Fix: 8px room
       at the scrolling edge (+ `scrollbar-gutter: stable`, thin), same for the Layers list; e2e
       checks the key caps end 8px before the edge — _fixed 2026-09-27_
+- [x] **History step names stayed English after switching language** (owner) — the crop-view wheel
+      zoom and Annotate's arrow-key nudge listeners are registered once and kept the labels from
+      that moment. Fix: `useLatest(labels)` read at event time; e2e switches language then zooms +
+      nudges. (Steps made _before_ a switch keep the language they were made in — history stores
+      text.) — _fixed 2026-09-27_
+- [ ] **Hindi and Arabic playground labels are drafts** (7.6b) — written by Claude, need a native
+      speaker's review before an app copies them (`apps/playground/app/locales/`) — _before Phase 8
+      docs_
 - [ ] **Emoji names and search are English** (owner chose backlog, 2026-09-27) — the emoji data file
       is English. Fix: an `emojiLocale` option that loads a localized emoji data file (emojibase
       has ~20 languages) — _later_

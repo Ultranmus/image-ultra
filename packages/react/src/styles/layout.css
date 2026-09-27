@@ -59,6 +59,14 @@
     justify-content: flex-end;
   }
 
+  /* Right-to-left: "back" points right, so Undo / Redo mirror (the rest of the TopBar mirrors by
+     itself — it's a grid). An attribute selector, not :dir(): CSS tooling rewrites :dir() into
+     :lang() lists, which miss an editor set to rtl without a language. */
+  [dir='rtl'] .iu-topbar__undo svg,
+  [dir='rtl'] .iu-topbar__redo svg {
+    transform: scaleX(-1);
+  }
+
   .iu-topbar__divider {
     width: 1px;
     height: 20px;
@@ -103,7 +111,7 @@
   .iu-rail {
     min-height: 0;
     background: var(--iu-surface-1);
-    border-right: 1px solid var(--iu-border);
+    border-inline-end: 1px solid var(--iu-border);
     overflow-y: auto;
     scrollbar-width: none;
   }
@@ -191,7 +199,7 @@
 
     .iu-rail {
       order: 2;
-      border-right: 0;
+      border-inline-end: 0;
       border-top: 1px solid var(--iu-border);
       overflow-x: auto;
       overflow-y: hidden;

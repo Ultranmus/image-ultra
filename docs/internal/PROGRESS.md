@@ -559,3 +559,13 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   wheel handler now leaves the wheel to anything that scrolls itself) and the Shortcuts scrollbar
   covered the key caps (overlay scrollbars; 8px room + gutter, Layers list too). e2e for both,
   checked to fail without the fixes.
+- **7.6b RTL** (+ owner's additions): playground settings are dropdowns (except accent colours);
+  Language english · hindi · arabic · pseudo (full typed `Labels` for Hindi and Arabic, drafted,
+  incl. an Arabic plural function); Direction auto · ltr · rtl. Editor: `dir` prop, ~20 layout
+  declarations → logical properties, `rowStep` for ←/→ in rows, Undo/Redo mirror, core
+  `textDirection` for canvas text + watermark (pinned left). Found on the way: `:dir()` is
+  rewritten by the CSS toolchain (use `[dir='rtl']`); the playground status text re-wrapped the
+  header and moved the editor mid-edit (fixed slot). `e2e/rtl.spec.ts` (4) + RTL axe run.
+  All checks green (142 + 3 unit, 146 e2e).
+- Owner: "Zoom" in History stayed English after switching language — two once-registered listeners
+  (crop wheel zoom, arrow-key nudge) held stale labels. `useLatest` hook; e2e (fails without it).

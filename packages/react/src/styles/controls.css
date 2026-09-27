@@ -379,7 +379,7 @@
     font: inherit;
     font-size: var(--iu-text-md);
     font-variant-numeric: tabular-nums;
-    text-align: right;
+    text-align: end;
   }
 }
 
@@ -401,7 +401,7 @@
   .iu-chip__badge {
     position: absolute;
     top: 6px;
-    left: 6px;
+    inset-inline-start: 6px;
     display: grid;
     place-items: center;
     width: 16px;
@@ -524,7 +524,7 @@
     background: transparent;
     color: var(--iu-text);
     font-size: var(--iu-text-lg);
-    text-align: left;
+    text-align: start;
     cursor: pointer;
   }
 
@@ -689,6 +689,8 @@
   .iu-field__input--hex {
     width: 8ch;
     text-align: left;
+    /* Hex codes read left-to-right in every language. */
+    direction: ltr;
     text-transform: lowercase;
   }
 
@@ -760,7 +762,7 @@
     color: var(--iu-text);
     font: inherit;
     font-size: var(--iu-text-md);
-    text-align: left;
+    text-align: start;
     cursor: pointer;
   }
 

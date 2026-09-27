@@ -62,6 +62,16 @@ body {
   font: inherit;
   cursor: pointer;
 }
+.pg-select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  background: #18181b;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 .pg-btn[aria-checked='true'] {
   background: #3f3f46;
   border-color: #52525b;
@@ -77,8 +87,14 @@ body {
   border-color: #fff;
 }
 .pg-log {
-  margin-left: auto;
+  /* A fixed-size slot: a longer message must never re-wrap the header (the editor would jump). */
+  flex: 1 1 220px;
+  min-width: 220px;
+  overflow: hidden;
   color: #a1a1aa;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pg-stage {
   display: grid;

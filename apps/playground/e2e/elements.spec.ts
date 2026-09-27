@@ -125,10 +125,7 @@ test('the watermark is an element: selectable, movable, reorderable, but only on
 
 test('an app-locked watermark stays on top and is never selected', async ({ page }) => {
   await openEditor(page);
-  await page
-    .getByRole('radiogroup', { name: 'App watermark' })
-    .getByRole('radio', { name: 'locked' })
-    .click();
+  await page.getByRole('combobox', { name: 'App watermark' }).selectOption('locked');
   await page.waitForFunction(() => {
     const hook = (window as unknown as { __iu?: TestHook }).__iu;
     return hook?.editor.current?.store.getState().status === 'ready';

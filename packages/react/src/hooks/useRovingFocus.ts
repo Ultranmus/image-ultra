@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from 'react';
+import { rowStep } from '../controls/rowStep';
 
 /**
  * One Tab stop for a long row of buttons (e.g. the sticker tiles): only the current item is
@@ -46,16 +47,15 @@ export function useRovingFocus(
     const all = items();
     const current = all.indexOf(event.target as HTMLElement);
     if (current < 0) return;
+    const step = rowStep(event.key, event.currentTarget);
     const next =
-      event.key === 'ArrowRight'
-        ? current + 1
-        : event.key === 'ArrowLeft'
-          ? current - 1
-          : event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? all.length - 1
-              : null;
+      step !== 0
+        ? current + step
+        : event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? all.length - 1
+            : null;
     if (next === null) return;
     event.preventDefault();
     const target = all[Math.max(0, Math.min(all.length - 1, next))];

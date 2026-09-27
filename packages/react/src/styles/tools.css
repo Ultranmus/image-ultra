@@ -58,7 +58,7 @@
     }
 
     .iu-toolgroup--end {
-      margin-left: auto;
+      margin-inline-start: auto;
     }
 
     .iu-resize__meta {
@@ -214,7 +214,7 @@
   .iu-savelook__input {
     width: 160px;
     height: 32px;
-    margin-right: var(--iu-space-1);
+    margin-inline-end: var(--iu-space-1);
     padding: 0 var(--iu-space-3);
     border: 1px solid var(--iu-border-strong);
     border-radius: var(--iu-radius-md);
@@ -468,7 +468,7 @@
   .iu-chip__remove {
     position: absolute;
     top: 0;
-    right: 0;
+    inset-inline-end: 0;
     display: grid;
     place-items: center;
     width: 18px;
@@ -519,7 +519,7 @@
   }
 
   .iu-inspector .iu-controlbar__hint {
-    padding-left: var(--iu-space-2);
+    padding-inline-start: var(--iu-space-2);
   }
 
   /* Sticker: tabs + search + upload / categories / tiles — three rows that fit the ControlBar. */
@@ -545,11 +545,11 @@
 
   .iu-sticker__search .iu-field__input {
     width: 16ch;
-    text-align: left;
+    text-align: start;
   }
 
   .iu-sticker__actions {
-    margin-left: var(--iu-space-4);
+    margin-inline-start: var(--iu-space-4);
   }
 
   .iu-sticker .iu-stickerstrip {
@@ -607,7 +607,7 @@
 
   .iu-watermark__text .iu-field__input {
     width: 18ch;
-    text-align: left;
+    text-align: start;
   }
 
   /* Text, colour, font, bold: one group, so it stays together on its own line when narrow. */
@@ -1053,7 +1053,7 @@
   .iu-layers {
     position: absolute;
     top: var(--iu-space-3);
-    right: var(--iu-space-3);
+    inset-inline-end: var(--iu-space-3);
     z-index: var(--iu-z-popover);
     display: flex;
     flex-direction: column;
@@ -1100,7 +1100,7 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    padding-right: var(--iu-space-1);
+    padding-inline-end: var(--iu-space-1);
     border-radius: var(--iu-radius-md);
   }
 
@@ -1126,7 +1126,7 @@
     color: var(--iu-text);
     font: inherit;
     font-size: var(--iu-text-sm);
-    text-align: left;
+    text-align: start;
     cursor: pointer;
   }
 
@@ -1281,7 +1281,7 @@
     .iu-resize__head > .iu-toolgroup--end {
       grid-area: 1 / 1;
       justify-content: flex-start;
-      margin-left: 0;
+      margin-inline-start: 0;
     }
   }
 
@@ -1343,7 +1343,7 @@
       flex-basis: 100%;
       order: -1;
       justify-content: flex-end;
-      margin-left: 0;
+      margin-inline-start: 0;
     }
   }
 
@@ -1372,7 +1372,7 @@
     }
 
     .iu-finetune__auto {
-      margin-right: auto;
+      margin-inline-end: auto;
     }
 
     /* Annotate: the tools are one line that scrolls sideways (owner's choice). The selection

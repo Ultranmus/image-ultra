@@ -71,6 +71,11 @@ export interface ImageEditorProps {
   initialState?: EditState | unknown;
   /** `'dark'` (default), `'light'`, or `'auto'` to follow the OS setting. */
   theme?: ThemeMode;
+  /**
+   * Text direction. Default: the page's (inherited). `rtl` mirrors the layout (tool rail on the
+   * right, rows reversed); the photo, sliders and curves stay left-to-right.
+   */
+  dir?: 'ltr' | 'rtl';
   /** Typed shortcuts for common design tokens, e.g. `{ accent: '#ff5a1f' }`. */
   themeOverrides?: ThemeOverrides;
   /**
@@ -156,6 +161,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
     src,
     initialState,
     theme = 'dark',
+    dir,
     themeOverrides,
     tools,
     defaultTool,
@@ -465,6 +471,7 @@ export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(funct
       <div
         ref={setRootElement}
         className={['iu-root', className].filter(Boolean).join(' ')}
+        dir={dir}
         data-iu-theme={theme === 'auto' ? undefined : theme}
         style={{ ...themeOverridesToStyle(themeOverrides), ...style }}
         onKeyDown={onKeyDown}

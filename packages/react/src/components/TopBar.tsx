@@ -82,12 +82,14 @@ export function TopBar({
 
       <div className="iu-topbar__group iu-topbar__center">
         <IconButton
+          className="iu-topbar__undo"
           label={labels.undo}
           icon={<IconUndo />}
           disabled={!ready || !canUndo}
           onClick={() => store.getState().undo()}
         />
         <IconButton
+          className="iu-topbar__redo"
           label={labels.redo}
           icon={<IconRedo />}
           disabled={!ready || !canRedo}

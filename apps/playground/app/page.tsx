@@ -8,9 +8,12 @@ import {
   type EditState,
   type ExportMimeType,
   type ExportResult,
+  type LabelOverrides,
   type ThemeMode,
 } from '@image-ultra/react';
 import { DevPanel } from './DevPanel';
+import { arabicLabels } from './locales/ar';
+import { hindiLabels } from './locales/hi';
 import { pseudoLabels } from './pseudoLabels';
 
 // `undefined` = the built-in plum brand accent (tuned per theme); the rest test `themeOverrides`.
@@ -18,8 +21,25 @@ const ACCENTS = [undefined, '#ff5a1f', '#10b981', '#0ea5e9', '#f43f5e'] as const
 const THEMES: ThemeMode[] = ['dark', 'light', 'auto'];
 type Frame = 'full' | 'tablet' | 'phone';
 // Demo of the `stickers` prop: the app's own stickers come first in the Sticker tool.
-const LANGUAGES = ['english', 'pseudo'] as const;
+const LANGUAGES = ['english', 'hindi', 'arabic', 'pseudo'] as const;
 type Language = (typeof LANGUAGES)[number];
+const LANGUAGE_NAMES: Record<Language, string> = {
+  english: 'English',
+  hindi: 'हिन्दी (Hindi)',
+  arabic: 'العربية (Arabic)',
+  pseudo: 'Pseudo ⟦test⟧',
+};
+/** Labels per language (`undefined` = the built-in English). */
+const LANGUAGE_LABELS: Record<Language, LabelOverrides | undefined> = {
+  english: undefined,
+  hindi: hindiLabels,
+  arabic: arabicLabels,
+  pseudo: pseudoLabels,
+};
+const DIRECTIONS = ['auto', 'ltr', 'rtl'] as const;
+type Direction = (typeof DIRECTIONS)[number];
+const IMAGES = { sample: '/sample.jpg', 'broken URL': '/does-not-exist.jpg', empty: undefined };
+type ImageChoice = keyof typeof IMAGES;
 /** The URL doesn't change while the page is open. */
 const noSubscribe = () => () => {};
 
@@ -49,7 +69,10 @@ export default function PlaygroundPage() {
     () => false,
   );
   const [pickedLanguage, setLanguage] = useState<Language | null>(null);
+  const [direction, setDirection] = useState<Direction>('auto');
   const language: Language = pickedLanguage ?? (urlPseudo ? 'pseudo' : 'english');
+  // Direction "auto" follows the language (Arabic reads right-to-left).
+  const editorDir = dirFor(direction, language);
 
   // Test hook for Playwright (e2e) — not part of the package API.
   useEffect(() => {
@@ -75,8 +98,8 @@ export default function PlaygroundPage() {
         </button>
 
         <div id="pg-settings" className="pg-settings" data-open={settingsOpen || undefined}>
-          <Segmented label="Theme" options={THEMES} value={theme} onChange={setTheme} />
-          <Segmented
+          <Dropdown label="Theme" options={THEMES} value={theme} onChange={setTheme} />
+          <Dropdown
             label="Frame"
             options={['full', 'tablet', 'phone'] as const}
             value={frame}
@@ -96,19 +119,14 @@ export default function PlaygroundPage() {
             ))}
           </div>
 
-          <div className="pg-group">
-            <button className="pg-btn" onClick={() => setSrc('/sample.jpg')}>
-              Sample
-            </button>
-            <button className="pg-btn" onClick={() => setSrc('/does-not-exist.jpg')}>
-              Broken URL
-            </button>
-            <button className="pg-btn" onClick={() => setSrc(undefined)}>
-              Empty
-            </button>
-          </div>
+          <Dropdown
+            label="Image"
+            options={Object.keys(IMAGES) as ImageChoice[]}
+            value={imageChoice(src)}
+            onChange={(choice) => setSrc(IMAGES[choice])}
+          />
 
-          <Segmented
+          <Dropdown
             label="App watermark"
             options={['off', 'on', 'locked'] as const}
             value={appWatermark}
@@ -118,9 +136,22 @@ export default function PlaygroundPage() {
             }}
           />
 
-          <Segmented label="Language" options={LANGUAGES} value={language} onChange={setLanguage} />
+          <Dropdown
+            label="Language"
+            options={LANGUAGES}
+            names={LANGUAGE_NAMES}
+            value={language}
+            onChange={setLanguage}
+          />
 
-          <Segmented
+          <Dropdown
+            label="Direction"
+            options={DIRECTIONS}
+            value={direction}
+            onChange={setDirection}
+          />
+
+          <Dropdown
             label="Metadata"
             options={['strip', 'keep', 'keep + GPS'] as const}
             value={metadata}
@@ -143,7 +174,8 @@ export default function PlaygroundPage() {
               src={src}
               initialState={initialState}
               theme={theme}
-              {...(language === 'pseudo' && { labels: pseudoLabels })}
+              {...(editorDir && { dir: editorDir })}
+              {...(LANGUAGE_LABELS[language] && { labels: LANGUAGE_LABELS[language] })}
               themeOverrides={accent ? { accent } : {}}
               exportOptions={{
                 mimeType: format,
@@ -192,31 +224,45 @@ async function hasExif(blob: Blob): Promise<boolean> {
   return head.includes('Exif\0\0');
 }
 
-export function Segmented<T extends string>({
+/** A labelled dropdown for the settings toolbar (`names`: display text per option). */
+export function Dropdown<T extends string>({
   label,
   options,
+  names,
   value,
   onChange,
 }: {
   label: string;
   options: readonly T[];
+  names?: Partial<Record<T, string>>;
   value: T;
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="pg-group" role="radiogroup" aria-label={label}>
+    <label className="pg-group">
       <span className="pg-label">{label}</span>
-      {options.map((option) => (
-        <button
-          key={option}
-          role="radio"
-          aria-checked={value === option}
-          className="pg-btn"
-          onClick={() => onChange(option)}
-        >
-          {option}
-        </button>
-      ))}
-    </div>
+      <select
+        className="pg-select"
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {names?.[option] ?? option}
+          </option>
+        ))}
+      </select>
+    </label>
   );
+}
+
+/** Which Image choice a source is (for the dropdown). */
+function imageChoice(src: string | undefined): ImageChoice {
+  return (Object.keys(IMAGES) as ImageChoice[]).find((key) => IMAGES[key] === src) ?? 'sample';
+}
+
+/** The editor's `dir` for the playground's Direction choice (`undefined` = inherit the page's). */
+function dirFor(direction: Direction, language: Language): 'ltr' | 'rtl' | undefined {
+  if (direction !== 'auto') return direction;
+  return language === 'arabic' ? 'rtl' : undefined;
 }

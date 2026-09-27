@@ -15,6 +15,7 @@ import {
   type Rect,
 } from '@image-ultra/core';
 import { useEditorState, useEditorStore, useLabels } from '../../context';
+import { useLatest } from '../../hooks/useLatest';
 
 /** Space kept around the crop box on the stage, in CSS px. */
 const STAGE_PADDING = 40;
@@ -54,6 +55,8 @@ interface DragState {
 export function CropOverlay() {
   const store = useEditorStore();
   const labels = useLabels();
+  // The wheel listener is registered once: it reads the labels live (language switches).
+  const labelsRef = useLatest(labels);
   const hintId = useId();
   const photoClipId = `${useId().replace(/:/g, '')}-photo`;
   const image = useEditorState((s) => s.image);
@@ -88,7 +91,7 @@ export function CropOverlay() {
       const factor = Math.exp(-event.deltaY * speed);
       if (!active) {
         active = true;
-        s.beginChange(labels.zoomCrop);
+        s.beginChange(labelsRef.current.zoomCrop);
       }
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
@@ -103,7 +106,7 @@ export function CropOverlay() {
         current,
       );
       const next = zoomCrop(s.image, g, current, anchor, factor, MIN_ZOOM_CROP);
-      s.update(labels.steps.crop, (draft) => {
+      s.update(labelsRef.current.steps.crop, (draft) => {
         draft.geometry.crop = next;
         draft.resize = syncResizeToCrop(draft.resize, next);
       });

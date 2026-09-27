@@ -111,13 +111,19 @@ for (const theme of ['dark', 'light'] as const) {
       if (theme === 'light') {
         const settings = page.getByRole('button', { name: 'Settings' });
         if (await settings.isVisible()) await settings.click();
-        await page
-          .getByRole('radiogroup', { name: 'Theme' })
-          .getByRole('radio', { name: 'light' })
-          .click();
+        await page.getByRole('combobox', { name: 'Theme' }).selectOption('light');
         if (await settings.isVisible()) await settings.click();
       }
       expect(await walk(page)).toEqual([]);
     });
   }
 }
+
+test('no accessibility problems · right-to-left · 1280px', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openEditor(page);
+  await page.getByRole('combobox', { name: 'Direction' }).selectOption('rtl');
+  await expect(page.locator('.iu-root')).toHaveAttribute('dir', 'rtl');
+  expect(await walk(page)).toEqual([]);
+});

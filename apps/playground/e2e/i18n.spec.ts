@@ -147,14 +147,44 @@ test('the playground Language switch changes the labels', async ({ page }) => {
   await page.goto('/');
   const rail = page.locator('.iu-rail');
   await expect(rail.getByRole('tab', { name: 'Adjust' })).toBeVisible();
-  await page
-    .getByRole('radiogroup', { name: 'Language' })
-    .getByRole('radio', { name: 'pseudo' })
-    .click();
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('pseudo');
   await expect(rail.getByRole('tab', { name: '⟦Adjust⟧' })).toBeVisible();
-  await page
-    .getByRole('radiogroup', { name: 'Language' })
-    .getByRole('radio', { name: 'english' })
-    .click();
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('english');
   await expect(rail.getByRole('tab', { name: 'Adjust' })).toBeVisible();
+});
+
+test('after switching language, new history steps use it (wheel zoom, arrow-key nudge)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.waitForFunction(() => {
+    const hook = (window as unknown as { __iu?: TestHook }).__iu;
+    return hook?.editor.current?.store.getState().status === 'ready';
+  });
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('pseudo');
+  const ed = page.locator('.iu-root');
+
+  // Crop view: a wheel zoom.
+  const stage = (await ed.locator('.iu-stage').boundingBox())!;
+  await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+  await page.mouse.wheel(0, -200);
+  await page.waitForTimeout(600); // the wheel step ends after a pause
+
+  // Annotate: draw, then nudge with an arrow key.
+  await ed
+    .locator('.iu-rail')
+    .getByRole('tab', { name: /Annotate/ })
+    .click();
+  await ed.getByRole('radio', { name: /Rectangle/ }).click();
+  await dragOnStage(page, [0.3, 0.4], [0.45, 0.55]);
+  await ed.locator('.iu-annotate-layer').focus();
+  await page.keyboard.press('ArrowRight');
+
+  await ed
+    .locator('.iu-topbar')
+    .getByRole('button', { name: /History/ })
+    .click();
+  const steps = await page.locator('.iu-history__row').allInnerTexts();
+  expect(steps.length).toBeGreaterThanOrEqual(4);
+  for (const step of steps) expect(step).toMatch(/⟦/);
 });

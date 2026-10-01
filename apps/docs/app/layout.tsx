@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Logo } from './Logo';
 import '@image-ultra/react/styles.css';
 import './docs.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://imageultra.ashvattech.com'),
-  title: { default: 'image-ultra — typed image editor for React', template: '%s · image-ultra' },
+  title: { default: 'Image Ultra — typed image editor for React', template: '%s · Image Ultra' },
   description:
     'A free (MIT), fully typed image editor component for React and Next.js: crop, adjust, filter, annotate, redact and export.',
 };
@@ -20,7 +21,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         <header className="site-header">
           <Link href="/" className="logo">
-            image-ultra
+            <Logo />
+            Image Ultra
           </Link>
           <nav aria-label="Site">
             <Link href="/docs/getting-started">Docs</Link>

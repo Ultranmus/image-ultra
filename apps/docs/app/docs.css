@@ -77,6 +77,9 @@ a {
   background: var(--docs-bg);
 }
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   color: var(--docs-text);
   text-decoration: none;

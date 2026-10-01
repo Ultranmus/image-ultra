@@ -670,3 +670,8 @@ shortcuts overlay, EXIF option, copy/paste shapes).
   (Desktop / Tablet / Phone, Full screen with close; overlay fallback) + 2 docs e2e (38 docs tests,
   axe clean); `check:snippets` covers READMEs → 3 README examples fixed. Examples stay on
   `workspace:*` (see HANDOFF).
+- **Brand mark (owner request)**: new logo — crop corners around a photo on the plum gradient
+  (`apps/docs/app/icon.svg`, same artwork in `Logo.tsx` and the playground's `app/icon.svg`). Docs
+  get a favicon and `apple-icon.png` (they had none) and the mark in the header. The site's display
+  name is "Image Ultra" (header, page titles); package names, imports and the `image-ultra` CSS layer
+  are unchanged.

@@ -1,0 +1,22 @@
+# Weekly dependency PRs, grouped so CI runs once per batch (DECISIONS #114).
+# Security fixes come separately, as soon as an advisory is published.
+version: 2
+updates:
+  - package-ecosystem: npm # covers pnpm and every workspace package via the root lockfile
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
